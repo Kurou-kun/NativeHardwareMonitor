@@ -1,0 +1,215 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Header Files\Core">
+      <UniqueIdentifier>{a4dc483c-5d45-446a-8acc-73c99e2e9562}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Categories">
+      <UniqueIdentifier>{bf3788f8-fabb-4867-b957-5457917ef57a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Plugin">
+      <UniqueIdentifier>{74c02d71-b1b9-41c9-8542-79135a6dbcc1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Types">
+      <UniqueIdentifier>{ac11779c-3a88-4ff7-82df-43600c4987b2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Utils">
+      <UniqueIdentifier>{1622236f-033d-45ea-93bb-bd622211ae3f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Categories\CPU">
+      <UniqueIdentifier>{49c9f332-55b9-4d2c-bd15-4e27b96cc07c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Categories\GPU">
+      <UniqueIdentifier>{fecaa83c-3d8f-483b-a0d0-f64a7d8f358f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Categories\Network">
+      <UniqueIdentifier>{e50bb966-634d-446a-a776-20491f835ec6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Categories\Memory">
+      <UniqueIdentifier>{0f61180d-b94d-4835-9d33-52e94143282d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Categories\Storage">
+      <UniqueIdentifier>{7b548a42-9c32-4990-9efa-387f93ee92d2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Categories\Dummy">
+      <UniqueIdentifier>{96e801b2-8b0e-4871-88bc-8161f1b1738b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Categories">
+      <UniqueIdentifier>{89f1d6f7-6c65-4ab1-84cf-7b5588771ca1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Core">
+      <UniqueIdentifier>{42a03dac-f108-46bf-bc80-d93b365c7ed0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Plugin">
+      <UniqueIdentifier>{9a6653ba-a27b-4937-bd55-f1bf71c25afd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Types">
+      <UniqueIdentifier>{d716ee2c-0bd2-4d34-8bac-b4f8c29d28a2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Utils">
+      <UniqueIdentifier>{33085ea6-416e-486b-86d1-d167a8c7a9c8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Categories\GPU">
+      <UniqueIdentifier>{5ed69d4b-5493-4879-8aba-a9722b8874f2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Categories\CPU">
+      <UniqueIdentifier>{6bf2f234-eede-4d6c-b054-75655784ede9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Categories\Network">
+      <UniqueIdentifier>{cb1685c6-4192-4878-851c-0ffa810513b4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Categories\Storage">
+      <UniqueIdentifier>{241da115-1002-4a6d-99ce-db68ae85620a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Categories\Memory">
+      <UniqueIdentifier>{40d75914-c6d1-4971-866b-447b662548db}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Categories\Dummy">
+      <UniqueIdentifier>{8afa48c6-75ff-4b30-a883-c0768d8c6104}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="source\Categories\GPU\ADLXLoader.cpp">
+      <Filter>Source Files\Categories\GPU</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Categories\GPU\AmdProvider.cpp">
+      <Filter>Source Files\Categories\GPU</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Categories\GPU\NvidiaLoader.cpp">
+      <Filter>Source Files\Categories\GPU</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Categories\GPU\NvidiaProvider.cpp">
+      <Filter>Source Files\Categories\GPU</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Core\BaseBackend.cpp">
+      <Filter>Source Files\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Categories\CPU\CpuBackend.cpp">
+      <Filter>Source Files\Categories\CPU</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Categories\GPU\GpuBackend.cpp">
+      <Filter>Source Files\Categories\GPU</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Categories\Dummy\DummyBackend.cpp">
+      <Filter>Source Files\Categories\Dummy</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Core\HardwareCore.cpp">
+      <Filter>Source Files\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Core\ICategoryBackend.cpp">
+      <Filter>Source Files\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Categories\Memory\MemoryBackend.cpp">
+      <Filter>Source Files\Categories\Memory</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Types\MetricParser.cpp">
+      <Filter>Source Files\Types</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Categories\Network\NetworkBackend.cpp">
+      <Filter>Source Files\Categories\Network</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Plugin\Plugin.cpp">
+      <Filter>Source Files\Plugin</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Categories\Storage\StorageBackend.cpp">
+      <Filter>Source Files\Categories\Storage</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Utils\TimeUtils.cpp">
+      <Filter>Source Files\Utils</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="source\Categories\GPU\ADLXLoader.h">
+      <Filter>Header Files\Categories\GPU</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Categories\GPU\AmdProvider.h">
+      <Filter>Header Files\Categories\GPU</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Categories\GPU\GpuBackend.h">
+      <Filter>Header Files\Categories\GPU</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Categories\GPU\IGpuProvider.h">
+      <Filter>Header Files\Categories\GPU</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Categories\CPU\CpuBackend.h">
+      <Filter>Header Files\Categories\CPU</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Categories\Dummy\DummyBackend.h">
+      <Filter>Header Files\Categories\Dummy</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Core\HardwareCore.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Categories\Memory\MemoryBackend.h">
+      <Filter>Header Files\Categories\Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Categories\GPU\NvidiaBackend.h">
+      <Filter>Header Files\Categories\Network</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Categories\GPU\NvidiaLoader.h">
+      <Filter>Header Files\Categories\GPU</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Categories\GPU\NvidiaProvider.h">
+      <Filter>Header Files\Categories\GPU</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Categories\Storage\StorageBackend.h">
+      <Filter>Header Files\Categories\Storage</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Utils\TimeUtils.h">
+      <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Plugin\Plugin.h">
+      <Filter>Header Files\Plugin</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Types\Category.h">
+      <Filter>Header Files\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Types\CpuMetric.h">
+      <Filter>Header Files\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Types\GpuMetric.h">
+      <Filter>Header Files\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Types\MemoryMetric.h">
+      <Filter>Header Files\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Types\NetworkMetric.h">
+      <Filter>Header Files\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Types\StorageMetric.h">
+      <Filter>Header Files\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Types\MetricParser.h">
+      <Filter>Header Files\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Core\BaseBackend.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Core\ICategoryBackend.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Version.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="NativeHardwareMonitor.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+</Project>
