@@ -48,6 +48,7 @@
     <ClInclude Include="source\Categories\GPU\NvidiaLoader.h" />
     <ClInclude Include="source\Categories\GPU\NvidiaProvider.h" />
     <ClInclude Include="source\Categories\Memory\MemoryBackend.h" />
+    <ClInclude Include="source\Categories\Network\NetworkBackend.h" />
     <ClInclude Include="source\Categories\Storage\StorageBackend.h" />
     <ClInclude Include="source\Core\BaseBackend.h" />
     <ClInclude Include="source\Core\HardwareCore.h" />
