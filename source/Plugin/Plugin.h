@@ -12,4 +12,6 @@ struct MeasureContext
     uint32_t deviceIndex = 0;
 
     uint32_t handle = 0;
+
+    bool debug = false;
 };

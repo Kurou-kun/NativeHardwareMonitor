@@ -1,8 +1,22 @@
-#pragma once
-
 enum class GpuMetric
 {
-    UtilizationPercent,
-    MemoryUsedBytes,
+    Usage,
+
+    CoreClock,
+
+    Temperature,
+    HotspotTemperature,
+    MemoryTemperature,
+
+    VramUsed,
+    VramTotal,
+    MemoryClock,
+
+    FanSpeed,
+    FanSpeedRPM,
+
+    Power,
+    PowerLimit,
+
     Unknown
 };

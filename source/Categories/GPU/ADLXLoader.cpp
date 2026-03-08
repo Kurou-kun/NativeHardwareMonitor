@@ -8,9 +8,18 @@ bool ADLXLoader::Initialize()
     if (g_ADLX.Initialize() != ADLX_OK)
         return false;
 
+    auto system = g_ADLX.GetSystemServices();
+
+    if (!system)
+    {
+        g_ADLX.Terminate();
+        return false;
+    }
+
     m_initialized = true;
     return true;
 }
+
 
 void ADLXLoader::Shutdown()
 {
@@ -26,5 +35,10 @@ adlx::IADLXSystem* ADLXLoader::GetSystemServices() const
     if (!m_initialized)
         return nullptr;
 
-    return g_ADLX.GetSystemServices();
+    auto system = g_ADLX.GetSystemServices();
+
+    if (!system)
+        return nullptr;
+
+    return system;
 }

@@ -1,3 +1,5 @@
+#include <windows.h>
+
 #include "Core/HardwareCore.h"
 
 #include "Categories/Network/NetworkBackend.h"
@@ -7,9 +9,7 @@
 #include "Categories/Dummy/DummyBackend.h"
 
 #include "Categories/GPU/GpuBackend.h"
-
-#include <windows.h>
-
+#include "Utils/Debug.h"
 HardwareCore& HardwareCore::Instance()
 {
     static HardwareCore instance;
@@ -23,6 +23,8 @@ HardwareCore::HardwareCore()
     m_backends[Category::Memory].backend = std::make_unique<MemoryBackend>();
     m_backends[Category::Network].backend = std::make_unique<NetworkBackend>();
     m_backends[Category::Storage].backend = std::make_unique<StorageBackend>();
+
+    LOG_INFO(L"HardwareCore(): Initialized");
 }
 
 uint32_t HardwareCore::RegisterMeasure(
@@ -37,6 +39,8 @@ uint32_t HardwareCore::RegisterMeasure(
         metricId,
         deviceIndex
         });
+
+    LOG_INFO(L"HardwareCore: Registered measure (handle=%u category=%u metric=%u device=%u)", handle, category, metricId, deviceIndex);
 
     return handle;
 }
@@ -69,7 +73,7 @@ double HardwareCore::GetValue(uint32_t handle)
         state->lastUpdateTime = now;
     }
 
-    return state->backend->GetValue(entry.deviceIndex, entry.metricId);
+    return state->backend->GetValue(entry.metricId, entry.deviceIndex);
 }
 
 HardwareCore::BackendState* HardwareCore::GetBackendState(Category category)

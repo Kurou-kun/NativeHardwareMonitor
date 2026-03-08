@@ -1,30 +1,34 @@
 #pragma once
 
-#include <windows.h>
-
 #include "Core/BaseBackend.h"
+#include "Types/CpuMetric.h"
+#include "Categories/CPU/ICpuProvider.h"
+
+#include <vector>
+#include <memory>
 
 class CpuBackend : public BaseBackend
 {
 public:
-    double GetValue(uint32_t deviceIndex, uint32_t metricId) override;
+    double GetValue(uint32_t metricId, uint32_t deviceIndex) override;
+
+    uint32_t GetDeviceCount() const override
+    {
+        return m_deviceCount;
+    }
+
 
 protected:
     bool OnInitialize() override;
     void OnUpdate() override;
 
 private:
-    struct Snapshot
-    {
-        ULONGLONG idle = 0;
-        ULONGLONG kernel = 0;
-        ULONGLONG user = 0;
-    };
+    std::vector<std::unique_ptr<ICpuProvider>> m_providers;
 
-    Snapshot m_prev{};
-    Snapshot m_curr{};
+    ICpuProvider* m_provider = nullptr;
 
-    double m_usagePercent = 0.0;
+    uint32_t m_deviceCount = 0;
 
-    bool ReadSnapshot(Snapshot& snap);
+    bool m_loggedUnsupportedTemp = false;
+    bool m_loggedUnknownMetric = false;
 };

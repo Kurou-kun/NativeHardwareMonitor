@@ -1,4 +1,5 @@
 #include "Types/MetricParser.h"
+#include "Utils/Debug.h"
 
 #include <algorithm>
 #include <cwctype>
@@ -52,24 +53,67 @@ uint32_t ParseMetric(Category category, const std::wstring& input)
         if (str == L"used") return static_cast<uint32_t>(MemoryMetric::Used);
         if (str == L"free") return static_cast<uint32_t>(MemoryMetric::Free);
         if (str == L"usagepercent") return static_cast<uint32_t>(MemoryMetric::UsagePercent);
+
+        LOG_INFO(L"Unknown Memory metric: %ls", str.c_str());
+
         return static_cast<uint32_t>(MemoryMetric::Unknown);
     }
 
     case Category::CPU:
     {
-        if (str == L"usagepercent")
-            return static_cast<uint32_t>(CpuMetric::UsagePercent);
+        if (str == L"usage")
+            return static_cast<uint32_t>(CpuMetric::Usage);
+
+        if (str == L"clock")
+            return static_cast<uint32_t>(CpuMetric::Clock);
+
+        if (str == L"temperature")
+            return static_cast<uint32_t>(CpuMetric::Temperature);
+
+        LOG_INFO(L"Unknown CPU metric: %ls", str.c_str());
 
         return static_cast<uint32_t>(CpuMetric::Unknown);
     }
 
     case Category::GPU:
     {
-        if (str == L"utilizationpercent")
-            return static_cast<uint32_t>(GpuMetric::UtilizationPercent);
+        if (str == L"usage")
+            return static_cast<uint32_t>(GpuMetric::Usage);
 
-        if (str == L"memoryusedbytes")
-            return static_cast<uint32_t>(GpuMetric::MemoryUsedBytes);
+        if (str == L"vramused")
+            return static_cast<uint32_t>(GpuMetric::VramUsed);
+
+        if (str == L"vramtotal")
+            return static_cast<uint32_t>(GpuMetric::VramTotal);
+
+        if (str == L"temperature")
+            return static_cast<uint32_t>(GpuMetric::Temperature);
+
+        if (str == L"hotspottemperature")
+            return static_cast<uint32_t>(GpuMetric::HotspotTemperature);
+
+        if (str == L"memorytemperature")
+            return static_cast<uint32_t>(GpuMetric::MemoryTemperature);
+
+        if (str == L"coreclock")
+            return static_cast<uint32_t>(GpuMetric::CoreClock);
+
+        if (str == L"memoryclock")
+            return static_cast<uint32_t>(GpuMetric::MemoryClock);
+
+        if (str == L"fanspeed")
+            return static_cast<uint32_t>(GpuMetric::FanSpeed);
+
+        if (str == L"fanspeedrpm")
+            return static_cast<uint32_t>(GpuMetric::FanSpeedRPM);
+
+        if (str == L"power")
+            return static_cast<uint32_t>(GpuMetric::Power);
+
+        if (str == L"powerlimit")
+            return static_cast<uint32_t>(GpuMetric::PowerLimit);
+
+        LOG_INFO(L"Unknown GPU metric: %ls", str.c_str());
 
         return static_cast<uint32_t>(GpuMetric::Unknown);
     }
@@ -82,6 +126,8 @@ uint32_t ParseMetric(Category category, const std::wstring& input)
         if (str == L"txbytespersec")
             return static_cast<uint32_t>(NetworkMetric::TxBytesPerSec);
 
+        LOG_INFO(L"Unknown Network metric: %ls", str.c_str());
+
         return static_cast<uint32_t>(NetworkMetric::Unknown);
     }
 
@@ -93,10 +139,14 @@ uint32_t ParseMetric(Category category, const std::wstring& input)
         if (str == L"writebytespersec")
             return static_cast<uint32_t>(StorageMetric::WriteBytesPerSec);
 
+        LOG_INFO(L"Unknown Storage metric: %ls", str.c_str());
+
         return static_cast<uint32_t>(StorageMetric::Unknown);
     }
 
     default:
+
+        LOG_INFO(L"Unknown category metric: %ls", str.c_str());
         return static_cast<uint32_t>(-1);
     }
 }

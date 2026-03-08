@@ -1,57 +1,103 @@
 #include "Categories/CPU/CpuBackend.h"
-#include "Types/CpuMetric.h"
+
+#include "Categories/CPU/WinApiProvider.h"
+#include "Utils/Debug.h"
 
 bool CpuBackend::OnInitialize()
 {
-    return ReadSnapshot(m_prev);
+    auto provider = std::make_unique<WinApiProvider>();
+
+    if (provider->Initialize())
+    {
+        uint32_t cores = provider->GetCoreCount();
+
+        m_deviceCount = cores + 1;
+
+        m_provider = provider.get();
+
+        m_providers.push_back(std::move(provider));
+
+        LOG_INFO(L"CPU logical cores detected: %u", cores);
+    }
+
+    return m_provider != nullptr;
 }
 
 void CpuBackend::OnUpdate()
 {
-    if (!ReadSnapshot(m_curr))
-        return;
+    if (m_provider)
+        m_provider->Update();
+}
 
-    ULONGLONG idleDiff = m_curr.idle - m_prev.idle;
-    ULONGLONG kernelDiff = m_curr.kernel - m_prev.kernel;
-    ULONGLONG userDiff = m_curr.user - m_prev.user;
+double CpuBackend::GetValue(uint32_t metricId, uint32_t deviceIndex)
+{
+    if (!m_provider)
+        return 0.0;
 
-    ULONGLONG total = kernelDiff + userDiff;
+    if (deviceIndex >= m_deviceCount)
+        return 0.0;
 
-    if (total > 0)
+    double value = 0.0;
+
+    switch (static_cast<CpuMetric>(metricId))
     {
-        m_usagePercent =
-            (1.0 - (double)idleDiff / total) * 100.0;
+    case CpuMetric::Usage:
+    {
+        if (deviceIndex == 0)
+        {
+            if (m_provider->GetTotalUsage(value))
+                return value;
+        }
+        else
+        {
+            if (m_provider->GetCoreUsage(deviceIndex - 1, value))
+                return value;
+        }
+
+        break;
     }
 
-    m_prev = m_curr;
-}
+    case CpuMetric::Clock:
+    {
+        if (deviceIndex == 0)
+        {
+            if (m_provider->GetClock(value))
+                return value;
+        }
+        else
+        {
+            if (m_provider->GetCoreClock(deviceIndex - 1, value))
+                return value;
+        }
 
-double CpuBackend::GetValue(uint32_t, uint32_t metricId)
-{
-    if (metricId == static_cast<uint32_t>(CpuMetric::UsagePercent))
-        return m_usagePercent;
+        break;
+    }
+
+    case CpuMetric::Temperature:
+    {
+        if (m_provider->GetTemperature(value))
+            return value;
+
+        if (!m_loggedUnsupportedTemp)
+        {
+            LOG_INFO(L"CPU temperature unsupported");
+            m_loggedUnsupportedTemp = true;
+        }
+
+        break;
+    }
+
+    default:
+    {
+        if (!m_loggedUnknownMetric)
+        {
+            LOG_INFO(L"CPU unknown metric requested");
+            m_loggedUnknownMetric = true;
+        }
+
+        break;
+    }
+    }
 
     return 0.0;
-}
-
-bool CpuBackend::ReadSnapshot(Snapshot& snap)
-{
-    FILETIME idleTime, kernelTime, userTime;
-
-    if (!GetSystemTimes(&idleTime, &kernelTime, &userTime))
-        return false;
-
-    snap.idle =
-        ((ULONGLONG)idleTime.dwHighDateTime << 32) |
-        idleTime.dwLowDateTime;
-
-    snap.kernel =
-        ((ULONGLONG)kernelTime.dwHighDateTime << 32) |
-        kernelTime.dwLowDateTime;
-
-    snap.user =
-        ((ULONGLONG)userTime.dwHighDateTime << 32) |
-        userTime.dwLowDateTime;
-
-    return true;
 }

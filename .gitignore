@@ -15,6 +15,7 @@
 *.filters
 *.users
 *.aps
+*.zip
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs

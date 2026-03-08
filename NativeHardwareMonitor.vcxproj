@@ -19,12 +19,15 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="external\amd\adlx\ADLXHelper.cpp" />
+    <ClCompile Include="external\amd\adlx\WinAPIs.cpp" />
     <ClCompile Include="source\Categories\CPU\CpuBackend.cpp" />
+    <ClCompile Include="source\Categories\CPU\WinApiProvider.cpp" />
     <ClCompile Include="source\Categories\Dummy\DummyBackend.cpp" />
     <ClCompile Include="source\Categories\GPU\ADLXLoader.cpp" />
     <ClCompile Include="source\Categories\GPU\AmdProvider.cpp" />
     <ClCompile Include="source\Categories\GPU\GpuBackend.cpp" />
-    <ClCompile Include="source\Categories\GPU\NvidiaLoader.cpp" />
+    <ClCompile Include="source\Categories\GPU\NvmlLoader.cpp" />
     <ClCompile Include="source\Categories\GPU\NvidiaProvider.cpp" />
     <ClCompile Include="source\Categories\Memory\MemoryBackend.cpp" />
     <ClCompile Include="source\Categories\Network\NetworkBackend.cpp" />
@@ -34,18 +37,20 @@
     <ClCompile Include="source\Core\ICategoryBackend.cpp" />
     <ClCompile Include="source\Plugin\Plugin.cpp" />
     <ClCompile Include="source\Types\MetricParser.cpp" />
+    <ClCompile Include="source\Utils\Debug.cpp" />
     <ClCompile Include="source\Utils\TimeUtils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />
     <ClInclude Include="source\Categories\CPU\CpuBackend.h" />
+    <ClInclude Include="source\Categories\CPU\ICpuProvider.h" />
+    <ClInclude Include="source\Categories\CPU\WinApiProvider.h" />
     <ClInclude Include="source\Categories\Dummy\DummyBackend.h" />
     <ClInclude Include="source\Categories\GPU\ADLXLoader.h" />
     <ClInclude Include="source\Categories\GPU\AmdProvider.h" />
     <ClInclude Include="source\Categories\GPU\GpuBackend.h" />
     <ClInclude Include="source\Categories\GPU\IGpuProvider.h" />
-    <ClInclude Include="source\Categories\GPU\NvidiaBackend.h" />
-    <ClInclude Include="source\Categories\GPU\NvidiaLoader.h" />
+    <ClInclude Include="source\Categories\GPU\NvmlLoader.h" />
     <ClInclude Include="source\Categories\GPU\NvidiaProvider.h" />
     <ClInclude Include="source\Categories\Memory\MemoryBackend.h" />
     <ClInclude Include="source\Categories\Network\NetworkBackend.h" />
@@ -61,6 +66,7 @@
     <ClInclude Include="source\Types\MetricParser.h" />
     <ClInclude Include="source\Types\NetworkMetric.h" />
     <ClInclude Include="source\Types\StorageMetric.h" />
+    <ClInclude Include="source\Utils\Debug.h" />
     <ClInclude Include="source\Utils\TimeUtils.h" />
     <ClInclude Include="Version.h" />
   </ItemGroup>
@@ -166,7 +172,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>LEAN_AND_MEAN;NOMINMAX;UNICODE;ADLX_PLATFORM_WINDOWS</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WINVER=0x0601;_WIN32_WINNT=0x0601;NTDDI_VERSION=0x06010000;NOMINMAX;UNICODE;ADLX_PLATFORM_WINDOWS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalIncludeDirectories>$(ProjectDir)external\rainmeter;$(ProjectDir)external\nvidia;$(ProjectDir)external\amd\adl2;$(ProjectDir)external\amd\adlx;$(ProjectDir)source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>

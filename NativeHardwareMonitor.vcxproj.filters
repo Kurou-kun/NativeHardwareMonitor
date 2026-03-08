@@ -79,20 +79,20 @@
     <Filter Include="Source Files\Categories\Dummy">
       <UniqueIdentifier>{8afa48c6-75ff-4b30-a883-c0768d8c6104}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Categories\GPU\AMD">
+      <UniqueIdentifier>{f0e0633d-0964-4f28-a6ad-884bc835be3b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Categories\GPU\NVIDIA">
+      <UniqueIdentifier>{9ac32d6b-2ee9-49ed-b8ef-e8aaa906c155}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Categories\GPU\AMD">
+      <UniqueIdentifier>{b3569ed6-87d3-4f86-b0be-afd93303606e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Categories\GPU\NVIDIA">
+      <UniqueIdentifier>{33a2db79-a275-45ee-9318-a3f5ea8115a9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="source\Categories\GPU\ADLXLoader.cpp">
-      <Filter>Source Files\Categories\GPU</Filter>
-    </ClCompile>
-    <ClCompile Include="source\Categories\GPU\AmdProvider.cpp">
-      <Filter>Source Files\Categories\GPU</Filter>
-    </ClCompile>
-    <ClCompile Include="source\Categories\GPU\NvidiaLoader.cpp">
-      <Filter>Source Files\Categories\GPU</Filter>
-    </ClCompile>
-    <ClCompile Include="source\Categories\GPU\NvidiaProvider.cpp">
-      <Filter>Source Files\Categories\GPU</Filter>
-    </ClCompile>
     <ClCompile Include="source\Core\BaseBackend.cpp">
       <Filter>Source Files\Core</Filter>
     </ClCompile>
@@ -129,14 +129,32 @@
     <ClCompile Include="source\Utils\TimeUtils.cpp">
       <Filter>Source Files\Utils</Filter>
     </ClCompile>
+    <ClCompile Include="external\amd\adlx\ADLXHelper.cpp">
+      <Filter>Source Files\Categories\GPU\AMD</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Categories\GPU\ADLXLoader.cpp">
+      <Filter>Source Files\Categories\GPU\AMD</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Categories\GPU\AmdProvider.cpp">
+      <Filter>Source Files\Categories\GPU\AMD</Filter>
+    </ClCompile>
+    <ClCompile Include="external\amd\adlx\WinAPIs.cpp">
+      <Filter>Source Files\Categories\GPU\AMD</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Categories\GPU\NvmlLoader.cpp">
+      <Filter>Source Files\Categories\GPU\NVIDIA</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Categories\GPU\NvidiaProvider.cpp">
+      <Filter>Source Files\Categories\GPU\NVIDIA</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Utils\Debug.cpp">
+      <Filter>Source Files\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Categories\CPU\WinApiProvider.cpp">
+      <Filter>Source Files\Categories\CPU</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="source\Categories\GPU\ADLXLoader.h">
-      <Filter>Header Files\Categories\GPU</Filter>
-    </ClInclude>
-    <ClInclude Include="source\Categories\GPU\AmdProvider.h">
-      <Filter>Header Files\Categories\GPU</Filter>
-    </ClInclude>
     <ClInclude Include="source\Categories\GPU\GpuBackend.h">
       <Filter>Header Files\Categories\GPU</Filter>
     </ClInclude>
@@ -154,12 +172,6 @@
     </ClInclude>
     <ClInclude Include="source\Categories\Memory\MemoryBackend.h">
       <Filter>Header Files\Categories\Memory</Filter>
-    </ClInclude>
-    <ClInclude Include="source\Categories\GPU\NvidiaLoader.h">
-      <Filter>Header Files\Categories\GPU</Filter>
-    </ClInclude>
-    <ClInclude Include="source\Categories\GPU\NvidiaProvider.h">
-      <Filter>Header Files\Categories\GPU</Filter>
     </ClInclude>
     <ClInclude Include="source\Categories\Storage\StorageBackend.h">
       <Filter>Header Files\Categories\Storage</Filter>
@@ -203,11 +215,29 @@
     <ClInclude Include="resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="source\Categories\GPU\NvidiaBackend.h">
-      <Filter>Header Files\Categories\GPU</Filter>
-    </ClInclude>
     <ClInclude Include="source\Categories\Network\NetworkBackend.h">
       <Filter>Header Files\Categories\Network</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Categories\GPU\ADLXLoader.h">
+      <Filter>Header Files\Categories\GPU\AMD</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Categories\GPU\AmdProvider.h">
+      <Filter>Header Files\Categories\GPU\AMD</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Categories\GPU\NvmlLoader.h">
+      <Filter>Header Files\Categories\GPU\NVIDIA</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Categories\GPU\NvidiaProvider.h">
+      <Filter>Header Files\Categories\GPU\NVIDIA</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Utils\Debug.h">
+      <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Categories\CPU\ICpuProvider.h">
+      <Filter>Header Files\Categories\CPU</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Categories\CPU\WinApiProvider.h">
+      <Filter>Header Files\Categories\CPU</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

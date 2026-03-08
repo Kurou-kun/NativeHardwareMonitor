@@ -1,6 +1,7 @@
 #include <windows.h>
 
 #include "Plugin/Plugin.h"
+#include "Utils/Debug.h"
 #include "Core/HardwareCore.h"
 
 #include "Types/MetricParser.h"
@@ -22,6 +23,8 @@ static HardwareCore& GetCore()
 
 PLUGIN_EXPORT void Initialize(void** data, void* rm)
 {
+    g_Rainmeter = rm;
+
     auto* ctx = new MeasureContext();
 
     LPCWSTR categoryRaw = RmReadString(rm, L"Category", L"", FALSE);
@@ -30,12 +33,20 @@ PLUGIN_EXPORT void Initialize(void** data, void* rm)
     LPCWSTR metricRaw = RmReadString(rm, L"Metric", L"", FALSE);
     std::wstring metricStr = metricRaw ? metricRaw : L"";
 
+    ctx->debug = RmReadInt(rm, L"Debug", 0) != 0;
+
+    if (ctx->debug)
+    {
+        g_DebugEnabled = true;
+        LOG_INFO(L"Debug logging enabled");
+    }
+
     ctx->category = ParseCategory(categoryStr);
     ctx->metricId = ParseMetric(ctx->category, metricStr);
 
     if (ctx->metricId == static_cast<uint32_t>(-1))
     {
-        RmLog(rm, LOG_ERROR, L"[NHM] Metric not supported for this category.");
+        LOG_INFO(L"METRIC NOT SUPPORTED");
         *data = ctx;
         return;
     }
@@ -90,6 +101,8 @@ PLUGIN_EXPORT void Reload(void* data, void* rm, double* maxValue)
     ctx->deviceIndex = static_cast<uint32_t>(
         RmReadInt(rm, L"Device", 0)
         );
+
+    ctx->debug = RmReadInt(rm, L"Debug", 0) != 0;
 
     ctx->handle = GetCore().RegisterMeasure(
         ctx->category,
