@@ -1,47 +1,79 @@
 #include "Categories/Memory/MemoryBackend.h"
+#include "Categories/Memory/WinApiMemoryProvider.h"
 
-bool MemoryBackend::OnInitialize()
+#include "Types/MemoryMetric.h"
+#include "Utils/Debug.h"
+
+bool MemoryBackend::Initialize()
 {
+    if (m_initAttempted)
+        return !m_initFailed;
+
+    m_initAttempted = true;
+
+    auto provider = std::make_unique<WinApiMemoryProvider>();
+
+    if (!provider->Initialize())
+    {
+        LOG_ERROR(L"Memory provider initialization failed");
+        m_initFailed = true;
+        return false;
+    }
+
+    LOG_INFO(L"Memory provider initialized");
+
+    m_providers.push_back(std::move(provider));
+
     return true;
 }
 
-void MemoryBackend::OnUpdate()
+void MemoryBackend::Update()
 {
-    MEMORYSTATUSEX statex{};
-    statex.dwLength = sizeof(statex);
-
-    if (GlobalMemoryStatusEx(&statex))
+    for (auto& provider : m_providers)
     {
-        m_snapshot.totalBytes = statex.ullTotalPhys;
-        m_snapshot.availBytes = statex.ullAvailPhys;
+        provider->Update();
     }
 }
 
-double MemoryBackend::GetValue(uint32_t deviceIndex, uint32_t metricId)
+double MemoryBackend::GetValue(uint32_t metricId, uint32_t deviceIndex)
 {
-    (void)deviceIndex;
+    if (m_providers.empty())
+        return 0.0;
 
-    const uint64_t total = m_snapshot.totalBytes;
-    const uint64_t free = m_snapshot.availBytes;
-    const uint64_t used = total - free;
+    auto metric = static_cast<MemoryMetric>(metricId);
+    auto& provider = m_providers[0];
 
-    switch (metricId)
+    double value = 0.0;
+
+    switch (metric)
     {
-    case 0: // Total MB
-        return static_cast<double>(total) / (1024.0 * 1024.0);
+    case MemoryMetric::Used:
+        if (provider->GetUsed(deviceIndex, value)) return value;
+        break;
 
-    case 1: // Used MB
-        return static_cast<double>(used) / (1024.0 * 1024.0);
+    case MemoryMetric::Free:
+        if (provider->GetFree(deviceIndex, value)) return value;
+        break;
 
-    case 2: // Free MB
-        return static_cast<double>(free) / (1024.0 * 1024.0);
+    case MemoryMetric::Total:
+        if (provider->GetTotal(deviceIndex, value)) return value;
+        break;
 
-    case 3: // Usage %
-        if (total == 0)
-            return 0.0;
-        return (static_cast<double>(used) / total) * 100.0;
+    case MemoryMetric::UsedPercent:
+        if (provider->GetUsedPercent(deviceIndex, value)) return value;
+        break;
 
     default:
-        return 0.0;
+        break;
     }
+
+    return 0.0;
+}
+
+uint32_t MemoryBackend::GetDeviceCount() const
+{
+    if (m_providers.empty())
+        return 0;
+
+    return m_providers[0]->GetDeviceCount();
 }

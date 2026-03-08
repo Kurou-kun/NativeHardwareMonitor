@@ -30,6 +30,7 @@
     <ClCompile Include="source\Categories\GPU\NvmlLoader.cpp" />
     <ClCompile Include="source\Categories\GPU\NvidiaProvider.cpp" />
     <ClCompile Include="source\Categories\Memory\MemoryBackend.cpp" />
+    <ClCompile Include="source\Categories\Memory\WinApiMemoryProvider.cpp" />
     <ClCompile Include="source\Categories\Network\NetworkBackend.cpp" />
     <ClCompile Include="source\Categories\Storage\StorageBackend.cpp" />
     <ClCompile Include="source\Core\BaseBackend.cpp" />
@@ -52,7 +53,9 @@
     <ClInclude Include="source\Categories\GPU\IGpuProvider.h" />
     <ClInclude Include="source\Categories\GPU\NvmlLoader.h" />
     <ClInclude Include="source\Categories\GPU\NvidiaProvider.h" />
+    <ClInclude Include="source\Categories\Memory\IMemoryProvider.h" />
     <ClInclude Include="source\Categories\Memory\MemoryBackend.h" />
+    <ClInclude Include="source\Categories\Memory\WinApiMemoryProvider.h" />
     <ClInclude Include="source\Categories\Network\NetworkBackend.h" />
     <ClInclude Include="source\Categories\Storage\StorageBackend.h" />
     <ClInclude Include="source\Core\BaseBackend.h" />

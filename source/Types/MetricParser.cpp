@@ -49,10 +49,10 @@ uint32_t ParseMetric(Category category, const std::wstring& input)
     {
     case Category::Memory:
     {
-        if (str == L"total") return static_cast<uint32_t>(MemoryMetric::Total);
         if (str == L"used") return static_cast<uint32_t>(MemoryMetric::Used);
         if (str == L"free") return static_cast<uint32_t>(MemoryMetric::Free);
-        if (str == L"usagepercent") return static_cast<uint32_t>(MemoryMetric::UsagePercent);
+        if (str == L"total") return static_cast<uint32_t>(MemoryMetric::Total);
+        if (str == L"usedpercent") return static_cast<uint32_t>(MemoryMetric::UsedPercent);
 
         LOG_INFO(L"Unknown Memory metric: %ls", str.c_str());
 

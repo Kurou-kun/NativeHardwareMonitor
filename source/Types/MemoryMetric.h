@@ -2,9 +2,9 @@
 
 enum class MemoryMetric
 {
-    Total,
     Used,
     Free,
-    UsagePercent,
+    Total,
+    UsedPercent,
     Unknown
 };

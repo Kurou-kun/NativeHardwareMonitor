@@ -1,24 +1,27 @@
 #pragma once
 
-#include <windows.h>
+#include "Core/ICategoryBackend.h"
+#include "Categories/Memory/IMemoryProvider.h"
 
-#include "Core/BaseBackend.h"
+#include <memory>
+#include <vector>
 
-class MemoryBackend : public BaseBackend
+class MemoryBackend : public ICategoryBackend
 {
 public:
-    double GetValue(uint32_t deviceIndex, uint32_t metricId) override;
 
-protected:
-    bool OnInitialize() override;
-    void OnUpdate() override;
+    bool Initialize() override;
+
+    void Update() override;
+
+    double GetValue(uint32_t metricId, uint32_t deviceIndex) override;
+
+    uint32_t GetDeviceCount() const override;
 
 private:
-    struct Snapshot
-    {
-        uint64_t totalBytes = 0;
-        uint64_t availBytes = 0;
-    };
 
-    Snapshot m_snapshot;
+    std::vector<std::unique_ptr<IMemoryProvider>> m_providers;
+
+    bool m_initAttempted = false;
+    bool m_initFailed = false;
 };
