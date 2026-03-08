@@ -1,34 +1,28 @@
 #pragma once
 
-#include "Core/BaseBackend.h"
-#include "Types/CpuMetric.h"
+#include "Core/ICategoryBackend.h"
 #include "Categories/CPU/ICpuProvider.h"
 
-#include <vector>
 #include <memory>
+#include <vector>
 
-class CpuBackend : public BaseBackend
+class CpuBackend : public ICategoryBackend
 {
 public:
+
+    bool Initialize() override;
+    void Update() override;
+
     double GetValue(uint32_t metricId, uint32_t deviceIndex) override;
 
-    uint32_t GetDeviceCount() const override
-    {
-        return m_deviceCount;
-    }
-
-
-protected:
-    bool OnInitialize() override;
-    void OnUpdate() override;
+    uint32_t GetDeviceCount() const override;
 
 private:
+
     std::vector<std::unique_ptr<ICpuProvider>> m_providers;
 
-    ICpuProvider* m_provider = nullptr;
+    bool m_initAttempted = false;
+    bool m_initFailed = false;
 
-    uint32_t m_deviceCount = 0;
-
-    bool m_loggedUnsupportedTemp = false;
-    bool m_loggedUnknownMetric = false;
+    bool m_initialized = false;
 };

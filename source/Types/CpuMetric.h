@@ -4,6 +4,5 @@ enum class CpuMetric
 {
     Usage,
     Clock,
-    Temperature,
     Unknown
 };

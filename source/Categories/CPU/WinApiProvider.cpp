@@ -1,15 +1,16 @@
+#include <windows.h>
+#include <winternl.h>
+#include <pdh.h>
+#include <vector>
+#include <algorithm>
+
+#pragma comment(lib, "pdh.lib")
+
 #include "Categories/CPU/WinApiProvider.h"
+#include "Utils/Debug.h"
 
-typedef NTSTATUS(NTAPI* NtQuerySystemInformation_t)(
-    ULONG,
-    PVOID,
-    ULONG,
-    PULONG
-    );
-
-static NtQuerySystemInformation_t NtQuerySystemInformationPtr = nullptr;
-
-static const ULONG SystemProcessorPerformanceInformation = 8;
+#define SystemProcessorPerformanceInformation 8
+#define STATUS_SUCCESS 0
 
 bool WinApiProvider::Initialize()
 {
@@ -18,139 +19,189 @@ bool WinApiProvider::Initialize()
     if (!ntdll)
         return false;
 
-    NtQuerySystemInformationPtr =
+    m_ntQuerySystemInformation =
         (NtQuerySystemInformation_t)GetProcAddress(
             ntdll,
-            "NtQuerySystemInformation");
+            "NtQuerySystemInformation"
+        );
 
-    if (!NtQuerySystemInformationPtr)
+    if (!m_ntQuerySystemInformation)
         return false;
 
-    m_coreCount = GetActiveProcessorCount(ALL_PROCESSOR_GROUPS);
+    SYSTEM_INFO info;
+    GetSystemInfo(&info);
 
-    m_prev.resize(m_coreCount);
-    m_curr.resize(m_coreCount);
-    m_coreUsage.resize(m_coreCount);
+    m_coreCount = info.dwNumberOfProcessors;
 
-    m_powerInfo.resize(m_coreCount);
-    m_coreClock.resize(m_coreCount);
+    m_prevTimes.resize(m_coreCount);
+    m_currTimes.resize(m_coreCount);
+    m_coreUsage.resize(m_coreCount, 0.0);
 
-    ULONG size =
-        sizeof(SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION) *
-        m_coreCount;
+    QueryProcessorInfo(m_prevTimes);
 
-    if (NtQuerySystemInformationPtr(
-        SystemProcessorPerformanceInformation,
-        m_prev.data(),
-        size,
-        nullptr) != 0)
+    /*
+        Base clock from registry
+    */
+
+    HKEY key;
+
+    if (RegOpenKeyExW(
+        HKEY_LOCAL_MACHINE,
+        L"HARDWARE\\DESCRIPTION\\System\\CentralProcessor\\0",
+        0,
+        KEY_READ,
+        &key) == ERROR_SUCCESS)
     {
-        return false;
+        DWORD mhz = 0;
+        DWORD size = sizeof(DWORD);
+
+        if (RegQueryValueExW(
+            key,
+            L"~MHz",
+            nullptr,
+            nullptr,
+            (LPBYTE)&mhz,
+            &size) == ERROR_SUCCESS)
+        {
+            m_baseClock = (double)mhz * 1000000.0;
+        }
+
+        RegCloseKey(key);
     }
+
+    /*
+        PDH performance counter for clock estimation
+    */
+
+    if (PdhOpenQueryW(nullptr, 0, &m_perfQuery) == ERROR_SUCCESS)
+    {
+        PdhAddEnglishCounterW(
+            m_perfQuery,
+            L"\\Processor Information(_Total)\\Processor Frequency",
+            0,
+            &m_freqCounter
+        );
+
+        PdhAddEnglishCounterW(
+            m_perfQuery,
+            L"\\Processor Information(_Total)\\% Processor Performance",
+            0,
+            &m_perfCounter
+        );
+
+        PdhCollectQueryData(m_perfQuery);
+    }
+
+    LOG_INFO(
+        L"WinApiProvider initialized",
+        m_coreCount,
+        m_baseClock / 1000000.0
+    );
 
     return true;
 }
 
 void WinApiProvider::Update()
 {
-    ULONG size =
-        sizeof(SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION) *
-        m_coreCount;
-
-    if (NtQuerySystemInformationPtr(
-        SystemProcessorPerformanceInformation,
-        m_curr.data(),
-        size,
-        nullptr) != 0)
+    if (!QueryProcessorInfo(m_currTimes))
     {
+        LOG_ERROR(L"WinApiProvider: QueryProcessorInfo failed");
         return;
     }
 
-    double totalIdle = 0;
-    double totalTime = 0;
+    double totalUsage = 0.0;
 
     for (uint32_t i = 0; i < m_coreCount; i++)
     {
-        auto& prev = m_prev[i];
-        auto& curr = m_curr[i];
+        auto& prev = m_prevTimes[i];
+        auto& curr = m_currTimes[i];
 
-        ULONGLONG idleDiff =
-            curr.IdleTime.QuadPart -
-            prev.IdleTime.QuadPart;
+        long long idle =
+            curr.IdleTime.QuadPart - prev.IdleTime.QuadPart;
 
-        ULONGLONG kernelDiff =
-            curr.KernelTime.QuadPart -
-            prev.KernelTime.QuadPart;
+        long long kernel =
+            curr.KernelTime.QuadPart - prev.KernelTime.QuadPart;
 
-        ULONGLONG userDiff =
-            curr.UserTime.QuadPart -
-            prev.UserTime.QuadPart;
+        long long user =
+            curr.UserTime.QuadPart - prev.UserTime.QuadPart;
 
-        ULONGLONG kernelWork =
-            kernelDiff - idleDiff;
+        long long total = kernel + user;
 
-        ULONGLONG active =
-            kernelWork + userDiff;
-
-        ULONGLONG total =
-            active + idleDiff;
+        double usage = 0.0;
 
         if (total > 0)
-        {
-            m_coreUsage[i] =
-                (double)active /
-                (double)total * 100.0;
-        }
+            usage = (double)(total - idle) / (double)total * 100.0;
 
-        totalIdle += idleDiff;
-        totalTime += total;
+        m_coreUsage[i] = usage;
+        totalUsage += usage;
     }
 
-    if (totalTime > 0)
+    m_totalUsage = totalUsage / m_coreCount;
+
+    m_prevTimes = m_currTimes;
+
+    /*
+        Clock calculation
+    */
+
+    if (!m_perfQuery || !m_freqCounter || !m_perfCounter)
     {
-        m_totalUsage =
-            (double)(totalTime - totalIdle) /
-            (double)totalTime * 100.0;
+        LOG_ERROR(L"WinApiProvider: PDH counters not initialized");
+        return;
     }
 
-    m_prev = m_curr;
+    if (PdhCollectQueryData(m_perfQuery) != ERROR_SUCCESS)
+    {
+        LOG_ERROR(L"WinApiProvider: PdhCollectQueryData failed");
+        return;
+    }
 
-    //
-    // CPU CLOCK
-    //
+    PDH_FMT_COUNTERVALUE freqValue;
+    PDH_FMT_COUNTERVALUE perfValue;
 
-    ULONG psize =
-        sizeof(PROCESSOR_POWER_INFORMATION) *
-        m_coreCount;
+    double clockFreq = 0.0;
+    double clockPerf = 0.0;
 
-    if (CallNtPowerInformation(
-        ProcessorInformation,
+    if (PdhGetFormattedCounterValue(
+        m_freqCounter,
+        PDH_FMT_DOUBLE,
         nullptr,
-        0,
-        m_powerInfo.data(),
-        psize) == 0)
+        &freqValue) != ERROR_SUCCESS)
     {
-        double totalClock = 0;
-
-        for (uint32_t i = 0; i < m_coreCount; i++)
-        {
-            double hz = (double)m_powerInfo[i].CurrentMhz * 1000000.0;
-
-            if (hz <= 0)
-                hz = (double)m_powerInfo[i].MaxMhz * 1000000.0;
-
-            m_coreClock[i] = hz;
-
-            totalClock += hz;
-        }
-
-
-        if (m_coreCount > 0)
-        {
-            m_totalClock =
-                totalClock / (double)m_coreCount;
-        }
+        LOG_ERROR(L"WinApiProvider: Failed reading Processor Frequency counter");
     }
+    else
+    {
+        clockFreq = freqValue.doubleValue * 1000000.0;
+    }
+
+    if (PdhGetFormattedCounterValue(
+        m_perfCounter,
+        PDH_FMT_DOUBLE,
+        nullptr,
+        &perfValue) != ERROR_SUCCESS)
+    {
+        LOG_ERROR(L"WinApiProvider: Failed reading Processor Performance counter");
+    }
+    else
+    {
+        double perf = perfValue.doubleValue;
+
+        if (perf > 120.0)
+            perf = 120.0;
+
+        clockPerf = (m_baseClock * perf) / 100.0;
+    }
+
+    m_currentClock = std::max(clockFreq, clockPerf);
+
+    if (m_currentClock <= 0.0)
+    {
+        LOG_ERROR(L"WinApiProvider: Invalid clock value detected");
+    }
+
+    if (m_currentClock > m_maxClock)
+        m_maxClock = m_currentClock;
 }
 
 bool WinApiProvider::GetTotalUsage(double& value)
@@ -161,7 +212,7 @@ bool WinApiProvider::GetTotalUsage(double& value)
 
 bool WinApiProvider::GetCoreUsage(uint32_t coreIndex, double& value)
 {
-    if (coreIndex >= m_coreCount)
+    if (coreIndex >= m_coreUsage.size())
         return false;
 
     value = m_coreUsage[coreIndex];
@@ -170,16 +221,7 @@ bool WinApiProvider::GetCoreUsage(uint32_t coreIndex, double& value)
 
 bool WinApiProvider::GetClock(double& value)
 {
-    value = m_totalClock;
-    return true;
-}
-
-bool WinApiProvider::GetCoreClock(uint32_t coreIndex, double& value)
-{
-    if (coreIndex >= m_coreCount)
-        return false;
-
-    value = m_coreClock[coreIndex];
+    value = m_currentClock;
     return true;
 }
 
@@ -188,7 +230,22 @@ uint32_t WinApiProvider::GetCoreCount() const
     return m_coreCount;
 }
 
-bool WinApiProvider::GetTemperature(double&)
+bool WinApiProvider::QueryProcessorInfo(
+    std::vector<SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION>& data)
 {
-    return false;
+    if (!m_ntQuerySystemInformation)
+        return false;
+
+    ULONG size =
+        sizeof(SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION) * m_coreCount;
+
+    NTSTATUS status =
+        m_ntQuerySystemInformation(
+            SystemProcessorPerformanceInformation,
+            data.data(),
+            size,
+            nullptr
+        );
+
+    return status == STATUS_SUCCESS;
 }

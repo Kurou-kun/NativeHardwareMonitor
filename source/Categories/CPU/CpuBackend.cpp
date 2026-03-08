@@ -1,103 +1,103 @@
 #include "Categories/CPU/CpuBackend.h"
 
 #include "Categories/CPU/WinApiProvider.h"
+
+#include "Types/CpuMetric.h"
 #include "Utils/Debug.h"
 
-bool CpuBackend::OnInitialize()
+#include <intrin.h>
+#include <cstring>
+
+bool CpuBackend::Initialize()
 {
-    auto provider = std::make_unique<WinApiProvider>();
+    if (m_initAttempted)
+        return !m_initFailed;
 
-    if (provider->Initialize())
+    m_initAttempted = true;
+
+    int cpuInfo[4] = { 0 };
+    __cpuid(cpuInfo, 0);
+
+    char vendor[13];
+    memcpy(vendor + 0, &cpuInfo[1], 4);
+    memcpy(vendor + 4, &cpuInfo[3], 4);
+    memcpy(vendor + 8, &cpuInfo[2], 4);
+    vendor[12] = '\0';
+
+    std::unique_ptr<ICpuProvider> provider;
+
+    if (strcmp(vendor, "GenuineIntel") == 0)
     {
-        uint32_t cores = provider->GetCoreCount();
-
-        m_deviceCount = cores + 1;
-
-        m_provider = provider.get();
-
-        m_providers.push_back(std::move(provider));
-
-        LOG_INFO(L"CPU logical cores detected: %u", cores);
+        provider = std::make_unique<WinApiProvider>();
+    }
+    else if (strcmp(vendor, "AuthenticAMD") == 0)
+    {
+        provider = std::make_unique<WinApiProvider>();
+    }
+    else
+    {
+        m_initFailed = true;
+        return false;
     }
 
-    return m_provider != nullptr;
+    if (!provider->Initialize())
+    {
+        m_initFailed = true;
+        return false;
+    }
+
+    m_providers.push_back(std::move(provider));
+
+    m_initialized = true;
+
+    return true;
 }
 
-void CpuBackend::OnUpdate()
+void CpuBackend::Update()
 {
-    if (m_provider)
-        m_provider->Update();
+    for (auto& provider : m_providers)
+    {
+        provider->Update();
+    }
 }
 
 double CpuBackend::GetValue(uint32_t metricId, uint32_t deviceIndex)
 {
-    if (!m_provider)
+    auto metric = static_cast<CpuMetric>(metricId);
+
+    if (m_providers.empty())
         return 0.0;
 
-    if (deviceIndex >= m_deviceCount)
-        return 0.0;
+    auto& provider = m_providers[0]; // CPU currently has one provider
 
     double value = 0.0;
 
-    switch (static_cast<CpuMetric>(metricId))
+    switch (metric)
     {
     case CpuMetric::Usage:
     {
         if (deviceIndex == 0)
-        {
-            if (m_provider->GetTotalUsage(value))
-                return value;
-        }
+            provider->GetTotalUsage(value);
         else
-        {
-            if (m_provider->GetCoreUsage(deviceIndex - 1, value))
-                return value;
-        }
+            provider->GetCoreUsage(deviceIndex - 1, value);
 
-        break;
+        return value;
     }
 
     case CpuMetric::Clock:
     {
-        if (deviceIndex == 0)
-        {
-            if (m_provider->GetClock(value))
-                return value;
-        }
-        else
-        {
-            if (m_provider->GetCoreClock(deviceIndex - 1, value))
-                return value;
-        }
-
-        break;
-    }
-
-    case CpuMetric::Temperature:
-    {
-        if (m_provider->GetTemperature(value))
-            return value;
-
-        if (!m_loggedUnsupportedTemp)
-        {
-            LOG_INFO(L"CPU temperature unsupported");
-            m_loggedUnsupportedTemp = true;
-        }
-
-        break;
-    }
-
-    default:
-    {
-        if (!m_loggedUnknownMetric)
-        {
-            LOG_INFO(L"CPU unknown metric requested");
-            m_loggedUnknownMetric = true;
-        }
-
-        break;
+        provider->GetClock(value);
+        return value;
     }
     }
 
     return 0.0;
+}
+
+uint32_t CpuBackend::GetDeviceCount() const
+{
+    if (m_providers.empty())
+        return 0;
+
+    return m_providers[0]->GetCoreCount() + 1;
 }

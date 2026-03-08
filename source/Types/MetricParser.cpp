@@ -67,9 +67,6 @@ uint32_t ParseMetric(Category category, const std::wstring& input)
         if (str == L"clock")
             return static_cast<uint32_t>(CpuMetric::Clock);
 
-        if (str == L"temperature")
-            return static_cast<uint32_t>(CpuMetric::Temperature);
-
         LOG_INFO(L"Unknown CPU metric: %ls", str.c_str());
 
         return static_cast<uint32_t>(CpuMetric::Unknown);
