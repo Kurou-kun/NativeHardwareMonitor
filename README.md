@@ -23,6 +23,10 @@ The plugin is designed to provide **lightweight and direct hardware monitoring**
 > AI-generated output may occasionally contain mistakes or inefficient implementations.
 > If you encounter any issues, please report them.
 
+
+---
+
+
 ## Features
 
 - Native Rainmeter plugin
