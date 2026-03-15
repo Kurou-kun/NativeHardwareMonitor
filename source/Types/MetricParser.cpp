@@ -117,11 +117,20 @@ uint32_t ParseMetric(Category category, const std::wstring& input)
 
     case Category::Network:
     {
-        if (str == L"rxbytespersec")
-            return static_cast<uint32_t>(NetworkMetric::RxBytesPerSec);
+        if (str == L"upload")
+            return static_cast<uint32_t>(NetworkMetric::Upload);
 
-        if (str == L"txbytespersec")
-            return static_cast<uint32_t>(NetworkMetric::TxBytesPerSec);
+        if (str == L"download")
+            return static_cast<uint32_t>(NetworkMetric::Download);
+
+        if (str == L"uploadtotal")
+            return static_cast<uint32_t>(NetworkMetric::UploadTotal);
+
+        if (str == L"downloadtotal")
+            return static_cast<uint32_t>(NetworkMetric::DownloadTotal);
+
+        if (str == L"speed")
+            return static_cast<uint32_t>(NetworkMetric::Speed);
 
         LOG_INFO(L"Unknown Network metric: %ls", str.c_str());
 

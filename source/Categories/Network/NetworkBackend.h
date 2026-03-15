@@ -1,43 +1,27 @@
 #pragma once
 
-#include <cstdint>
+#include "Core/ICategoryBackend.h"
+#include "Categories/Network/INetworkProvider.h"
+
+#include <memory>
 #include <vector>
-#include <string>
 
-#include "Core/BaseBackend.h"
-
-class NetworkBackend : public BaseBackend
+class NetworkBackend : public ICategoryBackend
 {
 public:
-    double GetValue(uint32_t deviceIndex, uint32_t metricId) override;
 
-    uint32_t GetDeviceCount() const;
-    const std::wstring& GetDeviceName(uint32_t index) const;
+    bool Initialize() override;
 
-protected:
-    bool OnInitialize() override;
-    void OnUpdate() override;
+    void Update() override;
+
+    double GetValue(uint32_t metricId, uint32_t deviceIndex) override;
+
+    uint32_t GetDeviceCount() const override;
 
 private:
-    struct Adapter
-    {
-        std::wstring name;
 
-        bool active = false;
+    std::vector<std::unique_ptr<INetworkProvider>> m_providers;
 
-        uint64_t prevRx = 0;
-        uint64_t prevTx = 0;
-
-        uint64_t currRx = 0;
-        uint64_t currTx = 0;
-
-        double rxPerSec = 0.0;
-        double txPerSec = 0.0;
-    };
-
-    std::vector<Adapter> m_adapters;
-
-    uint64_t m_prevTime = 0;
-
-    bool ReadSnapshot();
+    bool m_initAttempted = false;
+    bool m_initFailed = false;
 };

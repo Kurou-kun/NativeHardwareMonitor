@@ -1,126 +1,83 @@
-#include <winsock2.h>
-#include <windows.h>
-#include <iphlpapi.h>
-
-#include <algorithm>
-
-#pragma comment(lib, "iphlpapi.lib")
-
 #include "Categories/Network/NetworkBackend.h"
+#include "Categories/Network/WinApiNetworkProvider.h"
+
 #include "Types/NetworkMetric.h"
+#include "Utils/Debug.h"
 
-bool NetworkBackend::OnInitialize()
+bool NetworkBackend::Initialize()
 {
-    m_prevTime = GetTickCount64();
-    return ReadSnapshot();
-}
+    if (m_initAttempted)
+        return !m_initFailed;
 
-void NetworkBackend::OnUpdate()
-{
-    uint64_t now = GetTickCount64();
-    uint64_t deltaMs = now - m_prevTime;
+    m_initAttempted = true;
 
-    if (deltaMs == 0)
-        return;
+    auto provider = std::make_unique<WinApiNetworkProvider>();
 
-    if (!ReadSnapshot())
-        return;
-
-    for (auto& a : m_adapters)
+    if (!provider->Initialize())
     {
-        uint64_t rxDiff = a.currRx - a.prevRx;
-        uint64_t txDiff = a.currTx - a.prevTx;
-
-        a.rxPerSec = (double)rxDiff * 1000.0 / deltaMs;
-        a.txPerSec = (double)txDiff * 1000.0 / deltaMs;
-
-        a.prevRx = a.currRx;
-        a.prevTx = a.currTx;
+        LOG_ERROR(L"Network provider initialization failed");
+        m_initFailed = true;
+        return false;
     }
 
-    m_prevTime = now;
+    LOG_INFO(L"Network provider initialized");
+
+    m_providers.push_back(std::move(provider));
+
+    return true;
 }
 
-double NetworkBackend::GetValue(uint32_t deviceIndex, uint32_t metricId)
+void NetworkBackend::Update()
 {
-    if (deviceIndex >= m_adapters.size())
+    for (auto& provider : m_providers)
+    {
+        provider->Update();
+    }
+}
+
+double NetworkBackend::GetValue(uint32_t metricId, uint32_t deviceIndex)
+{
+    if (m_providers.empty())
         return 0.0;
 
-    const Adapter& a = m_adapters[deviceIndex];
+    auto metric = static_cast<NetworkMetric>(metricId);
+    auto& provider = m_providers[0];
 
-    if (metricId == static_cast<uint32_t>(NetworkMetric::RxBytesPerSec))
-        return a.rxPerSec;
+    double value = 0.0;
 
-    if (metricId == static_cast<uint32_t>(NetworkMetric::TxBytesPerSec))
-        return a.txPerSec;
+    switch (metric)
+    {
+    case NetworkMetric::Download:
+        if (provider->GetDownload(deviceIndex, value)) return value;
+        break;
+
+    case NetworkMetric::Upload:
+        if (provider->GetUpload(deviceIndex, value)) return value;
+        break;
+
+    case NetworkMetric::DownloadTotal:
+        if (provider->GetDownloadTotal(deviceIndex, value)) return value;
+        break;
+
+    case NetworkMetric::UploadTotal:
+        if (provider->GetUploadTotal(deviceIndex, value)) return value;
+        break;
+
+    case NetworkMetric::Speed:
+        if (provider->GetSpeed(deviceIndex, value)) return value;
+        break;
+
+    default:
+        break;
+    }
 
     return 0.0;
 }
 
 uint32_t NetworkBackend::GetDeviceCount() const
 {
-    return static_cast<uint32_t>(m_adapters.size());
-}
+    if (m_providers.empty())
+        return 0;
 
-const std::wstring& NetworkBackend::GetDeviceName(uint32_t index) const
-{
-    static std::wstring empty;
-
-    if (index >= m_adapters.size())
-        return empty;
-
-    return m_adapters[index].name;
-}
-
-bool NetworkBackend::ReadSnapshot()
-{
-    PMIB_IFTABLE table = nullptr;
-
-    DWORD size = 0;
-    GetIfTable(nullptr, &size, FALSE);
-
-    table = (PMIB_IFTABLE)malloc(size);
-    if (!table)
-        return false;
-
-    if (GetIfTable(table, &size, FALSE) != NO_ERROR)
-    {
-        free(table);
-        return false;
-    }
-
-    if (m_adapters.size() != table->dwNumEntries)
-        m_adapters.resize(table->dwNumEntries);
-
-    for (DWORD i = 0; i < table->dwNumEntries; ++i)
-    {
-        const MIB_IFROW& row = table->table[i];
-
-        Adapter& adapter = m_adapters[i];
-
-        adapter.name = std::wstring((wchar_t*)row.wszName);
-
-        adapter.active = (row.dwOperStatus == IF_OPER_STATUS_OPERATIONAL);
-
-        adapter.currRx = row.dwInOctets;
-        adapter.currTx = row.dwOutOctets;
-
-        if (adapter.prevRx == 0 && adapter.prevTx == 0)
-        {
-            adapter.prevRx = adapter.currRx;
-            adapter.prevTx = adapter.currTx;
-        }
-    }
-
-    free(table);
-
-    std::sort(
-        m_adapters.begin(),
-        m_adapters.end(),
-        [](const Adapter& a, const Adapter& b)
-        {
-            return a.active > b.active;
-        });
-
-    return true;
+    return m_providers[0]->GetDeviceCount();
 }

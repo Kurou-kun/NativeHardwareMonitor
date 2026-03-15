@@ -156,6 +156,9 @@
     <ClCompile Include="source\Categories\Memory\WinApiMemoryProvider.cpp">
       <Filter>Source Files\Categories\Memory</Filter>
     </ClCompile>
+    <ClCompile Include="source\Categories\Network\WinApiNetworkProvider.cpp">
+      <Filter>Source Files\Categories\Network</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\Categories\GPU\GpuBackend.h">
@@ -247,6 +250,12 @@
     </ClInclude>
     <ClInclude Include="source\Categories\Memory\WinApiMemoryProvider.h">
       <Filter>Header Files\Categories\Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Categories\Network\INetworkProvider.h">
+      <Filter>Header Files\Categories\Network</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Categories\Network\WinApiNetworkProvider.h">
+      <Filter>Header Files\Categories\Network</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

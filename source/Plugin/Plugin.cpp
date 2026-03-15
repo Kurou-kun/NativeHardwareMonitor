@@ -7,6 +7,20 @@
 #include "Types/MetricParser.h"
 
 #include "RainmeterAPI.h"
+#include "../../Version.h"
+
+// ------------------------------------------------------------
+// Metadata
+// ------------------------------------------------------------
+
+PLUGIN_EXPORT UINT  GetPluginVersion()
+{
+    return NHM_RAINMETER_VERSION;
+}
+PLUGIN_EXPORT LPCWSTR GetPluginAuthor()
+{
+    return NHM_COPYRIGHT L" " NHM_AUTHOR;
+}
 
 // ------------------------------------------------------------
 // Core access

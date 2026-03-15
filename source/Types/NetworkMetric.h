@@ -2,7 +2,10 @@
 
 enum class NetworkMetric
 {
-    RxBytesPerSec,
-    TxBytesPerSec,
+    Download,
+    Upload,
+    DownloadTotal,
+    UploadTotal,
+    Speed,
     Unknown
 };
