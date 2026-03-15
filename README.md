@@ -308,14 +308,6 @@ The polling frequency follows the **Rainmeter skin update rate**.
 
 ---
 
-## AI Notice
-
-Parts of this project were developed with the assistance of AI tools.
-
-AI was used mainly for development assistance and documentation generation.  
-All code, architecture decisions and implementations were reviewed and validated by the project author.
-
----
 
 ## License
 
