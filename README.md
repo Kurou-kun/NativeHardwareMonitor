@@ -7,6 +7,22 @@ The plugin is designed to provide **lightweight and direct hardware monitoring**
 
 ---
 
+> [!WARNING]
+> **AI ASSISTED DEVELOPMENT**
+>
+> This project was developed with the assistance of AI tools.
+>
+> AI systems were used to help with:
+> - code generation
+> - debugging assistance
+> - documentation writing
+> - architectural suggestions
+>
+> All code, design decisions, and final implementations were reviewed and validated by the project author.
+>
+> AI-generated output may occasionally contain mistakes or inefficient implementations.
+> If you encounter any issues, please report them.
+
 ## Features
 
 - Native Rainmeter plugin
