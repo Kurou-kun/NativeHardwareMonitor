@@ -139,11 +139,26 @@ uint32_t ParseMetric(Category category, const std::wstring& input)
 
     case Category::Storage:
     {
-        if (str == L"readbytespersec")
-            return static_cast<uint32_t>(StorageMetric::ReadBytesPerSec);
+        if (str == L"readbytes")
+            return static_cast<uint32_t>(StorageMetric::ReadBytes);
 
-        if (str == L"writebytespersec")
-            return static_cast<uint32_t>(StorageMetric::WriteBytesPerSec);
+        if (str == L"writebytes")
+            return static_cast<uint32_t>(StorageMetric::WriteBytes);
+
+        if (str == L"readspeed")
+            return static_cast<uint32_t>(StorageMetric::ReadSpeed);
+
+        if (str == L"writespeed")
+            return static_cast<uint32_t>(StorageMetric::WriteSpeed);
+
+        if (str == L"usedspace")
+            return static_cast<uint32_t>(StorageMetric::UsedSpace);
+
+        if (str == L"freespace")
+            return static_cast<uint32_t>(StorageMetric::FreeSpace);
+
+        if (str == L"totalspace")
+            return static_cast<uint32_t>(StorageMetric::TotalSpace);
 
         LOG_INFO(L"Unknown Storage metric: %ls", str.c_str());
 

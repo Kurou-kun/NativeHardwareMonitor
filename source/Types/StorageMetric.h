@@ -2,7 +2,12 @@
 
 enum class StorageMetric
 {
-    ReadBytesPerSec,
-    WriteBytesPerSec,
+    ReadBytes,
+    WriteBytes,
+    ReadSpeed,
+    WriteSpeed,
+    UsedSpace,
+    FreeSpace,
+    TotalSpace,
     Unknown
 };

@@ -1,33 +1,29 @@
 #pragma once
 
-#include <windows.h>
-#include <winioctl.h>
+#include <memory>
+#include <vector>
 
-#include "Core/BaseBackend.h"
+#include "Core/ICategoryBackend.h"
+#include "Categories/Storage/IStorageProvider.h"
+#include "Types/StorageMetric.h"
 
-class StorageBackend : public BaseBackend
+class StorageBackend : public ICategoryBackend
 {
 public:
-    double GetValue(uint32_t deviceIndex, uint32_t metricId) override;
 
-protected:
-    bool OnInitialize() override;
-    void OnUpdate() override;
+    bool Initialize() override;
+
+    void Update() override;
+
+    double GetValue(uint32_t metricId, uint32_t deviceIndex) override;
+
+    uint32_t GetDeviceCount() const override;
 
 private:
-    struct Snapshot
-    {
-        uint64_t readBytes = 0;
-        uint64_t writeBytes = 0;
-    };
 
-    Snapshot m_prev{};
-    Snapshot m_curr{};
+    std::vector<std::unique_ptr<IStorageProvider>> m_providers;
 
-    double m_readPerSec = 0.0;
-    double m_writePerSec = 0.0;
-
-    uint64_t m_prevTime = 0;
-
-    bool ReadSnapshot(Snapshot& snap);
+    bool m_initialized = false;
+    bool m_initAttempted = false;
+    bool m_initFailed = false;
 };

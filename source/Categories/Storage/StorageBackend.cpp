@@ -1,94 +1,98 @@
 #include "Categories/Storage/StorageBackend.h"
-#include "Types/StorageMetric.h"
+#include "Categories/Storage/WinApiStorageProvider.h"
+#include "Utils/Debug.h"
 
-bool StorageBackend::OnInitialize()
+bool StorageBackend::Initialize()
 {
-    m_prevTime = GetTickCount64();
-    return ReadSnapshot(m_prev);
+
+    if (m_initAttempted)
+        return !m_initFailed;
+
+    m_initAttempted = true;
+
+    auto provider = std::make_unique<WinApiStorageProvider>();
+
+    if (!provider->Initialize())
+    {
+        LOG_ERROR(L"[StorageBackend] WinApiStorageProvider initialization failed");
+        m_initFailed = true;
+        return false;
+    }
+
+    m_providers.push_back(std::move(provider));
+    m_initialized = true;
+
+    LOG_INFO(L"[StorageBackend] WinApiStorageProvider initialized");
+
+    return true;
 }
 
-void StorageBackend::OnUpdate()
+void StorageBackend::Update()
 {
-    uint64_t now = GetTickCount64();
-    uint64_t deltaMs = now - m_prevTime;
-
-    if (deltaMs == 0)
+    if (!m_initialized)
         return;
 
-    if (!ReadSnapshot(m_curr))
-        return;
-
-    uint64_t readDiff = m_curr.readBytes - m_prev.readBytes;
-    uint64_t writeDiff = m_curr.writeBytes - m_prev.writeBytes;
-
-    m_readPerSec = (double)readDiff * 1000.0 / deltaMs;
-    m_writePerSec = (double)writeDiff * 1000.0 / deltaMs;
-
-    m_prev = m_curr;
-    m_prevTime = now;
+    for (auto& provider : m_providers)
+        provider->Update();
 }
 
-double StorageBackend::GetValue(uint32_t, uint32_t metricId)
+double StorageBackend::GetValue(uint32_t metricId, uint32_t deviceIndex)
 {
-    if (metricId == static_cast<uint32_t>(StorageMetric::ReadBytesPerSec))
-        return m_readPerSec;
+    auto metric = static_cast<StorageMetric>(metricId);
 
-    if (metricId == static_cast<uint32_t>(StorageMetric::WriteBytesPerSec))
-        return m_writePerSec;
+    double value = 0.0;
+
+    for (auto& provider : m_providers)
+    {
+        bool success = false;
+
+        switch (metric)
+        {
+        case StorageMetric::ReadBytes:
+            success = provider->GetReadBytes(deviceIndex, value);
+            break;
+
+        case StorageMetric::WriteBytes:
+            success = provider->GetWriteBytes(deviceIndex, value);
+            break;
+
+        case StorageMetric::ReadSpeed:
+            success = provider->GetReadSpeed(deviceIndex, value);
+            break;
+
+        case StorageMetric::WriteSpeed:
+            success = provider->GetWriteSpeed(deviceIndex, value);
+            break;
+
+        case StorageMetric::UsedSpace:
+            success = provider->GetUsedSpace(deviceIndex, value);
+            break;
+
+        case StorageMetric::FreeSpace:
+            success = provider->GetFreeSpaceBytes(deviceIndex, value);
+            break;
+
+        case StorageMetric::TotalSpace:
+            success = provider->GetTotalSpace(deviceIndex, value);
+            break;
+
+        default:
+            return 0.0;
+        }
+
+        if (success)
+            return value;
+    }
 
     return 0.0;
 }
 
-bool StorageBackend::ReadSnapshot(Snapshot& snap)
+uint32_t StorageBackend::GetDeviceCount() const
 {
-    DWORD drives = GetLogicalDrives();
+    uint32_t total = 0;
 
-    uint64_t totalRead = 0;
-    uint64_t totalWrite = 0;
+    for (const auto& provider : m_providers)
+        total += provider->GetDeviceCount();
 
-    for (int i = 0; i < 26; ++i)
-    {
-        if (!(drives & (1 << i)))
-            continue;
-
-        wchar_t path[] = L"\\\\.\\A:";
-        path[4] = L'A' + i;
-
-        HANDLE hDisk = CreateFile(
-            path,
-            0,
-            FILE_SHARE_READ | FILE_SHARE_WRITE,
-            nullptr,
-            OPEN_EXISTING,
-            0,
-            nullptr
-        );
-
-        if (hDisk == INVALID_HANDLE_VALUE)
-            continue;
-
-        DISK_PERFORMANCE perf = {};
-        DWORD bytesReturned = 0;
-
-        if (DeviceIoControl(
-            hDisk,
-            IOCTL_DISK_PERFORMANCE,
-            nullptr,
-            0,
-            &perf,
-            sizeof(perf),
-            &bytesReturned,
-            nullptr))
-        {
-            totalRead += perf.BytesRead.QuadPart;
-            totalWrite += perf.BytesWritten.QuadPart;
-        }
-
-        CloseHandle(hDisk);
-    }
-
-    snap.readBytes = totalRead;
-    snap.writeBytes = totalWrite;
-
-    return true;
+    return total;
 }
