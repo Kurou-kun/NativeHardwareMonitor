@@ -11,14 +11,13 @@ add_compile_definitions(
     NOMINMAX
 )
 
-# Collect project sources
 file(GLOB_RECURSE SOURCES
     source/*.cpp
 )
 
-# Add ADLX helper implementation
 set(EXTERNAL_SOURCES
     external/amd/adlx/ADLXHelper.cpp
+    external/amd/adlx/WinAPIs.cpp
 )
 
 add_library(NativeHardwareMonitor SHARED
@@ -37,6 +36,7 @@ target_link_libraries(NativeHardwareMonitor PRIVATE
     advapi32
     psapi
     iphlpapi
+    "${CMAKE_SOURCE_DIR}/external/rainmeter/Rainmeter.lib"
 )
 
 set_target_properties(NativeHardwareMonitor PROPERTIES
