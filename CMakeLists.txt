@@ -5,7 +5,11 @@ project(NativeHardwareMonitor)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_compile_definitions(NOMINMAX)
+add_compile_definitions(
+    UNICODE
+    _UNICODE
+    NOMINMAX
+)
 
 file(GLOB_RECURSE SOURCES
     source/*.cpp
