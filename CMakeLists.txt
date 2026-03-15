@@ -11,11 +11,20 @@ add_compile_definitions(
     NOMINMAX
 )
 
+# Collect project sources
 file(GLOB_RECURSE SOURCES
     source/*.cpp
 )
 
-add_library(NativeHardwareMonitor SHARED ${SOURCES})
+# Add ADLX helper implementation
+set(EXTERNAL_SOURCES
+    external/amd/adlx/ADLXHelper.cpp
+)
+
+add_library(NativeHardwareMonitor SHARED
+    ${SOURCES}
+    ${EXTERNAL_SOURCES}
+)
 
 target_include_directories(NativeHardwareMonitor PRIVATE
     source
