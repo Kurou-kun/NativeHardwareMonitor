@@ -1,0 +1,28 @@
+var searchData=
+[
+  ['c_20bindings_20for_20adlx_0',['Building C# bindings for ADLX',['../page_guide_bindcsharp.html',1,'page_guide_qs']]],
+  ['c_20samples_1',['C Samples',['../page_sample_c.html',1,'C Samples'],['../page_sample_cs.html',1,'C# Samples'],['../page_sample_cpp.html',1,'C++ Samples']]],
+  ['centered_2',['CENTERED',['../_a_d_l_x_defines_8h.html#ga5358d52690a79c651752257cbc9f354fa4f82b1472f6edbe09a79492ca762cb9b',1,'adlx']]],
+  ['chill_3',['Chill',['../cpp__chill.html',1,'Chill'],['../c__chill.html',1,'Chill']]],
+  ['class_4',['ADLXHelper Class',['../page__a_d_l_x_cpp_help.html',1,'page_ADLXHelps']]],
+  ['clear_5',['Clear',['../_d_o_x__i_a_d_l_x_list__clear.html',1,'DOX_IADLXList']]],
+  ['clearperformancemetricshistory_6',['ClearPerformanceMetricsHistory',['../_d_o_x__i_a_d_l_x_performance_monitoring_services__clear_performance_metrics_history.html',1,'DOX_IADLXPerformanceMonitoringServices']]],
+  ['clearuser3dlut_7',['ClearUser3DLUT',['../_d_o_x__i_a_d_l_x_display3_d_l_u_t__clear_user3_d_l_u_t.html',1,'DOX_IADLXDisplay3DLUT']]],
+  ['coefficienta0_8',['coefficientA0',['../group__structures_val.html#a82a0c072f26cc842b3a8323826142d66',1,'ADLX_RegammaCoeff']]],
+  ['coefficienta1_9',['coefficientA1',['../group__structures_val.html#a843c3fa65f49561ff7c057e63a7b678f',1,'ADLX_RegammaCoeff']]],
+  ['coefficienta2_10',['coefficientA2',['../group__structures_val.html#a9059213377ccbe262625666bdf6ce8a1',1,'ADLX_RegammaCoeff']]],
+  ['coefficienta3_11',['coefficientA3',['../group__structures_val.html#aaab4f232db08f8c41eeed3530737ece2',1,'ADLX_RegammaCoeff']]],
+  ['compatibility_12',['Compatibility',['../page_guide__compatibility.html',1,'page_guide_spe']]],
+  ['compliance_20disclaimers_13',['Legal Information and Compliance/Disclaimers',['../page_legal.html',1,'']]],
+  ['configurations_14',['Advanced Configurations',['../page_guide_advanced.html',1,'page_adlxprogrammingguide']]],
+  ['connectortype_15',['ConnectorType',['../_d_o_x__i_a_d_l_x_display__connector_type.html',1,'DOX_IADLXDisplay']]],
+  ['cpuusage_16',['CPUUsage',['../_d_o_x__i_a_d_l_x_system_metrics__c_p_u_usage.html',1,'DOX_IADLXSystemMetrics']]],
+  ['create_17',['Create',['../_d_o_x__i_a_d_l_x_simple_eyefinity__create.html',1,'DOX_IADLXSimpleEyefinity']]],
+  ['createnewresolution_18',['CreateNewResolution',['../_d_o_x__i_a_d_l_x_display_custom_resolution__create_new_resolution.html',1,'DOX_IADLXDisplayCustomResolution']]],
+  ['cs_5fbt2020_19',['CS_BT2020',['../_a_d_l_x_defines_8h.html#ga11c9b2ddb867a1c3e3e090fe301a3db9aa90f452e6072a486a567c0e97a3b24f1',1,'adlx']]],
+  ['cs_5fdcip3_20',['CS_DCIP3',['../_a_d_l_x_defines_8h.html#ga11c9b2ddb867a1c3e3e090fe301a3db9a74d6e84ede013317546837f88588b991',1,'adlx']]],
+  ['cs_5fnative_21',['CS_NATIVE',['../_a_d_l_x_defines_8h.html#ga11c9b2ddb867a1c3e3e090fe301a3db9a580df8cd218c192bd46f3c94660e74c3',1,'adlx']]],
+  ['cs_5fsrgb_22',['CS_SRGB',['../_a_d_l_x_defines_8h.html#ga11c9b2ddb867a1c3e3e090fe301a3db9ac513fbb72cd5b00d9e0849fe6ea49822',1,'adlx']]],
+  ['cvt_23',['CVT',['../_a_d_l_x_defines_8h.html#gad74f1377d4a8eefb3d814ede5a31f521ab239d8ee6b35d00b84122a8a4d1b2461',1,'adlx']]],
+  ['cvt_5frb_24',['CVT_RB',['../_a_d_l_x_defines_8h.html#gad74f1377d4a8eefb3d814ede5a31f521ab865fde2eaf8a277e7367dd88979a9e9',1,'adlx']]]
+];

@@ -1,0 +1,36 @@
+﻿{
+  "configurations": [
+    {
+      "name": "Debug_win32",
+      "generator": "Ninja",
+      "configurationType": "Debug",
+      "inheritEnvironments": [ "msvc_x86" ],
+      "buildRoot": "${projectDir}\\build",
+      "intelliSenseMode": "windows-msvc-x86"
+    },
+    {
+      "name": "Release_win32",
+      "generator": "Ninja",
+      "configurationType": "Release",
+      "inheritEnvironments": [ "msvc_x86" ],
+      "buildRoot": "${projectDir}\\build",
+      "intelliSenseMode": "windows-msvc-x86"
+    },
+    {
+      "name": "Debug_x64",
+      "generator": "Ninja",
+      "configurationType": "Debug",
+      "buildRoot": "${projectDir}\\build",
+      "inheritEnvironments": [ "msvc_x64_x64" ],
+      "intelliSenseMode": "windows-msvc-x64"
+    },
+    {
+      "name": "Release_x64",
+      "generator": "Ninja",
+      "configurationType": "Release",
+      "buildRoot": "${projectDir}\\build",
+      "inheritEnvironments": [ "msvc_x64_x64" ],
+      "intelliSenseMode": "windows-msvc-x64"
+    }
+  ]
+}
