@@ -20,9 +20,13 @@ public:
 private:
     struct DeviceEntry
     {
-        IProvider* provider   = nullptr;
-        uint32_t   localIndex = 0;
-        GpuVendor  vendor     = GpuVendor::Unknown;
+        IProvider* provider         = nullptr;
+        uint32_t   localIndex       = 0;
+        GpuVendor  vendor           = GpuVendor::Unknown;
+
+        // Secondary provider queried only for metrics the primary can't supply
+        IProvider* backupProvider   = nullptr;
+        uint32_t   backupLocalIndex = 0;
     };
 
     std::vector<std::unique_ptr<IProvider>> m_providers;

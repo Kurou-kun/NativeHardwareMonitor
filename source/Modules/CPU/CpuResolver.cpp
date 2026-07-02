@@ -12,7 +12,7 @@ bool CpuResolver::Initialize()
         return false;
     }
 
-    LOG_STARTUP(L"CpuResolver: WinApiCpuProvider initialized (%u core(s))", provider->GetDeviceCount());
+    LOG_STARTUP(L"CpuResolver: WinApiCpuProvider initialized (%u device(s), incl. total)", provider->GetDeviceCount());
     m_provider = std::move(provider);
 
     return true;

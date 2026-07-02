@@ -3,6 +3,7 @@
 #include "Utils/Debug.h"
 
 #include "ADLXHelper.h"
+#include "IPerformanceMonitoring2.h"
 
 extern ADLXHelper g_ADLX;
 
@@ -49,6 +50,14 @@ bool AdlxProvider::Initialize()
         return false;
     }
 
+    m_vramTotal.resize(m_gpus.size(), 0.0);
+    for (size_t i = 0; i < m_gpus.size(); ++i)
+    {
+        adlx_uint vramMB = 0;
+        if (m_gpus[i]->TotalVRAM(&vramMB) == ADLX_OK)
+            m_vramTotal[i] = static_cast<double>(vramMB) * 1024.0 * 1024.0;
+    }
+
     LOG_STARTUP(L"AdlxProvider: initialized (%u device(s))", (uint32_t)m_gpus.size());
     return true;
 }
@@ -77,9 +86,25 @@ void AdlxProvider::GatherSnapshot(uint32_t deviceIndex, Snapshot& snap)
     if (metrics->GPUVRAMClockSpeed(&i)     == ADLX_OK) snap.Set(static_cast<uint32_t>(GpuMetric::MemoryClock),        i);
     if (metrics->GPUPower(&v)              == ADLX_OK) snap.Set(static_cast<uint32_t>(GpuMetric::Power),              v);
     if (metrics->GPUFanSpeed(&i)           == ADLX_OK) snap.Set(static_cast<uint32_t>(GpuMetric::FanSpeed),           i);
+    if (metrics->GPUTotalBoardPower(&v)    == ADLX_OK) snap.Set(static_cast<uint32_t>(GpuMetric::TotalBoardPower),   v);
+    if (metrics->GPUIntakeTemperature(&v)  == ADLX_OK) snap.Set(static_cast<uint32_t>(GpuMetric::IntakeTemperature), v);
+    if (metrics->GPUVoltage(&i)            == ADLX_OK) snap.Set(static_cast<uint32_t>(GpuMetric::Voltage),           i);
 
     adlx_int vramMB = 0;
     if (metrics->GPUVRAM(&vramMB)          == ADLX_OK) snap.Set(static_cast<uint32_t>(GpuMetric::VramUsed), static_cast<double>(vramMB) * 1024.0 * 1024.0);
+
+    if (deviceIndex < m_vramTotal.size() && m_vramTotal[deviceIndex] > 0.0)
+        snap.Set(static_cast<uint32_t>(GpuMetric::VramTotal), m_vramTotal[deviceIndex]);
+
+    // Memory temperature — only on the IADLXGPUMetrics1 extension interface
+    adlx::IADLXGPUMetrics1* metrics1 = nullptr;
+    if (metrics->QueryInterface(adlx::IADLXGPUMetrics1::IID(), (void**)&metrics1) == ADLX_OK && metrics1)
+    {
+        adlx_double memTemp = 0;
+        if (metrics1->GPUMemoryTemperature(&memTemp) == ADLX_OK)
+            snap.Set(static_cast<uint32_t>(GpuMetric::MemoryTemperature), memTemp);
+        metrics1->Release();
+    }
 
     metrics->Release();
 }

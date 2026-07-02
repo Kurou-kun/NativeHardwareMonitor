@@ -103,7 +103,7 @@ PLUGIN_EXPORT double Update(void* data)
 {
     auto* ctx = static_cast<MeasureContext*>(data);
     if (!ctx || !ctx->valid)
-        return 0.0;
+        return -2.0;
 
     return GetCore().GetValue(ctx->handle);
 }

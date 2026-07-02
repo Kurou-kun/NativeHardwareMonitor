@@ -57,11 +57,17 @@ uint32_t ParseMetric(Category category, const std::wstring& input)
         if (str == L"fanspeedrpm")        return static_cast<uint32_t>(GpuMetric::FanSpeedRPM);
         if (str == L"power")              return static_cast<uint32_t>(GpuMetric::Power);
         if (str == L"powerlimit")         return static_cast<uint32_t>(GpuMetric::PowerLimit);
+        if (str == L"voltage")            return static_cast<uint32_t>(GpuMetric::Voltage);
+        if (str == L"intaketemperature")  return static_cast<uint32_t>(GpuMetric::IntakeTemperature);
+        if (str == L"totalboardpower")    return static_cast<uint32_t>(GpuMetric::TotalBoardPower);
         return static_cast<uint32_t>(GpuMetric::Unknown);
 
     case Category::CPU:
-        if (str == L"usage") return static_cast<uint32_t>(CpuMetric::Usage);
-        if (str == L"clock") return static_cast<uint32_t>(CpuMetric::Clock);
+        if (str == L"usage")    return static_cast<uint32_t>(CpuMetric::Usage);
+        if (str == L"clock")    return static_cast<uint32_t>(CpuMetric::Clock);
+        if (str == L"maxclock") return static_cast<uint32_t>(CpuMetric::MaxClock);
+        if (str == L"voltage")  return static_cast<uint32_t>(CpuMetric::Voltage);
+        if (str == L"name")     return static_cast<uint32_t>(CpuMetric::Name);
         return static_cast<uint32_t>(CpuMetric::Unknown);
 
     case Category::Memory:

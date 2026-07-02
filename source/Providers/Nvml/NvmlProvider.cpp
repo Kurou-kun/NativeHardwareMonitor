@@ -69,6 +69,11 @@ bool NvmlProvider::LoadFunctions()
     LOAD(nvmlDeviceGetPowerManagementLimit, m_GetPowerLimit)
 
 #undef LOAD
+
+    // Optional — not every driver/architecture exports these; skip silently if missing
+    m_GetFanRPM      = (decltype(m_GetFanRPM))GetProcAddress(m_module, "nvmlDeviceGetFanSpeedRPM");
+    m_GetFieldValues = (decltype(m_GetFieldValues))GetProcAddress(m_module, "nvmlDeviceGetFieldValues");
+
     return true;
 }
 
@@ -149,6 +154,25 @@ void NvmlProvider::GatherSnapshot(uint32_t deviceIndex, Snapshot& snap)
         unsigned int limit = 0;
         if (m_GetPowerLimit(dev, &limit) == NVML_SUCCESS)
             snap.Set(static_cast<uint32_t>(GpuMetric::PowerLimit), limit / 1000.0);
+    }
+
+    // Fan RPM (Maxwell+ only)
+    if (m_GetFanRPM)
+    {
+        nvmlFanSpeedInfo_t info{};
+        info.version = nvmlFanSpeedInfo_v1;
+        info.fan = 0;
+        if (m_GetFanRPM(dev, &info) == NVML_SUCCESS)
+            snap.Set(static_cast<uint32_t>(GpuMetric::FanSpeedRPM), info.speed);
+    }
+
+    // Memory temperature — not exposed by nvmlDeviceGetTemperature, only via field values
+    if (m_GetFieldValues)
+    {
+        nvmlFieldValue_t field{};
+        field.fieldId = NVML_FI_DEV_MEMORY_TEMP;
+        if (m_GetFieldValues(dev, 1, &field) == NVML_SUCCESS && field.nvmlReturn == NVML_SUCCESS)
+            snap.Set(static_cast<uint32_t>(GpuMetric::MemoryTemperature), static_cast<double>(field.value.uiVal));
     }
 }
 

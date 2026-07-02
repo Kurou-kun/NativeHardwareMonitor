@@ -35,4 +35,8 @@ private:
     decltype(&nvmlDeviceGetFanSpeed)             m_GetFan          = nullptr;
     decltype(&nvmlDeviceGetPowerUsage)           m_GetPower        = nullptr;
     decltype(&nvmlDeviceGetPowerManagementLimit) m_GetPowerLimit   = nullptr;
+
+    // Optional — absent on older drivers/architectures; must not fail Initialize()
+    decltype(&nvmlDeviceGetFanSpeedRPM)          m_GetFanRPM       = nullptr;
+    decltype(&nvmlDeviceGetFieldValues)          m_GetFieldValues  = nullptr;
 };

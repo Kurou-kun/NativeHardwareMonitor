@@ -17,6 +17,7 @@ static constexpr unsigned int ID_GetThermalSettings     = 0xe3640a56u;
 static constexpr unsigned int ID_GetAllClockFrequencies = 0xdcb616c3u;
 static constexpr unsigned int ID_GetDynamicPstatesInfoEx= 0x60ded2edu;
 static constexpr unsigned int ID_GetMemoryInfo          = 0x07f9b368u;
+static constexpr unsigned int ID_GetTachReading         = 0x5f608315u;
 
 using FnInit      = NvAPI_Status (__cdecl*)();
 using FnUnload    = NvAPI_Status (__cdecl*)();
@@ -25,6 +26,7 @@ using FnGetTherm  = NvAPI_Status (__cdecl*)(NvPhysicalGpuHandle, NvU32, NV_GPU_T
 using FnGetClocks = NvAPI_Status (__cdecl*)(NvPhysicalGpuHandle, NV_GPU_CLOCK_FREQUENCIES*);
 using FnGetPstates= NvAPI_Status (__cdecl*)(NvPhysicalGpuHandle, NV_GPU_DYNAMIC_PSTATES_INFO_EX*);
 using FnGetMemory = NvAPI_Status (__cdecl*)(NvPhysicalGpuHandle, NV_DISPLAY_DRIVER_MEMORY_INFO*);
+using FnGetTach   = NvAPI_Status (__cdecl*)(NvPhysicalGpuHandle, NvU32*);
 
 template<typename T>
 static T QI(void* (__cdecl* qi)(unsigned int), unsigned int id)
@@ -89,6 +91,9 @@ bool NvapiProvider::LoadFunctions()
     m_GetPstates = m_QueryInterface(ID_GetDynamicPstatesInfoEx);
     m_GetMemory  = m_QueryInterface(ID_GetMemoryInfo);
 
+    // Optional — not present on fanless GPUs or older drivers; must not fail Initialize()
+    m_GetTach    = m_QueryInterface(ID_GetTachReading);
+
     return m_Init && m_Unload && m_EnumGPUs &&
            m_GetTherm && m_GetClocks && m_GetPstates && m_GetMemory;
 }
@@ -127,7 +132,7 @@ void NvapiProvider::GatherSnapshot(uint32_t deviceIndex, Snapshot& snap)
         }
     }
 
-    // Temperature — find the GPU core sensor
+    // Temperature — scan sensors for GPU core + memory (no hotspot target in public NVAPI)
     {
         NV_GPU_THERMAL_SETTINGS therm{};
         therm.version = NV_GPU_THERMAL_SETTINGS_VER;
@@ -136,13 +141,21 @@ void NvapiProvider::GatherSnapshot(uint32_t deviceIndex, Snapshot& snap)
             for (NvU32 i = 0; i < therm.count && i < NVAPI_MAX_THERMAL_SENSORS_PER_GPU; ++i)
             {
                 if (therm.sensor[i].target == NVAPI_THERMAL_TARGET_GPU)
-                {
                     snap.Set(static_cast<uint32_t>(GpuMetric::Temperature),
                              static_cast<double>(therm.sensor[i].currentTemp));
-                    break;
-                }
+                else if (therm.sensor[i].target == NVAPI_THERMAL_TARGET_MEMORY)
+                    snap.Set(static_cast<uint32_t>(GpuMetric::MemoryTemperature),
+                             static_cast<double>(therm.sensor[i].currentTemp));
             }
         }
+    }
+
+    // Fan RPM
+    if (m_GetTach)
+    {
+        NvU32 rpm = 0;
+        if (QI<FnGetTach>(m_QueryInterface, ID_GetTachReading)(gpu, &rpm) == NVAPI_OK)
+            snap.Set(static_cast<uint32_t>(GpuMetric::FanSpeedRPM), static_cast<double>(rpm));
     }
 
     // Clocks (kHz → Hz)

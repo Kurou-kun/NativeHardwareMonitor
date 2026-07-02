@@ -32,6 +32,7 @@ private:
     void* m_GetClocks = nullptr;
     void* m_GetPstates= nullptr;
     void* m_GetMemory = nullptr;
+    void* m_GetTach   = nullptr; // optional — not present on fanless GPUs/older drivers
 
     void*    m_gpus[64] = {};
     uint32_t m_count    = 0;

@@ -78,12 +78,12 @@ double HardwareCore::GetValue(uint32_t handle)
 {
     auto it = m_measures.find(handle);
     if (it == m_measures.end())
-        return 0.0;
+        return -2.0;
 
     const MeasureEntry& entry = it->second;
     ModuleState* state = GetModuleState(entry.category);
     if (!state || !state->module)
-        return 0.0;
+        return -2.0;
 
     std::lock_guard<std::mutex> lock(state->mutex);
 
@@ -98,7 +98,7 @@ double HardwareCore::GetValue(uint32_t handle)
     }
 
     if (!state->initialized)
-        return 0.0;
+        return -2.0;
 
     if (state->currentOverrideMs == 0)
     {

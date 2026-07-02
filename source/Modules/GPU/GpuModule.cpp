@@ -31,7 +31,7 @@ void GpuModule::GatherAll()
 double GpuModule::GetValue(uint32_t metricId, uint32_t deviceIndex)
 {
     if (deviceIndex >= m_snapshots.size())
-        return 0.0;
+        return -2.0;
 
     return m_snapshots[deviceIndex].Get(metricId);
 }

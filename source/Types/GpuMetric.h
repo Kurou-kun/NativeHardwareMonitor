@@ -14,5 +14,8 @@ enum class GpuMetric : uint32_t
     FanSpeedRPM,
     Power,
     PowerLimit,
+    Voltage,
+    IntakeTemperature,
+    TotalBoardPower,
     Unknown
 };

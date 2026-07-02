@@ -25,4 +25,5 @@ private:
     adlx::IADLXSystem*                      m_system = nullptr;
     adlx::IADLXPerformanceMonitoringServices* m_perf  = nullptr;
     std::vector<adlx::IADLXGPU*>            m_gpus;
+    std::vector<double>                     m_vramTotal; // static per-GPU capacity, cached at Initialize()
 };

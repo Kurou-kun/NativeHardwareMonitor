@@ -22,7 +22,7 @@ struct Snapshot
     {
         auto it = metrics.find(metricId);
         if (it == metrics.end() || !it->second.supported)
-            return 0.0;
+            return -1.0;
 
         return it->second.value;
     }
@@ -31,5 +31,16 @@ struct Snapshot
     {
         auto it = metrics.find(metricId);
         return it != metrics.end() && it->second.supported;
+    }
+
+    // Fills in metrics this snapshot doesn't already have from a backup source —
+    // used when a primary provider can't supply a metric a fallback provider can.
+    void MergeMissing(const Snapshot& backup)
+    {
+        for (const auto& [id, mv] : backup.metrics)
+        {
+            if (mv.supported && !IsSupported(id))
+                metrics[id] = mv;
+        }
     }
 };
