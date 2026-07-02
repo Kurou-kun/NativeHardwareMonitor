@@ -21,6 +21,13 @@
 *.userprefs
 resource.h
 
+# NativeHardwareMonitor project files (needed for build/CI)
+!/NativeHardwareMonitor.vcxproj
+!/NativeHardwareMonitor.vcxproj.filters
+!/NativeHardwareMonitor.slnx
+!/NativeHardwareMonitor.rc
+!/resource.h
+
 # Mono auto generated files
 mono_crash.*
 

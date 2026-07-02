@@ -1,0 +1,7 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="NativeHardwareMonitor.vcxproj" Id="748fe07c-0417-41d2-b760-21fd27409e4f" />
+</Solution>

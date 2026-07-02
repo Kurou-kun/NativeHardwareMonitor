@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>18.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{748fe07c-0417-41d2-b760-21fd27409e4f}</ProjectGuid>
+    <RootNamespace>NativeHardwareMonitor</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v145</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v145</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings" />
+  <ImportGroup Label="Shared" />
+
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+
+  <PropertyGroup Label="UserMacros" />
+
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>UNICODE;_UNICODE;NOMINMAX;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <AdditionalIncludeDirectories>$(SolutionDir)source;$(SolutionDir)sdk\adlx\SDK\ADLXHelper\Windows\Cpp;$(SolutionDir)sdk\adlx\SDK\Include;$(SolutionDir)sdk\adlx\SDK\Platform\Windows;$(SolutionDir)sdk\adl\include;$(SolutionDir)sdk\nvml;$(SolutionDir)sdk\nvapi;$(SolutionDir)sdk\rainmeter\API</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableUAC>false</EnableUAC>
+      <AdditionalDependencies>$(SolutionDir)sdk\rainmeter\API\x64\Rainmeter.lib;advapi32.lib;psapi.lib;iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>$(OutDir)NativeHardwareMonitor.dll</OutputFile>
+    </Link>
+    <Manifest>
+      <EnableSegmentHeap>true</EnableSegmentHeap>
+    </Manifest>
+    <PostBuildEvent>
+      <Command>copy /Y "$(OutDir)NativeHardwareMonitor.dll" "$(APPDATA)\Rainmeter\Plugins\NativeHardwareMonitor.dll"</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>UNICODE;_UNICODE;NOMINMAX;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <AdditionalIncludeDirectories>$(SolutionDir)source;$(SolutionDir)sdk\adlx\SDK\ADLXHelper\Windows\Cpp;$(SolutionDir)sdk\adlx\SDK\Include;$(SolutionDir)sdk\adlx\SDK\Platform\Windows;$(SolutionDir)sdk\adl\include;$(SolutionDir)sdk\nvml;$(SolutionDir)sdk\nvapi;$(SolutionDir)sdk\rainmeter\API</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableUAC>false</EnableUAC>
+      <AdditionalDependencies>$(SolutionDir)sdk\rainmeter\API\x64\Rainmeter.lib;advapi32.lib;psapi.lib;iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>$(OutDir)NativeHardwareMonitor.dll</OutputFile>
+    </Link>
+    <Manifest>
+      <EnableSegmentHeap>true</EnableSegmentHeap>
+    </Manifest>
+    <PostBuildEvent>
+      <Command>copy /Y "$(OutDir)NativeHardwareMonitor.dll" "$(APPDATA)\Rainmeter\Plugins\NativeHardwareMonitor.dll"</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+
+  <!-- Source Files -->
+  <ItemGroup>
+    <ClCompile Include="source\Plugin\Plugin.cpp" />
+    <ClCompile Include="source\Core\HardwareCore.cpp" />
+    <ClCompile Include="source\Core\PollerThread.cpp" />
+    <ClCompile Include="source\Modules\GPU\GpuModule.cpp" />
+    <ClCompile Include="source\Modules\GPU\GpuResolver.cpp" />
+    <ClCompile Include="source\Modules\CPU\CpuModule.cpp" />
+    <ClCompile Include="source\Modules\CPU\CpuResolver.cpp" />
+    <ClCompile Include="source\Modules\Memory\MemoryModule.cpp" />
+    <ClCompile Include="source\Modules\Memory\MemoryResolver.cpp" />
+    <ClCompile Include="source\Modules\Network\NetworkModule.cpp" />
+    <ClCompile Include="source\Modules\Network\NetworkResolver.cpp" />
+    <ClCompile Include="source\Modules\Storage\StorageModule.cpp" />
+    <ClCompile Include="source\Modules\Storage\StorageResolver.cpp" />
+    <ClCompile Include="source\Providers\Nvml\NvmlProvider.cpp" />
+    <ClCompile Include="source\Providers\Nvapi\NvapiProvider.cpp" />
+    <ClCompile Include="source\Providers\Adlx\AdlxProvider.cpp" />
+    <ClCompile Include="source\Providers\Adl2\Adl2Provider.cpp" />
+    <ClCompile Include="source\Providers\WinApi\WinApiCpuProvider.cpp" />
+    <ClCompile Include="source\Providers\WinApi\WinApiMemoryProvider.cpp" />
+    <ClCompile Include="source\Providers\WinApi\WinApiNetworkProvider.cpp" />
+    <ClCompile Include="source\Providers\WinApi\WinApiStorageProvider.cpp" />
+    <ClCompile Include="source\Types\MetricParser.cpp" />
+    <ClCompile Include="source\Utils\Debug.cpp" />
+    <ClCompile Include="source\Utils\TimeUtils.cpp" />
+    <ClCompile Include="source\Utils\MsrDriver.cpp" />
+    <!-- SDK -->
+    <ClCompile Include="sdk\adlx\SDK\ADLXHelper\Windows\Cpp\ADLXHelper.cpp" />
+    <ClCompile Include="sdk\adlx\SDK\Platform\Windows\WinAPIs.cpp" />
+  </ItemGroup>
+
+  <!-- Header Files -->
+  <ItemGroup>
+    <ClInclude Include="source\Plugin\Plugin.h" />
+    <ClInclude Include="source\Core\IModule.h" />
+    <ClInclude Include="source\Core\IProvider.h" />
+    <ClInclude Include="source\Core\HardwareCore.h" />
+    <ClInclude Include="source\Core\PollerThread.h" />
+    <ClInclude Include="source\Modules\GPU\GpuModule.h" />
+    <ClInclude Include="source\Modules\GPU\GpuResolver.h" />
+    <ClInclude Include="source\Modules\CPU\CpuModule.h" />
+    <ClInclude Include="source\Modules\CPU\CpuResolver.h" />
+    <ClInclude Include="source\Modules\Memory\MemoryModule.h" />
+    <ClInclude Include="source\Modules\Memory\MemoryResolver.h" />
+    <ClInclude Include="source\Modules\Network\NetworkModule.h" />
+    <ClInclude Include="source\Modules\Network\NetworkResolver.h" />
+    <ClInclude Include="source\Modules\Storage\StorageModule.h" />
+    <ClInclude Include="source\Modules\Storage\StorageResolver.h" />
+    <ClInclude Include="source\Providers\Nvml\NvmlProvider.h" />
+    <ClInclude Include="source\Providers\Nvapi\NvapiProvider.h" />
+    <ClInclude Include="source\Providers\Adlx\AdlxProvider.h" />
+    <ClInclude Include="source\Providers\Adl2\Adl2Provider.h" />
+    <ClInclude Include="source\Providers\WinApi\WinApiCpuProvider.h" />
+    <ClInclude Include="source\Providers\WinApi\WinApiMemoryProvider.h" />
+    <ClInclude Include="source\Providers\WinApi\WinApiNetworkProvider.h" />
+    <ClInclude Include="source\Providers\WinApi\WinApiStorageProvider.h" />
+    <ClInclude Include="source\Providers\Dummy\DummyProvider.h" />
+    <ClInclude Include="source\Types\Category.h" />
+    <ClInclude Include="source\Types\Snapshot.h" />
+    <ClInclude Include="source\Types\GpuMetric.h" />
+    <ClInclude Include="source\Types\CpuMetric.h" />
+    <ClInclude Include="source\Types\MemoryMetric.h" />
+    <ClInclude Include="source\Types\NetworkMetric.h" />
+    <ClInclude Include="source\Types\StorageMetric.h" />
+    <ClInclude Include="source\Types\MetricParser.h" />
+    <ClInclude Include="source\Utils\Debug.h" />
+    <ClInclude Include="source\Utils\TimeUtils.h" />
+    <ClInclude Include="source\Utils\MsrDriver.h" />
+    <ClInclude Include="resource.h" />
+  </ItemGroup>
+
+  <!-- Resource Files -->
+  <ItemGroup>
+    <ResourceCompile Include="NativeHardwareMonitor.rc" />
+  </ItemGroup>
+
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets" />
+</Project>

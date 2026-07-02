@@ -1,0 +1,355 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Plugin">
+      <UniqueIdentifier>{a1b2c3d4-0001-0001-0001-000000000001}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Core">
+      <UniqueIdentifier>{a1b2c3d4-0001-0001-0001-000000000002}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Modules">
+      <UniqueIdentifier>{a1b2c3d4-0001-0001-0001-000000000003}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Modules\GPU">
+      <UniqueIdentifier>{a1b2c3d4-0001-0001-0001-000000000004}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Modules\CPU">
+      <UniqueIdentifier>{a1b2c3d4-0001-0001-0001-000000000005}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Modules\Memory">
+      <UniqueIdentifier>{a1b2c3d4-0001-0001-0001-000000000006}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Modules\Network">
+      <UniqueIdentifier>{a1b2c3d4-0001-0001-0001-000000000007}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Modules\Storage">
+      <UniqueIdentifier>{a1b2c3d4-0001-0001-0001-000000000008}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Providers">
+      <UniqueIdentifier>{a1b2c3d4-0001-0001-0001-000000000009}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Providers\Nvml">
+      <UniqueIdentifier>{a1b2c3d4-0001-0001-0001-000000000010}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Providers\Nvapi">
+      <UniqueIdentifier>{a1b2c3d4-0001-0001-0001-000000000011}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Providers\Adlx">
+      <UniqueIdentifier>{a1b2c3d4-0001-0001-0001-000000000012}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Providers\Adl2">
+      <UniqueIdentifier>{a1b2c3d4-0001-0001-0001-000000000013}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Providers\WinApi">
+      <UniqueIdentifier>{a1b2c3d4-0001-0001-0001-000000000014}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Providers\Dummy">
+      <UniqueIdentifier>{a1b2c3d4-0001-0001-0001-000000000015}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Types">
+      <UniqueIdentifier>{a1b2c3d4-0001-0001-0001-000000000016}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Utils">
+      <UniqueIdentifier>{a1b2c3d4-0001-0001-0001-000000000017}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\SDK">
+      <UniqueIdentifier>{a1b2c3d4-0001-0001-0001-000000000018}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Plugin -->
+    <ClCompile Include="source\Plugin\Plugin.cpp">
+      <Filter>Source Files\Plugin</Filter>
+    </ClCompile>
+    <!-- Core -->
+    <ClCompile Include="source\Core\HardwareCore.cpp">
+      <Filter>Source Files\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Core\PollerThread.cpp">
+      <Filter>Source Files\Core</Filter>
+    </ClCompile>
+    <!-- Modules\GPU -->
+    <ClCompile Include="source\Modules\GPU\GpuModule.cpp">
+      <Filter>Source Files\Modules\GPU</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Modules\GPU\GpuResolver.cpp">
+      <Filter>Source Files\Modules\GPU</Filter>
+    </ClCompile>
+    <!-- Modules\CPU -->
+    <ClCompile Include="source\Modules\CPU\CpuModule.cpp">
+      <Filter>Source Files\Modules\CPU</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Modules\CPU\CpuResolver.cpp">
+      <Filter>Source Files\Modules\CPU</Filter>
+    </ClCompile>
+    <!-- Modules\Memory -->
+    <ClCompile Include="source\Modules\Memory\MemoryModule.cpp">
+      <Filter>Source Files\Modules\Memory</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Modules\Memory\MemoryResolver.cpp">
+      <Filter>Source Files\Modules\Memory</Filter>
+    </ClCompile>
+    <!-- Modules\Network -->
+    <ClCompile Include="source\Modules\Network\NetworkModule.cpp">
+      <Filter>Source Files\Modules\Network</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Modules\Network\NetworkResolver.cpp">
+      <Filter>Source Files\Modules\Network</Filter>
+    </ClCompile>
+    <!-- Modules\Storage -->
+    <ClCompile Include="source\Modules\Storage\StorageModule.cpp">
+      <Filter>Source Files\Modules\Storage</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Modules\Storage\StorageResolver.cpp">
+      <Filter>Source Files\Modules\Storage</Filter>
+    </ClCompile>
+    <!-- Providers\Nvml -->
+    <ClCompile Include="source\Providers\Nvml\NvmlProvider.cpp">
+      <Filter>Source Files\Providers\Nvml</Filter>
+    </ClCompile>
+    <!-- Providers\Nvapi -->
+    <ClCompile Include="source\Providers\Nvapi\NvapiProvider.cpp">
+      <Filter>Source Files\Providers\Nvapi</Filter>
+    </ClCompile>
+    <!-- Providers\Adlx -->
+    <ClCompile Include="source\Providers\Adlx\AdlxProvider.cpp">
+      <Filter>Source Files\Providers\Adlx</Filter>
+    </ClCompile>
+    <!-- Providers\Adl2 -->
+    <ClCompile Include="source\Providers\Adl2\Adl2Provider.cpp">
+      <Filter>Source Files\Providers\Adl2</Filter>
+    </ClCompile>
+    <!-- Providers\WinApi -->
+    <ClCompile Include="source\Providers\WinApi\WinApiCpuProvider.cpp">
+      <Filter>Source Files\Providers\WinApi</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Providers\WinApi\WinApiMemoryProvider.cpp">
+      <Filter>Source Files\Providers\WinApi</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Providers\WinApi\WinApiNetworkProvider.cpp">
+      <Filter>Source Files\Providers\WinApi</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Providers\WinApi\WinApiStorageProvider.cpp">
+      <Filter>Source Files\Providers\WinApi</Filter>
+    </ClCompile>
+    <!-- Types -->
+    <ClCompile Include="source\Types\MetricParser.cpp">
+      <Filter>Source Files\Types</Filter>
+    </ClCompile>
+    <!-- Utils -->
+    <ClCompile Include="source\Utils\Debug.cpp">
+      <Filter>Source Files\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Utils\TimeUtils.cpp">
+      <Filter>Source Files\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Utils\MsrDriver.cpp">
+      <Filter>Source Files\Utils</Filter>
+    </ClCompile>
+    <!-- SDK -->
+    <ClCompile Include="sdk\adlx\SDK\ADLXHelper\Windows\Cpp\ADLXHelper.cpp">
+      <Filter>Source Files\SDK</Filter>
+    </ClCompile>
+    <ClCompile Include="sdk\adlx\SDK\Platform\Windows\WinAPIs.cpp">
+      <Filter>Source Files\SDK</Filter>
+    </ClCompile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Plugin -->
+    <ClInclude Include="source\Plugin\Plugin.h">
+      <Filter>Header Files\Plugin</Filter>
+    </ClInclude>
+    <!-- Core -->
+    <ClInclude Include="source\Core\IModule.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Core\IProvider.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Core\HardwareCore.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Core\PollerThread.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <!-- Modules\GPU -->
+    <ClInclude Include="source\Modules\GPU\GpuModule.h">
+      <Filter>Header Files\Modules\GPU</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Modules\GPU\GpuResolver.h">
+      <Filter>Header Files\Modules\GPU</Filter>
+    </ClInclude>
+    <!-- Modules\CPU -->
+    <ClInclude Include="source\Modules\CPU\CpuModule.h">
+      <Filter>Header Files\Modules\CPU</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Modules\CPU\CpuResolver.h">
+      <Filter>Header Files\Modules\CPU</Filter>
+    </ClInclude>
+    <!-- Modules\Memory -->
+    <ClInclude Include="source\Modules\Memory\MemoryModule.h">
+      <Filter>Header Files\Modules\Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Modules\Memory\MemoryResolver.h">
+      <Filter>Header Files\Modules\Memory</Filter>
+    </ClInclude>
+    <!-- Modules\Network -->
+    <ClInclude Include="source\Modules\Network\NetworkModule.h">
+      <Filter>Header Files\Modules\Network</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Modules\Network\NetworkResolver.h">
+      <Filter>Header Files\Modules\Network</Filter>
+    </ClInclude>
+    <!-- Modules\Storage -->
+    <ClInclude Include="source\Modules\Storage\StorageModule.h">
+      <Filter>Header Files\Modules\Storage</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Modules\Storage\StorageResolver.h">
+      <Filter>Header Files\Modules\Storage</Filter>
+    </ClInclude>
+    <!-- Providers\Nvml -->
+    <ClInclude Include="source\Providers\Nvml\NvmlProvider.h">
+      <Filter>Header Files\Providers\Nvml</Filter>
+    </ClInclude>
+    <!-- Providers\Nvapi -->
+    <ClInclude Include="source\Providers\Nvapi\NvapiProvider.h">
+      <Filter>Header Files\Providers\Nvapi</Filter>
+    </ClInclude>
+    <!-- Providers\Adlx -->
+    <ClInclude Include="source\Providers\Adlx\AdlxProvider.h">
+      <Filter>Header Files\Providers\Adlx</Filter>
+    </ClInclude>
+    <!-- Providers\Adl2 -->
+    <ClInclude Include="source\Providers\Adl2\Adl2Provider.h">
+      <Filter>Header Files\Providers\Adl2</Filter>
+    </ClInclude>
+    <!-- Providers\WinApi -->
+    <ClInclude Include="source\Providers\WinApi\WinApiCpuProvider.h">
+      <Filter>Header Files\Providers\WinApi</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Providers\WinApi\WinApiMemoryProvider.h">
+      <Filter>Header Files\Providers\WinApi</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Providers\WinApi\WinApiNetworkProvider.h">
+      <Filter>Header Files\Providers\WinApi</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Providers\WinApi\WinApiStorageProvider.h">
+      <Filter>Header Files\Providers\WinApi</Filter>
+    </ClInclude>
+    <!-- Providers\Dummy -->
+    <ClInclude Include="source\Providers\Dummy\DummyProvider.h">
+      <Filter>Header Files\Providers\Dummy</Filter>
+    </ClInclude>
+    <!-- Types -->
+    <ClInclude Include="source\Types\Category.h">
+      <Filter>Header Files\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Types\Snapshot.h">
+      <Filter>Header Files\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Types\GpuMetric.h">
+      <Filter>Header Files\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Types\CpuMetric.h">
+      <Filter>Header Files\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Types\MemoryMetric.h">
+      <Filter>Header Files\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Types\NetworkMetric.h">
+      <Filter>Header Files\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Types\StorageMetric.h">
+      <Filter>Header Files\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Types\MetricParser.h">
+      <Filter>Header Files\Types</Filter>
+    </ClInclude>
+    <!-- Utils -->
+    <ClInclude Include="source\Utils\Debug.h">
+      <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Utils\TimeUtils.h">
+      <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Utils\MsrDriver.h">
+      <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+    <!-- Root -->
+    <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ResourceCompile Include="NativeHardwareMonitor.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+
+  <!-- Missing Header Filters (referenced by ClInclude above) -->
+  <ItemGroup>
+    <Filter Include="Header Files\Plugin">
+      <UniqueIdentifier>{b1b2c3d4-0001-0001-0001-000000000001}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Core">
+      <UniqueIdentifier>{b1b2c3d4-0001-0001-0001-000000000002}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Modules">
+      <UniqueIdentifier>{b1b2c3d4-0001-0001-0001-000000000003}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Modules\GPU">
+      <UniqueIdentifier>{b1b2c3d4-0001-0001-0001-000000000004}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Modules\CPU">
+      <UniqueIdentifier>{b1b2c3d4-0001-0001-0001-000000000005}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Modules\Memory">
+      <UniqueIdentifier>{b1b2c3d4-0001-0001-0001-000000000006}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Modules\Network">
+      <UniqueIdentifier>{b1b2c3d4-0001-0001-0001-000000000007}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Modules\Storage">
+      <UniqueIdentifier>{b1b2c3d4-0001-0001-0001-000000000008}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Providers">
+      <UniqueIdentifier>{b1b2c3d4-0001-0001-0001-000000000009}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Providers\Nvml">
+      <UniqueIdentifier>{b1b2c3d4-0001-0001-0001-000000000010}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Providers\Nvapi">
+      <UniqueIdentifier>{b1b2c3d4-0001-0001-0001-000000000011}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Providers\Adlx">
+      <UniqueIdentifier>{b1b2c3d4-0001-0001-0001-000000000012}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Providers\Adl2">
+      <UniqueIdentifier>{b1b2c3d4-0001-0001-0001-000000000013}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Providers\WinApi">
+      <UniqueIdentifier>{b1b2c3d4-0001-0001-0001-000000000014}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Providers\Dummy">
+      <UniqueIdentifier>{b1b2c3d4-0001-0001-0001-000000000015}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Types">
+      <UniqueIdentifier>{b1b2c3d4-0001-0001-0001-000000000016}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Utils">
+      <UniqueIdentifier>{b1b2c3d4-0001-0001-0001-000000000017}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
