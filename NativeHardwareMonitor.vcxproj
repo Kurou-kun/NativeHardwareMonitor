@@ -69,7 +69,7 @@
       <EnableSegmentHeap>true</EnableSegmentHeap>
     </Manifest>
     <PostBuildEvent>
-      <Command>copy /Y "$(OutDir)NativeHardwareMonitor.dll" "$(APPDATA)\Rainmeter\Plugins\NativeHardwareMonitor.dll"</Command>
+      <Command>if exist "$(APPDATA)\Rainmeter\Plugins" copy /Y "$(OutDir)NativeHardwareMonitor.dll" "$(APPDATA)\Rainmeter\Plugins\NativeHardwareMonitor.dll"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
 
@@ -96,7 +96,7 @@
       <EnableSegmentHeap>true</EnableSegmentHeap>
     </Manifest>
     <PostBuildEvent>
-      <Command>copy /Y "$(OutDir)NativeHardwareMonitor.dll" "$(APPDATA)\Rainmeter\Plugins\NativeHardwareMonitor.dll"</Command>
+      <Command>if exist "$(APPDATA)\Rainmeter\Plugins" copy /Y "$(OutDir)NativeHardwareMonitor.dll" "$(APPDATA)\Rainmeter\Plugins\NativeHardwareMonitor.dll"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
 
