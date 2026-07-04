@@ -82,6 +82,7 @@ uint32_t ParseMetric(Category category, const std::wstring& input)
         if (str == L"free")        return static_cast<uint32_t>(MemoryMetric::Free);
         if (str == L"total")       return static_cast<uint32_t>(MemoryMetric::Total);
         if (str == L"usedpercent") return static_cast<uint32_t>(MemoryMetric::UsedPercent);
+        if (str == L"cached")      return static_cast<uint32_t>(MemoryMetric::Cached);
         return static_cast<uint32_t>(MemoryMetric::Unknown);
 
     case Category::Network:

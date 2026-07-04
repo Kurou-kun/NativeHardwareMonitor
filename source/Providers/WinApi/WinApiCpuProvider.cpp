@@ -194,17 +194,20 @@ void WinApiCpuProvider::ReadIdentity()
 
 // CurrentVoltage isn't available through any other user-mode API — WMI is the
 // only no-driver source, so this pays the one-time COM cost at startup only.
+//
+// RPC_E_CHANGED_MODE means the calling thread already has COM initialized in a
+// different apartment (Rainmeter's own thread does) — not fatal, WMI works fine
+// in either apartment; we just must not call CoUninitialize for one we didn't init.
 void WinApiCpuProvider::ReadVoltage()
 {
     HRESULT coInit = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
-    if (coInit == RPC_E_CHANGED_MODE)
-        return; // already initialized with an incompatible model — skip rather than fight it
+    bool    ownsCom = SUCCEEDED(coInit);
 
     IWbemLocator* locator = nullptr;
     if (FAILED(CoCreateInstance(CLSID_WbemLocator, nullptr, CLSCTX_INPROC_SERVER,
                                  IID_IWbemLocator, (LPVOID*)&locator)) || !locator)
     {
-        CoUninitialize();
+        if (ownsCom) CoUninitialize();
         return;
     }
 
@@ -214,7 +217,7 @@ void WinApiCpuProvider::ReadVoltage()
     if (FAILED(hr) || !services)
     {
         locator->Release();
-        CoUninitialize();
+        if (ownsCom) CoUninitialize();
         return;
     }
 
@@ -248,5 +251,5 @@ void WinApiCpuProvider::ReadVoltage()
 
     services->Release();
     locator->Release();
-    CoUninitialize();
+    if (ownsCom) CoUninitialize();
 }

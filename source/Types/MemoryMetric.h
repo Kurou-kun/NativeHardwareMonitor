@@ -6,5 +6,6 @@ enum class MemoryMetric : uint32_t
     Free,
     Total,
     UsedPercent,
+    Cached,
     Unknown
 };
