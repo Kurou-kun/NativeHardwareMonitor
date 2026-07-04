@@ -142,6 +142,9 @@
     <ClCompile Include="source\Providers\WinApi\WinApiNetworkProvider.cpp">
       <Filter>Source Files\Providers\WinApi</Filter>
     </ClCompile>
+    <ClCompile Include="source\Providers\WinApi\WinApiPingProvider.cpp">
+      <Filter>Source Files\Providers\WinApi</Filter>
+    </ClCompile>
     <ClCompile Include="source\Providers\WinApi\WinApiStorageProvider.cpp">
       <Filter>Source Files\Providers\WinApi</Filter>
     </ClCompile>
@@ -245,6 +248,9 @@
       <Filter>Header Files\Providers\WinApi</Filter>
     </ClInclude>
     <ClInclude Include="source\Providers\WinApi\WinApiNetworkProvider.h">
+      <Filter>Header Files\Providers\WinApi</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Providers\WinApi\WinApiPingProvider.h">
       <Filter>Header Files\Providers\WinApi</Filter>
     </ClInclude>
     <ClInclude Include="source\Providers\WinApi\WinApiStorageProvider.h">

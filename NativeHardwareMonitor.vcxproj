@@ -123,6 +123,7 @@
     <ClCompile Include="source\Providers\WinApi\WinApiGpuInfo.cpp" />
     <ClCompile Include="source\Providers\WinApi\WinApiMemoryProvider.cpp" />
     <ClCompile Include="source\Providers\WinApi\WinApiNetworkProvider.cpp" />
+    <ClCompile Include="source\Providers\WinApi\WinApiPingProvider.cpp" />
     <ClCompile Include="source\Providers\WinApi\WinApiStorageProvider.cpp" />
     <ClCompile Include="source\Types\MetricParser.cpp" />
     <ClCompile Include="source\Utils\Debug.cpp" />
@@ -157,6 +158,7 @@
     <ClInclude Include="source\Providers\WinApi\WinApiGpuInfo.h" />
     <ClInclude Include="source\Providers\WinApi\WinApiMemoryProvider.h" />
     <ClInclude Include="source\Providers\WinApi\WinApiNetworkProvider.h" />
+    <ClInclude Include="source\Providers\WinApi\WinApiPingProvider.h" />
     <ClInclude Include="source\Providers\WinApi\WinApiStorageProvider.h" />
     <ClInclude Include="source\Providers\Dummy\DummyProvider.h" />
     <ClInclude Include="source\Types\Category.h" />
