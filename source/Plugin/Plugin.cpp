@@ -18,12 +18,14 @@ static void ReadContext(MeasureContext* ctx, void* rm)
     // assign to wstring immediately before the next call overwrites it.
     ctx->categoryStr = RmReadString(rm, L"Category", L"", FALSE);
     ctx->metricStr   = RmReadString(rm, L"Metric",   L"", FALSE);
+    ctx->host        = RmReadString(rm, L"Host",     L"", FALSE);
 
     ctx->category         = ParseCategory(ctx->categoryStr);
     ctx->metricId         = ParseMetric(ctx->category, ctx->metricStr);
     ctx->deviceIndex      = static_cast<uint32_t>(RmReadInt(rm, L"Device", 0));
     ctx->debugLevel       = RmReadInt(rm, L"Debug", 0);
     ctx->updateOverrideMs = static_cast<uint32_t>(RmReadInt(rm, L"UpdateOverride", 0));
+    ctx->pingIntervalMs   = static_cast<uint32_t>(RmReadInt(rm, L"PingInterval", 1000));
 }
 
 PLUGIN_EXPORT void Initialize(void** data, void* rm)
@@ -49,7 +51,9 @@ PLUGIN_EXPORT void Initialize(void** data, void* rm)
         ctx->category,
         ctx->metricId,
         ctx->deviceIndex,
-        ctx->updateOverrideMs
+        ctx->updateOverrideMs,
+        ctx->host,
+        ctx->pingIntervalMs
     );
 
     ctx->valid = true;
@@ -89,7 +93,9 @@ PLUGIN_EXPORT void Reload(void* data, void* rm, double* maxValue)
         ctx->category,
         ctx->metricId,
         ctx->deviceIndex,
-        ctx->updateOverrideMs
+        ctx->updateOverrideMs,
+        ctx->host,
+        ctx->pingIntervalMs
     );
 
     ctx->valid = true;

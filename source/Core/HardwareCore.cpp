@@ -5,6 +5,7 @@
 #include "Modules/Memory/MemoryModule.h"
 #include "Modules/Network/NetworkModule.h"
 #include "Modules/Storage/StorageModule.h"
+#include "Modules/Ping/PingModule.h"
 
 #include <algorithm>
 #include <windows.h>
@@ -28,15 +29,35 @@ HardwareCore::HardwareCore()
     m_modules[Category::Memory]  = make(std::make_unique<MemoryModule>());
     m_modules[Category::Network] = make(std::make_unique<NetworkModule>());
     m_modules[Category::Storage] = make(std::make_unique<StorageModule>());
+    m_modules[Category::Ping]    = make(std::make_unique<PingModule>());
 }
 
 uint32_t HardwareCore::RegisterMeasure(
-    Category category,
-    uint32_t metricId,
-    uint32_t deviceIndex,
-    uint32_t updateOverrideMs)
+    Category            category,
+    uint32_t             metricId,
+    uint32_t             deviceIndex,
+    uint32_t             updateOverrideMs,
+    const std::wstring& targetHost,
+    uint32_t             pingIntervalMs)
 {
     uint32_t handle = m_nextHandle++;
+
+    if (category == Category::Ping)
+    {
+        // Ping devices are resolved from a host string, not a skin-supplied
+        // Device= index — and unlike other categories, it must be initialized
+        // here (at registration time) rather than lazily on first read, since
+        // the background ping polling has to start the moment the skin loads.
+        ModuleState* state = GetModuleState(category);
+        if (state && state->module)
+        {
+            if (!state->initialized)
+                state->initialized = state->module->Initialize();
+
+            if (state->initialized)
+                deviceIndex = state->module->ResolveTarget(targetHost, pingIntervalMs);
+        }
+    }
 
     m_measures.emplace(handle, MeasureEntry{ category, metricId, deviceIndex, updateOverrideMs });
 

@@ -15,7 +15,13 @@ class HardwareCore
 public:
     static HardwareCore& Instance();
 
-    uint32_t RegisterMeasure(Category category, uint32_t metricId, uint32_t deviceIndex, uint32_t updateOverrideMs);
+    uint32_t RegisterMeasure(
+        Category             category,
+        uint32_t              metricId,
+        uint32_t              deviceIndex,
+        uint32_t              updateOverrideMs,
+        const std::wstring&  targetHost     = L"",
+        uint32_t              pingIntervalMs = 0);
     void     UnregisterMeasure(uint32_t handle);
 
     double GetValue(uint32_t handle);
