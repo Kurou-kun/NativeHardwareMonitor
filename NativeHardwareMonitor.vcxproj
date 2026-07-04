@@ -115,6 +115,8 @@
     <ClCompile Include="source\Modules\Network\NetworkResolver.cpp" />
     <ClCompile Include="source\Modules\Storage\StorageModule.cpp" />
     <ClCompile Include="source\Modules\Storage\StorageResolver.cpp" />
+    <ClCompile Include="source\Modules\Ping\PingModule.cpp" />
+    <ClCompile Include="source\Modules\Ping\PingResolver.cpp" />
     <ClCompile Include="source\Providers\Nvml\NvmlProvider.cpp" />
     <ClCompile Include="source\Providers\Nvapi\NvapiProvider.cpp" />
     <ClCompile Include="source\Providers\Adlx\AdlxProvider.cpp" />
@@ -150,6 +152,8 @@
     <ClInclude Include="source\Modules\Network\NetworkResolver.h" />
     <ClInclude Include="source\Modules\Storage\StorageModule.h" />
     <ClInclude Include="source\Modules\Storage\StorageResolver.h" />
+    <ClInclude Include="source\Modules\Ping\PingModule.h" />
+    <ClInclude Include="source\Modules\Ping\PingResolver.h" />
     <ClInclude Include="source\Providers\Nvml\NvmlProvider.h" />
     <ClInclude Include="source\Providers\Nvapi\NvapiProvider.h" />
     <ClInclude Include="source\Providers\Adlx\AdlxProvider.h" />

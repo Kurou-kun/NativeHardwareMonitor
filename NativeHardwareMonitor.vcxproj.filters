@@ -34,6 +34,9 @@
     <Filter Include="Source Files\Modules\Storage">
       <UniqueIdentifier>{a1b2c3d4-0001-0001-0001-000000000008}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Modules\Ping">
+      <UniqueIdentifier>{a1b2c3d4-0001-0001-0001-000000000019}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Source Files\Providers">
       <UniqueIdentifier>{a1b2c3d4-0001-0001-0001-000000000009}</UniqueIdentifier>
     </Filter>
@@ -112,6 +115,13 @@
     </ClCompile>
     <ClCompile Include="source\Modules\Storage\StorageResolver.cpp">
       <Filter>Source Files\Modules\Storage</Filter>
+    </ClCompile>
+    <!-- Modules\Ping -->
+    <ClCompile Include="source\Modules\Ping\PingModule.cpp">
+      <Filter>Source Files\Modules\Ping</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Modules\Ping\PingResolver.cpp">
+      <Filter>Source Files\Modules\Ping</Filter>
     </ClCompile>
     <!-- Providers\Nvml -->
     <ClCompile Include="source\Providers\Nvml\NvmlProvider.cpp">
@@ -220,6 +230,13 @@
     </ClInclude>
     <ClInclude Include="source\Modules\Storage\StorageResolver.h">
       <Filter>Header Files\Modules\Storage</Filter>
+    </ClInclude>
+    <!-- Modules\Ping -->
+    <ClInclude Include="source\Modules\Ping\PingModule.h">
+      <Filter>Header Files\Modules\Ping</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Modules\Ping\PingResolver.h">
+      <Filter>Header Files\Modules\Ping</Filter>
     </ClInclude>
     <!-- Providers\Nvml -->
     <ClInclude Include="source\Providers\Nvml\NvmlProvider.h">
@@ -332,6 +349,9 @@
     </Filter>
     <Filter Include="Header Files\Modules\Storage">
       <UniqueIdentifier>{b1b2c3d4-0001-0001-0001-000000000008}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Modules\Ping">
+      <UniqueIdentifier>{b1b2c3d4-0001-0001-0001-000000000018}</UniqueIdentifier>
     </Filter>
     <Filter Include="Header Files\Providers">
       <UniqueIdentifier>{b1b2c3d4-0001-0001-0001-000000000009}</UniqueIdentifier>
