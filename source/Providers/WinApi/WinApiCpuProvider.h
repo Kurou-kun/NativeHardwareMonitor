@@ -26,6 +26,9 @@ private:
     double   m_voltage       = -1.0; // cached at Initialize(); stays -1 if WMI can't supply it
     bool     m_clockValid    = false;
     std::wstring m_name;
+    std::wstring m_vendor;
+    std::wstring m_identifier;
+    std::wstring m_microcodeVersion;
 
     std::vector<SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION> m_prevTimes;
     std::vector<SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION> m_currTimes;
@@ -36,6 +39,6 @@ private:
     NtQuerySystemInformation_t m_ntQuery = nullptr;
 
     bool QueryProcessorTimes(std::vector<SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION>& data);
-    void ReadName();
+    void ReadIdentity(); // Name, Vendor, Identifier, MicrocodeVersion — one registry key, one open
     void ReadVoltage(); // one-shot WMI query — CurrentVoltage isn't exposed anywhere else without a driver
 };

@@ -71,7 +71,10 @@ uint32_t ParseMetric(Category category, const std::wstring& input)
         if (str == L"clock")    return static_cast<uint32_t>(CpuMetric::Clock);
         if (str == L"maxclock") return static_cast<uint32_t>(CpuMetric::MaxClock);
         if (str == L"voltage")  return static_cast<uint32_t>(CpuMetric::Voltage);
-        if (str == L"name")     return static_cast<uint32_t>(CpuMetric::Name);
+        if (str == L"name")             return static_cast<uint32_t>(CpuMetric::Name);
+        if (str == L"vendor")           return static_cast<uint32_t>(CpuMetric::Vendor);
+        if (str == L"identifier")       return static_cast<uint32_t>(CpuMetric::Identifier);
+        if (str == L"microcodeversion") return static_cast<uint32_t>(CpuMetric::MicrocodeVersion);
         return static_cast<uint32_t>(CpuMetric::Unknown);
 
     case Category::Memory:

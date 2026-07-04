@@ -7,5 +7,8 @@ enum class CpuMetric : uint32_t
     MaxClock,
     Voltage,
     Name,
+    Vendor,
+    Identifier,
+    MicrocodeVersion,
     Unknown
 };

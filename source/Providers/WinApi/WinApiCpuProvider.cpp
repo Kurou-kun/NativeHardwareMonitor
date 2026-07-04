@@ -3,6 +3,7 @@
 #include "Utils/Debug.h"
 
 #include <algorithm>
+#include <cstdio>
 #include <powrprof.h>
 #include <powerbase.h>
 #include <comdef.h>
@@ -46,7 +47,7 @@ bool WinApiCpuProvider::Initialize()
 
     QueryProcessorTimes(m_prevTimes);
 
-    ReadName();
+    ReadIdentity();
     ReadVoltage();
 
     LOG_STARTUP(L"WinApiCpuProvider: initialized (%u core(s))", m_coreCount);
@@ -132,12 +133,14 @@ void WinApiCpuProvider::GatherSnapshot(uint32_t deviceIndex, Snapshot& snap)
 
 bool WinApiCpuProvider::GetString(uint32_t metricId, uint32_t deviceIndex, std::wstring& out)
 {
-    if (metricId == static_cast<uint32_t>(CpuMetric::Name) && !m_name.empty())
+    switch (static_cast<CpuMetric>(metricId))
     {
-        out = m_name;
-        return true;
+    case CpuMetric::Name:             if (m_name.empty())             return false; out = m_name;             return true;
+    case CpuMetric::Vendor:           if (m_vendor.empty())           return false; out = m_vendor;           return true;
+    case CpuMetric::Identifier:       if (m_identifier.empty())       return false; out = m_identifier;       return true;
+    case CpuMetric::MicrocodeVersion: if (m_microcodeVersion.empty()) return false; out = m_microcodeVersion; return true;
+    default:                         return false;
     }
-    return false;
 }
 
 bool WinApiCpuProvider::QueryProcessorTimes(std::vector<SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION>& data)
@@ -148,7 +151,20 @@ bool WinApiCpuProvider::QueryProcessorTimes(std::vector<SYSTEM_PROCESSOR_PERFORM
     return m_ntQuery(SystemProcessorPerformanceInformation, data.data(), size, nullptr) == 0;
 }
 
-void WinApiCpuProvider::ReadName()
+static std::wstring ReadTrimmedSz(HKEY key, const wchar_t* valueName)
+{
+    wchar_t buf[256] = {};
+    DWORD   size     = sizeof(buf);
+    if (RegQueryValueExW(key, valueName, nullptr, nullptr, (LPBYTE)buf, &size) != ERROR_SUCCESS)
+        return L"";
+
+    std::wstring value = buf;
+    size_t start = value.find_first_not_of(L' ');
+    size_t end   = value.find_last_not_of(L' ');
+    return start == std::wstring::npos ? L"" : value.substr(start, end - start + 1);
+}
+
+void WinApiCpuProvider::ReadIdentity()
 {
     HKEY key;
     if (RegOpenKeyExW(HKEY_LOCAL_MACHINE,
@@ -156,17 +172,23 @@ void WinApiCpuProvider::ReadName()
         0, KEY_READ, &key) != ERROR_SUCCESS)
         return;
 
-    wchar_t buf[256] = {};
-    DWORD size = sizeof(buf);
-    if (RegQueryValueExW(key, L"ProcessorNameString", nullptr, nullptr, (LPBYTE)buf, &size) == ERROR_SUCCESS)
-    {
-        m_name = buf;
+    m_name       = ReadTrimmedSz(key, L"ProcessorNameString");
+    m_vendor     = ReadTrimmedSz(key, L"VendorIdentifier");
+    m_identifier = ReadTrimmedSz(key, L"Identifier");
 
-        // Registry value is typically padded with spaces
-        size_t start = m_name.find_first_not_of(L' ');
-        size_t end   = m_name.find_last_not_of(L' ');
-        m_name = (start == std::wstring::npos) ? L"" : m_name.substr(start, end - start + 1);
+    // "Update Revision" is REG_BINARY; the microcode revision is its last 4 bytes,
+    // little-endian — the same convention CPU-Z/HWiNFO read it with.
+    BYTE  revBuf[64] = {};
+    DWORD revSize    = sizeof(revBuf);
+    if (RegQueryValueExW(key, L"Update Revision", nullptr, nullptr, revBuf, &revSize) == ERROR_SUCCESS && revSize >= 4)
+    {
+        uint32_t revision = revBuf[revSize - 4] | (revBuf[revSize - 3] << 8)
+                          | (revBuf[revSize - 2] << 16) | (revBuf[revSize - 1] << 24);
+        wchar_t revStr[16];
+        swprintf_s(revStr, L"0x%X", revision);
+        m_microcodeVersion = revStr;
     }
+
     RegCloseKey(key);
 }
 
