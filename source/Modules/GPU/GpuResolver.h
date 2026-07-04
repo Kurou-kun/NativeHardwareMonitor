@@ -2,6 +2,7 @@
 
 #include "Core/IProvider.h"
 #include "Types/Snapshot.h"
+#include "Providers/WinApi/WinApiGpuInfo.h"
 
 #include <memory>
 #include <string>
@@ -31,4 +32,5 @@ private:
 
     std::vector<std::unique_ptr<IProvider>> m_providers;
     std::vector<DeviceEntry>                m_devices;
+    WinApiGpuInfo                           m_winFallback;
 };

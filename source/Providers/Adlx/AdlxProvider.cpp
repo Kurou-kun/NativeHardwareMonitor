@@ -4,6 +4,7 @@
 
 #include "ADLXHelper.h"
 #include "IPerformanceMonitoring2.h"
+#include "ISystem2.h"
 
 extern ADLXHelper g_ADLX;
 
@@ -109,7 +110,64 @@ void AdlxProvider::GatherSnapshot(uint32_t deviceIndex, Snapshot& snap)
     metrics->Release();
 }
 
+static std::wstring ToWide(const char* s)
+{
+    return s ? std::wstring(s, s + strlen(s)) : std::wstring();
+}
+
 bool AdlxProvider::GetString(uint32_t metricId, uint32_t deviceIndex, std::wstring& out)
 {
-    return false;
+    if (deviceIndex >= m_gpus.size())
+        return false;
+
+    auto* gpu   = m_gpus[deviceIndex];
+    auto metric = static_cast<GpuMetric>(metricId);
+
+    switch (metric)
+    {
+    case GpuMetric::Name:
+    {
+        const char* name = nullptr;
+        if (gpu->Name(&name) != ADLX_OK || !name)
+            return false;
+        out = ToWide(name);
+        return true;
+    }
+
+    case GpuMetric::DriverVersion:
+    {
+        adlx::IADLXGPU2* gpu2 = nullptr;
+        if (gpu->QueryInterface(adlx::IADLXGPU2::IID(), (void**)&gpu2) != ADLX_OK || !gpu2)
+            return false;
+        const char* version = nullptr;
+        bool ok = gpu2->DriverVersion(&version) == ADLX_OK && version;
+        if (ok) out = ToWide(version);
+        gpu2->Release();
+        return ok;
+    }
+
+    case GpuMetric::VbiosVersion:
+    {
+        const char* partNumber = nullptr;
+        const char* version    = nullptr;
+        const char* date       = nullptr;
+        if (gpu->BIOSInfo(&partNumber, &version, &date) != ADLX_OK || !version)
+            return false;
+        out = ToWide(version);
+        return true;
+    }
+
+    case GpuMetric::PciDeviceId:
+    {
+        const char* vendorId = nullptr;
+        const char* deviceId = nullptr;
+        if (gpu->VendorId(&vendorId) != ADLX_OK || gpu->DeviceId(&deviceId) != ADLX_OK || !vendorId || !deviceId)
+            return false;
+        out = ToWide(vendorId) + L":" + ToWide(deviceId);
+        return true;
+    }
+
+    default:
+        return false;
+    }
 }

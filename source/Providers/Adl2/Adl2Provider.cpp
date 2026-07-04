@@ -109,6 +109,9 @@ void Adl2Provider::EnumerateAdapters()
             continue;
 
         m_adapterIndices.push_back(info[i].iAdapterIndex);
+
+        int nameLen = static_cast<int>(strnlen_s(info[i].strAdapterName, ADL_MAX_PATH));
+        m_adapterNames.emplace_back(info[i].strAdapterName, info[i].strAdapterName + nameLen);
     }
 
     free(info);
@@ -122,6 +125,7 @@ void Adl2Provider::Shutdown()
 
     if (m_module) { FreeLibrary(m_module); m_module = nullptr; }
     m_adapterIndices.clear();
+    m_adapterNames.clear();
 }
 
 uint32_t Adl2Provider::GetDeviceCount() const
@@ -168,5 +172,14 @@ void Adl2Provider::GatherSnapshot(uint32_t deviceIndex, Snapshot& snap)
 
 bool Adl2Provider::GetString(uint32_t metricId, uint32_t deviceIndex, std::wstring& out)
 {
-    return false;
+    if (deviceIndex >= m_adapterNames.size())
+        return false;
+
+    // ponytail: ADL2 is a legacy fallback with no test hardware; the vendored ADL headers
+    // expose no driver/VBIOS/PCI-id query, only the adapter name cached from AdapterInfo.
+    if (static_cast<GpuMetric>(metricId) != GpuMetric::Name)
+        return false;
+
+    out = m_adapterNames[deviceIndex];
+    return true;
 }

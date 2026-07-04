@@ -39,4 +39,10 @@ private:
     // Optional — absent on older drivers/architectures; must not fail Initialize()
     decltype(&nvmlDeviceGetFanSpeedRPM)          m_GetFanRPM       = nullptr;
     decltype(&nvmlDeviceGetFieldValues)          m_GetFieldValues  = nullptr;
+
+    // String info — optional, absent on older drivers; must not fail Initialize()
+    decltype(&nvmlDeviceGetName)                 m_GetName         = nullptr;
+    decltype(&nvmlSystemGetDriverVersion)        m_GetDriverVersion= nullptr;
+    decltype(&nvmlDeviceGetVbiosVersion)         m_GetVbios        = nullptr;
+    decltype(&nvmlDeviceGetPciInfo_v3)           m_GetPciInfo      = nullptr;
 };

@@ -24,7 +24,8 @@ private:
     HMODULE m_module = nullptr;
     void*   m_ctx    = nullptr; // ADL_CONTEXT_HANDLE
 
-    std::vector<int> m_adapterIndices; // active AMD adapter indices, one per physical GPU
+    std::vector<int>         m_adapterIndices; // active AMD adapter indices, one per physical GPU
+    std::vector<std::wstring> m_adapterNames;   // cached from AdapterInfo.strAdapterName, same order as m_adapterIndices
 
     // Function pointers (typed in .cpp via ADL headers; kept as void* here)
     void* m_Create      = nullptr;

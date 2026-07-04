@@ -3,6 +3,8 @@
 #include "Utils/Debug.h"
 
 #include <windows.h>
+#include <cstring>
+#include <cstdio>
 
 bool NvmlProvider::Initialize()
 {
@@ -73,6 +75,11 @@ bool NvmlProvider::LoadFunctions()
     // Optional — not every driver/architecture exports these; skip silently if missing
     m_GetFanRPM      = (decltype(m_GetFanRPM))GetProcAddress(m_module, "nvmlDeviceGetFanSpeedRPM");
     m_GetFieldValues = (decltype(m_GetFieldValues))GetProcAddress(m_module, "nvmlDeviceGetFieldValues");
+
+    m_GetName          = (decltype(m_GetName))GetProcAddress(m_module, "nvmlDeviceGetName");
+    m_GetDriverVersion = (decltype(m_GetDriverVersion))GetProcAddress(m_module, "nvmlSystemGetDriverVersion");
+    m_GetVbios         = (decltype(m_GetVbios))GetProcAddress(m_module, "nvmlDeviceGetVbiosVersion");
+    m_GetPciInfo       = (decltype(m_GetPciInfo))GetProcAddress(m_module, "nvmlDeviceGetPciInfo_v3");
 
     return true;
 }
@@ -178,5 +185,49 @@ void NvmlProvider::GatherSnapshot(uint32_t deviceIndex, Snapshot& snap)
 
 bool NvmlProvider::GetString(uint32_t metricId, uint32_t deviceIndex, std::wstring& out)
 {
-    return false;
+    if (deviceIndex >= m_devices.size())
+        return false;
+
+    nvmlDevice_t dev = m_devices[deviceIndex];
+    auto metric = static_cast<GpuMetric>(metricId);
+
+    char buf[256] = {};
+
+    switch (metric)
+    {
+    case GpuMetric::Name:
+        if (!m_GetName || m_GetName(dev, buf, sizeof(buf)) != NVML_SUCCESS)
+            return false;
+        break;
+
+    case GpuMetric::DriverVersion:
+        // System-wide, not per-GPU — fine for the common single-vendor-dGPU case
+        if (!m_GetDriverVersion || m_GetDriverVersion(buf, sizeof(buf)) != NVML_SUCCESS)
+            return false;
+        break;
+
+    case GpuMetric::VbiosVersion:
+        if (!m_GetVbios || m_GetVbios(dev, buf, sizeof(buf)) != NVML_SUCCESS)
+            return false;
+        break;
+
+    case GpuMetric::PciDeviceId:
+    {
+        if (!m_GetPciInfo)
+            return false;
+        nvmlPciInfo_t pci{};
+        if (m_GetPciInfo(dev, &pci) != NVML_SUCCESS)
+            return false;
+        wchar_t idBuf[16];
+        swprintf_s(idBuf, L"%04X:%04X", pci.pciDeviceId & 0xFFFFu, (pci.pciDeviceId >> 16) & 0xFFFFu);
+        out = idBuf;
+        return true;
+    }
+
+    default:
+        return false;
+    }
+
+    out = std::wstring(buf, buf + strnlen_s(buf, sizeof(buf)));
+    return true;
 }

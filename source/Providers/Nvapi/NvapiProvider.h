@@ -34,6 +34,12 @@ private:
     void* m_GetMemory = nullptr;
     void* m_GetTach   = nullptr; // optional — not present on fanless GPUs/older drivers
 
+    // String info
+    void* m_GetFullName    = nullptr;
+    void* m_GetDriverBranch= nullptr;
+    void* m_GetVbios       = nullptr;
+    void* m_GetPciIds      = nullptr;
+
     void*    m_gpus[64] = {};
     uint32_t m_count    = 0;
 };

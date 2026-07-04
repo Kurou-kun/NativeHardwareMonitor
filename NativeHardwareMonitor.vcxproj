@@ -62,7 +62,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>$(SolutionDir)sdk\rainmeter\API\x64\Rainmeter.lib;advapi32.lib;psapi.lib;iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(SolutionDir)sdk\rainmeter\API\x64\Rainmeter.lib;advapi32.lib;psapi.lib;iphlpapi.lib;dxgi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)NativeHardwareMonitor.dll</OutputFile>
     </Link>
     <Manifest>
@@ -89,7 +89,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>$(SolutionDir)sdk\rainmeter\API\x64\Rainmeter.lib;advapi32.lib;psapi.lib;iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(SolutionDir)sdk\rainmeter\API\x64\Rainmeter.lib;advapi32.lib;psapi.lib;iphlpapi.lib;dxgi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)NativeHardwareMonitor.dll</OutputFile>
     </Link>
     <Manifest>
@@ -120,6 +120,7 @@
     <ClCompile Include="source\Providers\Adlx\AdlxProvider.cpp" />
     <ClCompile Include="source\Providers\Adl2\Adl2Provider.cpp" />
     <ClCompile Include="source\Providers\WinApi\WinApiCpuProvider.cpp" />
+    <ClCompile Include="source\Providers\WinApi\WinApiGpuInfo.cpp" />
     <ClCompile Include="source\Providers\WinApi\WinApiMemoryProvider.cpp" />
     <ClCompile Include="source\Providers\WinApi\WinApiNetworkProvider.cpp" />
     <ClCompile Include="source\Providers\WinApi\WinApiStorageProvider.cpp" />
@@ -154,6 +155,7 @@
     <ClInclude Include="source\Providers\Adlx\AdlxProvider.h" />
     <ClInclude Include="source\Providers\Adl2\Adl2Provider.h" />
     <ClInclude Include="source\Providers\WinApi\WinApiCpuProvider.h" />
+    <ClInclude Include="source\Providers\WinApi\WinApiGpuInfo.h" />
     <ClInclude Include="source\Providers\WinApi\WinApiMemoryProvider.h" />
     <ClInclude Include="source\Providers\WinApi\WinApiNetworkProvider.h" />
     <ClInclude Include="source\Providers\WinApi\WinApiStorageProvider.h" />

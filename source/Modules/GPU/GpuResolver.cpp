@@ -5,7 +5,11 @@
 #include "Providers/Adlx/AdlxProvider.h"
 #include "Providers/Adl2/Adl2Provider.h"
 
+#include "Types/GpuMetric.h"
 #include "Utils/Debug.h"
+
+static constexpr uint32_t PCI_VENDOR_NVIDIA = 0x10DE;
+static constexpr uint32_t PCI_VENDOR_AMD    = 0x1002;
 
 bool GpuResolver::Initialize()
 {
@@ -124,5 +128,26 @@ bool GpuResolver::GetString(uint32_t metricId, uint32_t deviceIndex, std::wstrin
         return false;
 
     auto& dev = m_devices[deviceIndex];
-    return dev.provider->GetString(metricId, dev.localIndex, out);
+
+    if (dev.provider->GetString(metricId, dev.localIndex, out))
+        return true;
+
+    if (dev.backupProvider && dev.backupProvider->GetString(metricId, dev.backupLocalIndex, out))
+        return true;
+
+    // Windows-side last resort — only covers Name/DriverVersion, and only actually
+    // matters for the ADL2-only path (no other SDK gap it needs to plug today).
+    auto metric = static_cast<GpuMetric>(metricId);
+    if (metric != GpuMetric::Name && metric != GpuMetric::DriverVersion)
+        return false;
+
+    uint32_t pciVendorId = dev.vendor == GpuVendor::Nvidia ? PCI_VENDOR_NVIDIA
+                          : dev.vendor == GpuVendor::AMD   ? PCI_VENDOR_AMD
+                          : 0;
+    if (pciVendorId == 0)
+        return false;
+
+    return metric == GpuMetric::Name
+        ? m_winFallback.GetName(pciVendorId, dev.localIndex, out)
+        : m_winFallback.GetDriverVersion(pciVendorId, dev.localIndex, out);
 }

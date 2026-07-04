@@ -60,6 +60,10 @@ uint32_t ParseMetric(Category category, const std::wstring& input)
         if (str == L"voltage")            return static_cast<uint32_t>(GpuMetric::Voltage);
         if (str == L"intaketemperature")  return static_cast<uint32_t>(GpuMetric::IntakeTemperature);
         if (str == L"totalboardpower")    return static_cast<uint32_t>(GpuMetric::TotalBoardPower);
+        if (str == L"name")               return static_cast<uint32_t>(GpuMetric::Name);
+        if (str == L"driverversion")      return static_cast<uint32_t>(GpuMetric::DriverVersion);
+        if (str == L"vbiosversion")       return static_cast<uint32_t>(GpuMetric::VbiosVersion);
+        if (str == L"pcideviceid")        return static_cast<uint32_t>(GpuMetric::PciDeviceId);
         return static_cast<uint32_t>(GpuMetric::Unknown);
 
     case Category::CPU:

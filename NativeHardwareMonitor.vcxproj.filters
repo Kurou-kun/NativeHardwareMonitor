@@ -133,6 +133,9 @@
     <ClCompile Include="source\Providers\WinApi\WinApiCpuProvider.cpp">
       <Filter>Source Files\Providers\WinApi</Filter>
     </ClCompile>
+    <ClCompile Include="source\Providers\WinApi\WinApiGpuInfo.cpp">
+      <Filter>Source Files\Providers\WinApi</Filter>
+    </ClCompile>
     <ClCompile Include="source\Providers\WinApi\WinApiMemoryProvider.cpp">
       <Filter>Source Files\Providers\WinApi</Filter>
     </ClCompile>
@@ -236,6 +239,9 @@
     </ClInclude>
     <!-- Providers\WinApi -->
     <ClInclude Include="source\Providers\WinApi\WinApiCpuProvider.h">
+      <Filter>Header Files\Providers\WinApi</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Providers\WinApi\WinApiGpuInfo.h">
       <Filter>Header Files\Providers\WinApi</Filter>
     </ClInclude>
     <ClInclude Include="source\Providers\WinApi\WinApiMemoryProvider.h">
