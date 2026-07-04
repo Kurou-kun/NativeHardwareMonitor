@@ -88,9 +88,21 @@ uint32_t ParseMetric(Category category, const std::wstring& input)
     case Category::Network:
         if (str == L"download")      return static_cast<uint32_t>(NetworkMetric::Download);
         if (str == L"upload")        return static_cast<uint32_t>(NetworkMetric::Upload);
-        if (str == L"downloadtotal") return static_cast<uint32_t>(NetworkMetric::DownloadTotal);
-        if (str == L"uploadtotal")   return static_cast<uint32_t>(NetworkMetric::UploadTotal);
-        if (str == L"speed")         return static_cast<uint32_t>(NetworkMetric::Speed);
+        if (str == L"downloadtotal")    return static_cast<uint32_t>(NetworkMetric::DownloadTotal);
+        if (str == L"uploadtotal")      return static_cast<uint32_t>(NetworkMetric::UploadTotal);
+        if (str == L"speed")            return static_cast<uint32_t>(NetworkMetric::Speed);
+        if (str == L"receivelinkspeed") return static_cast<uint32_t>(NetworkMetric::ReceiveLinkSpeed);
+        if (str == L"packetsreceived")  return static_cast<uint32_t>(NetworkMetric::PacketsReceived);
+        if (str == L"packetssent")      return static_cast<uint32_t>(NetworkMetric::PacketsSent);
+        if (str == L"errorsreceived")   return static_cast<uint32_t>(NetworkMetric::ErrorsReceived);
+        if (str == L"errorssent")       return static_cast<uint32_t>(NetworkMetric::ErrorsSent);
+        if (str == L"discardsreceived") return static_cast<uint32_t>(NetworkMetric::DiscardsReceived);
+        if (str == L"discardssent")     return static_cast<uint32_t>(NetworkMetric::DiscardsSent);
+        if (str == L"mtu")              return static_cast<uint32_t>(NetworkMetric::Mtu);
+        if (str == L"alias")            return static_cast<uint32_t>(NetworkMetric::Alias);
+        if (str == L"description")      return static_cast<uint32_t>(NetworkMetric::Description);
+        if (str == L"physicaladdress")  return static_cast<uint32_t>(NetworkMetric::PhysicalAddress);
+        if (str == L"connectionstatus") return static_cast<uint32_t>(NetworkMetric::ConnectionStatus);
         return static_cast<uint32_t>(NetworkMetric::Unknown);
 
     case Category::Storage:
