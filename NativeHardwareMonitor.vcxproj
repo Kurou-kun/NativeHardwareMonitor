@@ -166,6 +166,7 @@
     <ClInclude Include="source\Types\MemoryMetric.h" />
     <ClInclude Include="source\Types\NetworkMetric.h" />
     <ClInclude Include="source\Types\StorageMetric.h" />
+    <ClInclude Include="source\Types\PingMetric.h" />
     <ClInclude Include="source\Types\MetricParser.h" />
     <ClInclude Include="source\Utils\Debug.h" />
     <ClInclude Include="source\Utils\TimeUtils.h" />

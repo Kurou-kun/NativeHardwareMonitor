@@ -5,6 +5,7 @@
 #include "Types/MemoryMetric.h"
 #include "Types/NetworkMetric.h"
 #include "Types/StorageMetric.h"
+#include "Types/PingMetric.h"
 
 #include <algorithm>
 #include <cwctype>
@@ -34,6 +35,7 @@ Category ParseCategory(const std::wstring& input)
     if (str == L"memory")  return Category::Memory;
     if (str == L"network") return Category::Network;
     if (str == L"storage") return Category::Storage;
+    if (str == L"ping")    return Category::Ping;
 
     return Category::Unknown;
 }
@@ -104,6 +106,11 @@ uint32_t ParseMetric(Category category, const std::wstring& input)
         if (str == L"physicaladdress")  return static_cast<uint32_t>(NetworkMetric::PhysicalAddress);
         if (str == L"connectionstatus") return static_cast<uint32_t>(NetworkMetric::ConnectionStatus);
         return static_cast<uint32_t>(NetworkMetric::Unknown);
+
+    case Category::Ping:
+        if (str == L"rtt")        return static_cast<uint32_t>(PingMetric::Rtt);
+        if (str == L"packetloss") return static_cast<uint32_t>(PingMetric::PacketLoss);
+        return static_cast<uint32_t>(PingMetric::Unknown);
 
     case Category::Storage:
         if (str == L"readbytes")   return static_cast<uint32_t>(StorageMetric::ReadBytes);

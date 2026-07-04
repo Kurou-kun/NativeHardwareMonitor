@@ -276,6 +276,9 @@
     <ClInclude Include="source\Types\StorageMetric.h">
       <Filter>Header Files\Types</Filter>
     </ClInclude>
+    <ClInclude Include="source\Types\PingMetric.h">
+      <Filter>Header Files\Types</Filter>
+    </ClInclude>
     <ClInclude Include="source\Types\MetricParser.h">
       <Filter>Header Files\Types</Filter>
     </ClInclude>

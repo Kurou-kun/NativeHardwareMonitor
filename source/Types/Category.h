@@ -7,5 +7,6 @@ enum class Category
     Memory,
     Network,
     Storage,
+    Ping,
     Unknown
 };
