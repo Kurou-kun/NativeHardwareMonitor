@@ -9,5 +9,12 @@ enum class StorageMetric : uint32_t
     UsedSpace,
     FreeSpace,
     TotalSpace,
+    QueueLength,
+    BusyPercent,
+    ReadsPerSec,
+    WritesPerSec,
+    VolumeLabel,
+    FileSystem,
+    DriveType,
     Unknown
 };

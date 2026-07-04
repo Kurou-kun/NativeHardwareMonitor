@@ -25,16 +25,31 @@ private:
         double   readSpeed  = 0, writeSpeed = 0;
         uint64_t readBytes  = 0, writeBytes = 0;
         uint64_t freeSpace  = 0, totalSpace = 0;
+        double   queueLength = 0, busyPercent = 0;
+        double   readsPerSec = 0, writesPerSec = 0;
+
+        // Read once (rarely changes at runtime), not refreshed every tick.
+        bool         identityRead = false;
+        std::wstring volumeLabel;
+        std::wstring fileSystem;
+        std::wstring driveType;
     };
 
-    PDH_HQUERY   m_query        = nullptr;
-    PDH_HCOUNTER m_readCounter  = nullptr;
-    PDH_HCOUNTER m_writeCounter = nullptr;
+    PDH_HQUERY   m_query             = nullptr;
+    PDH_HCOUNTER m_readCounter       = nullptr;
+    PDH_HCOUNTER m_writeCounter      = nullptr;
+    PDH_HCOUNTER m_queueCounter      = nullptr;
+    PDH_HCOUNTER m_idleCounter       = nullptr;
+    PDH_HCOUNTER m_readsPerSecCounter  = nullptr;
+    PDH_HCOUNTER m_writesPerSecCounter = nullptr;
 
     std::vector<Device> m_devices;
     ULONGLONG           m_prevTime = 0;
     double              m_elapsed  = 1.0;
 
     void UpdateSpace(Device& dev);
+    void UpdateIdentity(Device& dev);
     void EnsureDevicesDiscovered(DWORD itemCount, PDH_FMT_COUNTERVALUE_ITEM* items);
+    static bool FindCounterValue(PDH_FMT_COUNTERVALUE_ITEM* items, DWORD count,
+                                  const std::wstring& instance, double& out);
 };

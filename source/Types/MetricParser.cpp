@@ -120,6 +120,13 @@ uint32_t ParseMetric(Category category, const std::wstring& input)
         if (str == L"usedspace")   return static_cast<uint32_t>(StorageMetric::UsedSpace);
         if (str == L"freespace")   return static_cast<uint32_t>(StorageMetric::FreeSpace);
         if (str == L"totalspace")  return static_cast<uint32_t>(StorageMetric::TotalSpace);
+        if (str == L"queuelength")  return static_cast<uint32_t>(StorageMetric::QueueLength);
+        if (str == L"busypercent") return static_cast<uint32_t>(StorageMetric::BusyPercent);
+        if (str == L"readspersec") return static_cast<uint32_t>(StorageMetric::ReadsPerSec);
+        if (str == L"writespersec") return static_cast<uint32_t>(StorageMetric::WritesPerSec);
+        if (str == L"volumelabel") return static_cast<uint32_t>(StorageMetric::VolumeLabel);
+        if (str == L"filesystem") return static_cast<uint32_t>(StorageMetric::FileSystem);
+        if (str == L"drivetype")  return static_cast<uint32_t>(StorageMetric::DriveType);
         return static_cast<uint32_t>(StorageMetric::Unknown);
 
     default:
