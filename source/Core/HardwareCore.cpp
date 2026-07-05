@@ -51,6 +51,10 @@ uint32_t HardwareCore::RegisterMeasure(
         ModuleState* state = GetModuleState(category);
         if (state && state->module)
         {
+            // ResolveTarget grows the module's snapshot vector — must not race
+            // a PollerThread that's mid-GatherAll on this module.
+            std::lock_guard<std::mutex> lock(state->mutex);
+
             if (!state->initialized)
                 state->initialized = state->module->Initialize();
 

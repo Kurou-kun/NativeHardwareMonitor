@@ -83,8 +83,8 @@ void AdlxProvider::GatherSnapshot(uint32_t deviceIndex, Snapshot& snap)
     if (metrics->GPUUsage(&v)              == ADLX_OK) snap.Set(static_cast<uint32_t>(GpuMetric::Usage),              v);
     if (metrics->GPUTemperature(&v)        == ADLX_OK) snap.Set(static_cast<uint32_t>(GpuMetric::Temperature),        v);
     if (metrics->GPUHotspotTemperature(&v) == ADLX_OK) snap.Set(static_cast<uint32_t>(GpuMetric::HotspotTemperature), v);
-    if (metrics->GPUClockSpeed(&i)         == ADLX_OK) snap.Set(static_cast<uint32_t>(GpuMetric::CoreClock),          i);
-    if (metrics->GPUVRAMClockSpeed(&i)     == ADLX_OK) snap.Set(static_cast<uint32_t>(GpuMetric::MemoryClock),        i);
+    if (metrics->GPUClockSpeed(&i)         == ADLX_OK) snap.Set(static_cast<uint32_t>(GpuMetric::CoreClock),          i * 1000000.0); // MHz → Hz, matches NVML/NVAPI/ADL2
+    if (metrics->GPUVRAMClockSpeed(&i)     == ADLX_OK) snap.Set(static_cast<uint32_t>(GpuMetric::MemoryClock),        i * 1000000.0);
     if (metrics->GPUPower(&v)              == ADLX_OK) snap.Set(static_cast<uint32_t>(GpuMetric::Power),              v);
     if (metrics->GPUFanSpeed(&i)           == ADLX_OK) snap.Set(static_cast<uint32_t>(GpuMetric::FanSpeed),           i);
     if (metrics->GPUTotalBoardPower(&v)    == ADLX_OK) snap.Set(static_cast<uint32_t>(GpuMetric::TotalBoardPower),   v);

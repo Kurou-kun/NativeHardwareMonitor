@@ -74,44 +74,65 @@ bool WinApiPingProvider::GetString(uint32_t, uint32_t, std::wstring&)
     return false;
 }
 
+static bool ResolveIPv4(const std::wstring& host, IPAddr& out)
+{
+    ADDRINFOW hints{};
+    hints.ai_family = AF_INET;
+
+    PADDRINFOW result = nullptr;
+    if (GetAddrInfoW(host.c_str(), nullptr, &hints, &result) != 0 || !result)
+        return false;
+
+    out = reinterpret_cast<sockaddr_in*>(result->ai_addr)->sin_addr.s_addr;
+    FreeAddrInfoW(result);
+    return true;
+}
+
 void WinApiPingProvider::PingOnce(Target* target)
 {
+    // Retry DNS each poll until it succeeds — registration can run before the
+    // network is up (skin loads at boot). Until resolved, each poll records a
+    // miss below so the target reads as down (rtt 9999, loss → 100) instead of
+    // a perfect 0 ms connection.
     if (!target->resolved)
-        return;
-
-    if (!target->icmpHandle)
-    {
-        target->icmpHandle = IcmpCreateFile();
-        if (target->icmpHandle == INVALID_HANDLE_VALUE)
-        {
-            target->icmpHandle = nullptr;
-            return;
-        }
-    }
-
-    char sendData[32] = "NativeHardwareMonitor ping";
-    BYTE replyBuffer[sizeof(ICMP_ECHO_REPLY) + sizeof(sendData) + 8];
-
-    DWORD timeout = std::min(target->intervalMs, 1000u);
-
-    DWORD result = IcmpSendEcho(
-        target->icmpHandle,
-        target->address,
-        sendData, static_cast<WORD>(sizeof(sendData)),
-        nullptr,
-        replyBuffer, sizeof(replyBuffer),
-        timeout);
+        target->resolved = ResolveIPv4(target->host, target->address);
 
     bool   success = false;
     double rttMs   = 9999.0;
 
-    if (result != 0)
+    if (target->resolved)
     {
-        auto* reply = reinterpret_cast<PICMP_ECHO_REPLY>(replyBuffer);
-        if (reply->Status == IP_SUCCESS)
+        if (!target->icmpHandle)
         {
-            success = true;
-            rttMs   = static_cast<double>(reply->RoundTripTime);
+            target->icmpHandle = IcmpCreateFile();
+            if (target->icmpHandle == INVALID_HANDLE_VALUE)
+                target->icmpHandle = nullptr;
+        }
+
+        if (target->icmpHandle)
+        {
+            char sendData[32] = "NativeHardwareMonitor ping";
+            BYTE replyBuffer[sizeof(ICMP_ECHO_REPLY) + sizeof(sendData) + 8];
+
+            DWORD timeout = std::min(target->intervalMs, 1000u);
+
+            DWORD result = IcmpSendEcho(
+                target->icmpHandle,
+                target->address,
+                sendData, static_cast<WORD>(sizeof(sendData)),
+                nullptr,
+                replyBuffer, sizeof(replyBuffer),
+                timeout);
+
+            if (result != 0)
+            {
+                auto* reply = reinterpret_cast<PICMP_ECHO_REPLY>(replyBuffer);
+                if (reply->Status == IP_SUCCESS)
+                {
+                    success = true;
+                    rttMs   = static_cast<double>(reply->RoundTripTime);
+                }
+            }
         }
     }
 
@@ -156,21 +177,9 @@ uint32_t WinApiPingProvider::ResolveTarget(const std::wstring& host, uint32_t in
     target->host       = key;
     target->intervalMs = interval;
 
-    ADDRINFOW hints{};
-    hints.ai_family = AF_INET;
-
-    PADDRINFOW result = nullptr;
-    if (GetAddrInfoW(key.c_str(), nullptr, &hints, &result) == 0 && result)
-    {
-        auto* sin = reinterpret_cast<sockaddr_in*>(result->ai_addr);
-        target->address  = sin->sin_addr.s_addr;
-        target->resolved = true;
-        FreeAddrInfoW(result);
-    }
-    else
-    {
-        LOG_STARTUP(L"WinApiPingProvider: failed to resolve host '%s'", key.c_str());
-    }
+    target->resolved = ResolveIPv4(key, target->address);
+    if (!target->resolved)
+        LOG_STARTUP(L"WinApiPingProvider: failed to resolve host '%s' (will retry each poll)", key.c_str());
 
     uint32_t index = static_cast<uint32_t>(m_targets.size());
 

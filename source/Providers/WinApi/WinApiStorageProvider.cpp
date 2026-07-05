@@ -105,16 +105,18 @@ void WinApiStorageProvider::GatherSnapshot(uint32_t deviceIndex, Snapshot& snap)
 {
     if (!m_query) return;
 
-    // Compute elapsed once per cycle (deviceIndex 0) so byte totals are time-correct
+    // Once per cycle (deviceIndex 0): elapsed for byte totals, and the PDH collect.
+    // PDH rates are computed between the last two collects — collecting per device
+    // would give every disk after the first a near-zero interval and garbage rates.
     if (deviceIndex == 0)
     {
         ULONGLONG now = GetTickCount64();
         double dt     = (now - m_prevTime) / 1000.0;
         m_elapsed     = dt > 0.0 ? dt : 1.0;
         m_prevTime    = now;
-    }
 
-    PdhCollectQueryData(m_query);
+        PdhCollectQueryData(m_query);
+    }
 
     std::vector<BYTE> buf;
     PDH_FMT_COUNTERVALUE_ITEM* items = nullptr;
