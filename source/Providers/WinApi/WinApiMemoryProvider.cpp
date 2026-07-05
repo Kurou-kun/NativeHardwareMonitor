@@ -18,6 +18,7 @@ bool WinApiMemoryProvider::Initialize()
     }
 
     InitWmi(); // best-effort — Swap device just reports unsupported if this fails
+    ReadPhysicalMemory(); // best-effort RAM identity; stays unsupported if WMI is unavailable
 
     LOG_STARTUP(L"WinApiMemoryProvider: initialized");
     return true;
@@ -128,6 +129,10 @@ void WinApiMemoryProvider::GatherSnapshot(uint32_t deviceIndex, Snapshot& snap)
         if (GetPerformanceInfo(&perf, sizeof(perf)))
             snap.Set(static_cast<uint32_t>(MemoryMetric::Cached),
                      static_cast<double>(perf.SystemCache) * perf.PageSize);
+
+        // Static RAM identity (numeric parts) — physical-RAM properties, device 0 only.
+        if (m_ramSpeed > 0.0)    snap.Set(static_cast<uint32_t>(MemoryMetric::Speed),       m_ramSpeed);
+        if (m_moduleCount > 0)   snap.Set(static_cast<uint32_t>(MemoryMetric::ModuleCount), m_moduleCount);
     }
     else if (deviceIndex == 1)
     {
@@ -162,5 +167,97 @@ void WinApiMemoryProvider::GatherSnapshot(uint32_t deviceIndex, Snapshot& snap)
 
 bool WinApiMemoryProvider::GetString(uint32_t metricId, uint32_t deviceIndex, std::wstring& out)
 {
-    return false;
+    if (deviceIndex != 0)
+        return false;
+
+    switch (static_cast<MemoryMetric>(metricId))
+    {
+    case MemoryMetric::MemoryType:   if (m_memoryType.empty())   return false; out = m_memoryType;   return true;
+    case MemoryMetric::Manufacturer: if (m_manufacturer.empty()) return false; out = m_manufacturer; return true;
+    case MemoryMetric::PartNumber:   if (m_partNumber.empty())   return false; out = m_partNumber;   return true;
+    default:                         return false;
+    }
+}
+
+static const wchar_t* SmbiosMemoryTypeToString(long type)
+{
+    // SMBIOS spec 7.18.2 memory type values.
+    switch (type)
+    {
+    case 0x12: return L"DDR";
+    case 0x13: return L"DDR2";
+    case 0x18: return L"DDR3";
+    case 0x1A: return L"DDR4";
+    case 0x1E: return L"LPDDR4";
+    case 0x22: return L"DDR5";
+    case 0x23: return L"LPDDR5";
+    default:   return L"";
+    }
+}
+
+static std::wstring TrimBstr(const wchar_t* s)
+{
+    if (!s) return L"";
+    std::wstring v = s;
+    size_t start = v.find_first_not_of(L' ');
+    size_t end   = v.find_last_not_of(L' ');
+    return start == std::wstring::npos ? L"" : v.substr(start, end - start + 1);
+}
+
+// Win32_PhysicalMemory: static RAM hardware identity, read once. Modules are near
+// always identical, so report the first instance's fields + a module count.
+void WinApiMemoryProvider::ReadPhysicalMemory()
+{
+    if (!m_wmiServices)
+        return;
+
+    IEnumWbemClassObject* enumerator = nullptr;
+    HRESULT hr = m_wmiServices->ExecQuery(_bstr_t(L"WQL"),
+        _bstr_t(L"SELECT ConfiguredClockSpeed, Speed, SMBIOSMemoryType, Manufacturer, PartNumber FROM Win32_PhysicalMemory"),
+        WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY, nullptr, &enumerator);
+
+    if (FAILED(hr) || !enumerator)
+        return;
+
+    IWbemClassObject* obj = nullptr;
+    ULONG returned = 0;
+    while (enumerator->Next(WBEM_INFINITE, 1, &obj, &returned) == S_OK && obj)
+    {
+        ++m_moduleCount;
+
+        if (m_moduleCount == 1) // take identity from the first module
+        {
+            auto getU32 = [&](const wchar_t* name) -> long {
+                VARIANT v; VariantInit(&v);
+                long out = 0;
+                if (SUCCEEDED(obj->Get(name, 0, &v, nullptr, nullptr)))
+                {
+                    if      (v.vt == VT_I4)  out = v.lVal;
+                    else if (v.vt == VT_UI4) out = static_cast<long>(v.ulVal);
+                }
+                VariantClear(&v);
+                return out;
+            };
+            auto getStr = [&](const wchar_t* name) -> std::wstring {
+                VARIANT v; VariantInit(&v);
+                std::wstring out;
+                if (SUCCEEDED(obj->Get(name, 0, &v, nullptr, nullptr)) && v.vt == VT_BSTR)
+                    out = TrimBstr(v.bstrVal);
+                VariantClear(&v);
+                return out;
+            };
+
+            long configured = getU32(L"ConfiguredClockSpeed");
+            long rated       = getU32(L"Speed");
+            m_ramSpeed       = static_cast<double>(configured > 0 ? configured : rated); // MT/s
+
+            m_memoryType   = SmbiosMemoryTypeToString(getU32(L"SMBIOSMemoryType"));
+            m_manufacturer = getStr(L"Manufacturer");
+            m_partNumber   = getStr(L"PartNumber");
+        }
+
+        obj->Release();
+        obj = nullptr;
+    }
+    enumerator->Release();
 }

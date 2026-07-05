@@ -5,6 +5,7 @@
 
 #include <windows.h>
 #include <wbemidl.h>
+#include <string>
 
 class WinApiMemoryProvider : public IProvider
 {
@@ -25,6 +26,14 @@ private:
     IWbemServices* m_wmiServices    = nullptr;
     bool           m_comInitialized = false;
 
+    // Static RAM hardware identity, read once at Initialize via Win32_PhysicalMemory.
+    double       m_ramSpeed    = 0.0; // configured (EXPO/XMP) MT/s, falls back to rated
+    uint32_t     m_moduleCount = 0;
+    std::wstring m_memoryType;   // DDR4 / DDR5 / ...
+    std::wstring m_manufacturer;
+    std::wstring m_partNumber;
+
     void InitWmi();
+    void ReadPhysicalMemory(); // RAM identity — one WMI query at startup, reuses m_wmiServices
     bool QueryPageFileUsage(double& usedBytes, double& totalBytes);
 };

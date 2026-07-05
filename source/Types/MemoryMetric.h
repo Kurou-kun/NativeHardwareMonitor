@@ -7,5 +7,10 @@ enum class MemoryMetric : uint32_t
     Total,
     UsedPercent,
     Cached,
+    Speed,
+    MemoryType,
+    Manufacturer,
+    PartNumber,
+    ModuleCount,
     Unknown
 };

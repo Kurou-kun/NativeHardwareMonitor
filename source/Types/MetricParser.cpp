@@ -91,6 +91,11 @@ uint32_t ParseMetric(Category category, const std::wstring& input)
         if (str == L"total")       return static_cast<uint32_t>(MemoryMetric::Total);
         if (str == L"usedpercent") return static_cast<uint32_t>(MemoryMetric::UsedPercent);
         if (str == L"cached")      return static_cast<uint32_t>(MemoryMetric::Cached);
+        if (str == L"speed")        return static_cast<uint32_t>(MemoryMetric::Speed);
+        if (str == L"memorytype")   return static_cast<uint32_t>(MemoryMetric::MemoryType);
+        if (str == L"manufacturer") return static_cast<uint32_t>(MemoryMetric::Manufacturer);
+        if (str == L"partnumber")   return static_cast<uint32_t>(MemoryMetric::PartNumber);
+        if (str == L"modulecount")  return static_cast<uint32_t>(MemoryMetric::ModuleCount);
         return static_cast<uint32_t>(MemoryMetric::Unknown);
 
     case Category::Network:
