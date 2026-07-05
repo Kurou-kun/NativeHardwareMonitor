@@ -66,6 +66,13 @@ uint32_t ParseMetric(Category category, const std::wstring& input)
         if (str == L"driverversion")      return static_cast<uint32_t>(GpuMetric::DriverVersion);
         if (str == L"vbiosversion")       return static_cast<uint32_t>(GpuMetric::VbiosVersion);
         if (str == L"pcideviceid")        return static_cast<uint32_t>(GpuMetric::PciDeviceId);
+        if (str == L"maxcoreclock")       return static_cast<uint32_t>(GpuMetric::MaxCoreClock);
+        if (str == L"pcielinkgen")        return static_cast<uint32_t>(GpuMetric::PcieLinkGen);
+        if (str == L"pcielinkwidth")      return static_cast<uint32_t>(GpuMetric::PcieLinkWidth);
+        if (str == L"encoderusage")       return static_cast<uint32_t>(GpuMetric::EncoderUsage);
+        if (str == L"decoderusage")       return static_cast<uint32_t>(GpuMetric::DecoderUsage);
+        if (str == L"perfstate")          return static_cast<uint32_t>(GpuMetric::PerfState);
+        if (str == L"throttlereasons")    return static_cast<uint32_t>(GpuMetric::ThrottleReasons);
         return static_cast<uint32_t>(GpuMetric::Unknown);
 
     case Category::CPU:

@@ -75,6 +75,13 @@ bool NvmlProvider::LoadFunctions()
     // Optional — not every driver/architecture exports these; skip silently if missing
     m_GetFanRPM      = (decltype(m_GetFanRPM))GetProcAddress(m_module, "nvmlDeviceGetFanSpeedRPM");
     m_GetFieldValues = (decltype(m_GetFieldValues))GetProcAddress(m_module, "nvmlDeviceGetFieldValues");
+    m_GetMaxClock    = (decltype(m_GetMaxClock))GetProcAddress(m_module, "nvmlDeviceGetMaxClockInfo");
+    m_GetPcieGen     = (decltype(m_GetPcieGen))GetProcAddress(m_module, "nvmlDeviceGetCurrPcieLinkGeneration");
+    m_GetPcieWidth   = (decltype(m_GetPcieWidth))GetProcAddress(m_module, "nvmlDeviceGetCurrPcieLinkWidth");
+    m_GetEncoderUtil = (decltype(m_GetEncoderUtil))GetProcAddress(m_module, "nvmlDeviceGetEncoderUtilization");
+    m_GetDecoderUtil = (decltype(m_GetDecoderUtil))GetProcAddress(m_module, "nvmlDeviceGetDecoderUtilization");
+    m_GetPState      = (decltype(m_GetPState))GetProcAddress(m_module, "nvmlDeviceGetPerformanceState");
+    m_GetThrottle    = (GetThrottle_t)GetProcAddress(m_module, "nvmlDeviceGetCurrentClocksThrottleReasons");
 
     m_GetName          = (decltype(m_GetName))GetProcAddress(m_module, "nvmlDeviceGetName");
     m_GetDriverVersion = (decltype(m_GetDriverVersion))GetProcAddress(m_module, "nvmlSystemGetDriverVersion");
@@ -181,6 +188,50 @@ void NvmlProvider::GatherSnapshot(uint32_t deviceIndex, Snapshot& snap)
         if (m_GetFieldValues(dev, 1, &field) == NVML_SUCCESS && field.nvmlReturn == NVML_SUCCESS)
             snap.Set(static_cast<uint32_t>(GpuMetric::MemoryTemperature), static_cast<double>(field.value.uiVal));
     }
+
+    // Max core clock (MHz → Hz)
+    if (m_GetMaxClock)
+    {
+        unsigned int clock = 0;
+        if (m_GetMaxClock(dev, NVML_CLOCK_GRAPHICS, &clock) == NVML_SUCCESS)
+            snap.Set(static_cast<uint32_t>(GpuMetric::MaxCoreClock), clock * 1000000.0);
+    }
+
+    // PCIe link (current negotiated generation + width)
+    if (m_GetPcieGen)
+    {
+        unsigned int gen = 0;
+        if (m_GetPcieGen(dev, &gen) == NVML_SUCCESS)
+            snap.Set(static_cast<uint32_t>(GpuMetric::PcieLinkGen), gen);
+    }
+    if (m_GetPcieWidth)
+    {
+        unsigned int width = 0;
+        if (m_GetPcieWidth(dev, &width) == NVML_SUCCESS)
+            snap.Set(static_cast<uint32_t>(GpuMetric::PcieLinkWidth), width);
+    }
+
+    // NVENC / NVDEC utilization (%). Second out-param is the sampling period, unused.
+    if (m_GetEncoderUtil)
+    {
+        unsigned int util = 0, period = 0;
+        if (m_GetEncoderUtil(dev, &util, &period) == NVML_SUCCESS)
+            snap.Set(static_cast<uint32_t>(GpuMetric::EncoderUsage), util);
+    }
+    if (m_GetDecoderUtil)
+    {
+        unsigned int util = 0, period = 0;
+        if (m_GetDecoderUtil(dev, &util, &period) == NVML_SUCCESS)
+            snap.Set(static_cast<uint32_t>(GpuMetric::DecoderUsage), util);
+    }
+
+    // Performance state P0..P15 (P0 = max perf). 32 = unknown → leave unsupported.
+    if (m_GetPState)
+    {
+        nvmlPstates_t pstate = NVML_PSTATE_UNKNOWN;
+        if (m_GetPState(dev, &pstate) == NVML_SUCCESS && pstate != NVML_PSTATE_UNKNOWN)
+            snap.Set(static_cast<uint32_t>(GpuMetric::PerfState), static_cast<double>(pstate));
+    }
 }
 
 bool NvmlProvider::GetString(uint32_t metricId, uint32_t deviceIndex, std::wstring& out)
@@ -221,6 +272,43 @@ bool NvmlProvider::GetString(uint32_t metricId, uint32_t deviceIndex, std::wstri
         wchar_t idBuf[16];
         swprintf_s(idBuf, L"%04X:%04X", pci.pciDeviceId & 0xFFFFu, (pci.pciDeviceId >> 16) & 0xFFFFu);
         out = idBuf;
+        return true;
+    }
+
+    case GpuMetric::ThrottleReasons:
+    {
+        if (!m_GetThrottle)
+            return false;
+        unsigned long long reasons = 0;
+        if (m_GetThrottle(dev, &reasons) != NVML_SUCCESS)
+            return false;
+
+        // GpuIdle alone isn't really "throttling" — report it as the idle state.
+        if (reasons == nvmlClocksEventReasonNone || reasons == nvmlClocksEventReasonGpuIdle)
+        {
+            out = (reasons == nvmlClocksEventReasonGpuIdle) ? L"Idle" : L"None";
+            return true;
+        }
+
+        struct { unsigned long long bit; const wchar_t* label; } map[] = {
+            { nvmlClocksEventReasonSwPowerCap,           L"Power Limit" },
+            { nvmlClocksThrottleReasonHwPowerBrakeSlowdown, L"Power Brake" },
+            { nvmlClocksThrottleReasonHwThermalSlowdown, L"Thermal (HW)" },
+            { nvmlClocksEventReasonSwThermalSlowdown,    L"Thermal (SW)" },
+            { nvmlClocksThrottleReasonHwSlowdown,        L"HW Slowdown" },
+            { nvmlClocksEventReasonApplicationsClocksSetting, L"App Clock Limit" },
+            { nvmlClocksEventReasonDisplayClockSetting,  L"Display Clock" },
+            { nvmlClocksEventReasonSyncBoost,            L"Sync Boost" },
+        };
+
+        for (auto& m : map)
+            if (reasons & m.bit)
+            {
+                if (!out.empty()) out += L", ";
+                out += m.label;
+            }
+
+        if (out.empty()) out = L"None"; // unmapped reason bits only
         return true;
     }
 

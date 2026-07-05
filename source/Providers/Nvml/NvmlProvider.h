@@ -39,6 +39,15 @@ private:
     // Optional — absent on older drivers/architectures; must not fail Initialize()
     decltype(&nvmlDeviceGetFanSpeedRPM)          m_GetFanRPM       = nullptr;
     decltype(&nvmlDeviceGetFieldValues)          m_GetFieldValues  = nullptr;
+    decltype(&nvmlDeviceGetMaxClockInfo)         m_GetMaxClock     = nullptr;
+    decltype(&nvmlDeviceGetCurrPcieLinkGeneration) m_GetPcieGen    = nullptr;
+    decltype(&nvmlDeviceGetCurrPcieLinkWidth)    m_GetPcieWidth    = nullptr;
+    decltype(&nvmlDeviceGetEncoderUtilization)   m_GetEncoderUtil  = nullptr;
+    decltype(&nvmlDeviceGetDecoderUtilization)   m_GetDecoderUtil  = nullptr;
+    decltype(&nvmlDeviceGetPerformanceState)     m_GetPState       = nullptr;
+    // Deprecated in NVML 13 but still exported; manual typedef avoids the decltype deprecation warning.
+    typedef nvmlReturn_t (*GetThrottle_t)(nvmlDevice_t, unsigned long long*);
+    GetThrottle_t                                m_GetThrottle     = nullptr;
 
     // String info — optional, absent on older drivers; must not fail Initialize()
     decltype(&nvmlDeviceGetName)                 m_GetName         = nullptr;

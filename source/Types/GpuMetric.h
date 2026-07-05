@@ -17,12 +17,19 @@ enum class GpuMetric : uint32_t
     Voltage,
     IntakeTemperature,
     TotalBoardPower,
+    MaxCoreClock,
+    PcieLinkGen,
+    PcieLinkWidth,
+    EncoderUsage,
+    DecoderUsage,
+    PerfState,
 
     // String metrics — fetched via GetString(), not GatherSnapshot()
     Name,
     DriverVersion,
     VbiosVersion,
     PciDeviceId,
+    ThrottleReasons,
 
     Unknown
 };
