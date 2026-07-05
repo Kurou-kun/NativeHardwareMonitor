@@ -55,9 +55,6 @@
     <Filter Include="Source Files\Providers\WinApi">
       <UniqueIdentifier>{a1b2c3d4-0001-0001-0001-000000000014}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Providers\Dummy">
-      <UniqueIdentifier>{a1b2c3d4-0001-0001-0001-000000000015}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\Types">
       <UniqueIdentifier>{a1b2c3d4-0001-0001-0001-000000000016}</UniqueIdentifier>
     </Filter>
@@ -166,9 +163,6 @@
     <ClCompile Include="source\Utils\Debug.cpp">
       <Filter>Source Files\Utils</Filter>
     </ClCompile>
-    <ClCompile Include="source\Utils\TimeUtils.cpp">
-      <Filter>Source Files\Utils</Filter>
-    </ClCompile>
     <!-- SDK -->
     <ClCompile Include="sdk\adlx\SDK\ADLXHelper\Windows\Cpp\ADLXHelper.cpp">
       <Filter>Source Files\SDK</Filter>
@@ -273,10 +267,6 @@
     <ClInclude Include="source\Providers\WinApi\WinApiStorageProvider.h">
       <Filter>Header Files\Providers\WinApi</Filter>
     </ClInclude>
-    <!-- Providers\Dummy -->
-    <ClInclude Include="source\Providers\Dummy\DummyProvider.h">
-      <Filter>Header Files\Providers\Dummy</Filter>
-    </ClInclude>
     <!-- Types -->
     <ClInclude Include="source\Types\Category.h">
       <Filter>Header Files\Types</Filter>
@@ -307,9 +297,6 @@
     </ClInclude>
     <!-- Utils -->
     <ClInclude Include="source\Utils\Debug.h">
-      <Filter>Header Files\Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="source\Utils\TimeUtils.h">
       <Filter>Header Files\Utils</Filter>
     </ClInclude>
     <!-- Root -->
@@ -370,9 +357,6 @@
     </Filter>
     <Filter Include="Header Files\Providers\WinApi">
       <UniqueIdentifier>{b1b2c3d4-0001-0001-0001-000000000014}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Providers\Dummy">
-      <UniqueIdentifier>{b1b2c3d4-0001-0001-0001-000000000015}</UniqueIdentifier>
     </Filter>
     <Filter Include="Header Files\Types">
       <UniqueIdentifier>{b1b2c3d4-0001-0001-0001-000000000016}</UniqueIdentifier>

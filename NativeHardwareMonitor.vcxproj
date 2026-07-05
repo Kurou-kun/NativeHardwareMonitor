@@ -129,7 +129,6 @@
     <ClCompile Include="source\Providers\WinApi\WinApiStorageProvider.cpp" />
     <ClCompile Include="source\Types\MetricParser.cpp" />
     <ClCompile Include="source\Utils\Debug.cpp" />
-    <ClCompile Include="source\Utils\TimeUtils.cpp" />
     <!-- SDK -->
     <ClCompile Include="sdk\adlx\SDK\ADLXHelper\Windows\Cpp\ADLXHelper.cpp" />
     <ClCompile Include="sdk\adlx\SDK\Platform\Windows\WinAPIs.cpp" />
@@ -164,7 +163,6 @@
     <ClInclude Include="source\Providers\WinApi\WinApiNetworkProvider.h" />
     <ClInclude Include="source\Providers\WinApi\WinApiPingProvider.h" />
     <ClInclude Include="source\Providers\WinApi\WinApiStorageProvider.h" />
-    <ClInclude Include="source\Providers\Dummy\DummyProvider.h" />
     <ClInclude Include="source\Types\Category.h" />
     <ClInclude Include="source\Types\Snapshot.h" />
     <ClInclude Include="source\Types\GpuMetric.h" />
@@ -175,7 +173,6 @@
     <ClInclude Include="source\Types\PingMetric.h" />
     <ClInclude Include="source\Types\MetricParser.h" />
     <ClInclude Include="source\Utils\Debug.h" />
-    <ClInclude Include="source\Utils\TimeUtils.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
 
