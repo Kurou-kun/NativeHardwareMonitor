@@ -67,3 +67,13 @@ CPU temperature and true per-core voltage require SMU/MSR access through a kerne
 driver. This project deliberately ships **no driver and no service** — those
 metrics are out of scope, and anything they'd expose returns `-1`. Everything
 here is readable from user space.
+
+## License
+
+**GNU General Public License v2 or later** — see [`LICENSE`](LICENSE).
+
+This is not a free choice: the Rainmeter plugin SDK header this plugin includes
+(`RainmeterAPI.h`) is GPL v2-or-later, and Rainmeter itself is GPLv2. A plugin
+that includes that header and links Rainmeter is a derivative work, so it must be
+distributed under the GPL. Any fork or derivative of this plugin inherits the same
+requirement.
