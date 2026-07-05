@@ -77,6 +77,12 @@ uint32_t ParseMetric(Category category, const std::wstring& input)
         if (str == L"vendor")           return static_cast<uint32_t>(CpuMetric::Vendor);
         if (str == L"identifier")       return static_cast<uint32_t>(CpuMetric::Identifier);
         if (str == L"microcodeversion") return static_cast<uint32_t>(CpuMetric::MicrocodeVersion);
+        if (str == L"corecount")        return static_cast<uint32_t>(CpuMetric::CoreCount);
+        if (str == L"threadcount")      return static_cast<uint32_t>(CpuMetric::ThreadCount);
+        if (str == L"cachel1")          return static_cast<uint32_t>(CpuMetric::CacheL1);
+        if (str == L"cachel2")          return static_cast<uint32_t>(CpuMetric::CacheL2);
+        if (str == L"cachel3")          return static_cast<uint32_t>(CpuMetric::CacheL3);
+        if (str == L"architecture")     return static_cast<uint32_t>(CpuMetric::Architecture);
         return static_cast<uint32_t>(CpuMetric::Unknown);
 
     case Category::Memory:

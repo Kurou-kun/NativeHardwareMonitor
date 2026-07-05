@@ -48,6 +48,7 @@ bool WinApiCpuProvider::Initialize()
     QueryProcessorTimes(m_prevTimes);
 
     ReadIdentity();
+    ReadTopology();
     ReadVoltage();
 
     LOG_STARTUP(L"WinApiCpuProvider: initialized (%u core(s))", m_coreCount);
@@ -114,6 +115,14 @@ void WinApiCpuProvider::GatherSnapshot(uint32_t deviceIndex, Snapshot& snap)
 
         if (m_voltage >= 0.0)
             snap.Set(static_cast<uint32_t>(CpuMetric::Voltage), m_voltage);
+
+        // Static topology — only meaningful on the aggregate device. Set once each
+        // tick (cheap); leave unset (reads -1) when the OS didn't supply the value.
+        snap.Set(static_cast<uint32_t>(CpuMetric::ThreadCount), m_coreCount);
+        if (m_physicalCores > 0) snap.Set(static_cast<uint32_t>(CpuMetric::CoreCount), m_physicalCores);
+        if (m_cacheL1 > 0)       snap.Set(static_cast<uint32_t>(CpuMetric::CacheL1), static_cast<double>(m_cacheL1));
+        if (m_cacheL2 > 0)       snap.Set(static_cast<uint32_t>(CpuMetric::CacheL2), static_cast<double>(m_cacheL2));
+        if (m_cacheL3 > 0)       snap.Set(static_cast<uint32_t>(CpuMetric::CacheL3), static_cast<double>(m_cacheL3));
     }
     else
     {
@@ -139,6 +148,7 @@ bool WinApiCpuProvider::GetString(uint32_t metricId, uint32_t deviceIndex, std::
     case CpuMetric::Vendor:           if (m_vendor.empty())           return false; out = m_vendor;           return true;
     case CpuMetric::Identifier:       if (m_identifier.empty())       return false; out = m_identifier;       return true;
     case CpuMetric::MicrocodeVersion: if (m_microcodeVersion.empty()) return false; out = m_microcodeVersion; return true;
+    case CpuMetric::Architecture:     if (m_architecture.empty())     return false; out = m_architecture;     return true;
     default:                         return false;
     }
 }
@@ -190,6 +200,54 @@ void WinApiCpuProvider::ReadIdentity()
     }
 
     RegCloseKey(key);
+}
+
+void WinApiCpuProvider::ReadTopology()
+{
+    // Architecture — driverless, from the native (not WOW64) system info.
+    SYSTEM_INFO ni;
+    GetNativeSystemInfo(&ni);
+    switch (ni.wProcessorArchitecture)
+    {
+    case PROCESSOR_ARCHITECTURE_AMD64: m_architecture = L"x64";   break;
+    case PROCESSOR_ARCHITECTURE_ARM64: m_architecture = L"ARM64"; break;
+    case PROCESSOR_ARCHITECTURE_ARM:   m_architecture = L"ARM";   break;
+    case PROCESSOR_ARCHITECTURE_INTEL: m_architecture = L"x86";   break;
+    default:                           m_architecture = L"Unknown"; break;
+    }
+
+    // Physical cores + L1/L2/L3 cache — one variable-length pass over RelationAll.
+    // Each cache entry is one physical cache instance (shared caches appear once),
+    // so summing CacheSize per level gives the true total per level.
+    DWORD len = 0;
+    GetLogicalProcessorInformationEx(RelationAll, nullptr, &len);
+    if (len == 0) return;
+
+    std::vector<BYTE> buf(len);
+    if (!GetLogicalProcessorInformationEx(RelationAll,
+            reinterpret_cast<PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX>(buf.data()), &len))
+        return;
+
+    BYTE* p   = buf.data();
+    BYTE* end = p + len;
+    while (p < end)
+    {
+        auto* cur = reinterpret_cast<PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX>(p);
+        if (cur->Relationship == RelationProcessorCore)
+        {
+            ++m_physicalCores;
+        }
+        else if (cur->Relationship == RelationCache)
+        {
+            switch (cur->Cache.Level)
+            {
+            case 1: m_cacheL1 += cur->Cache.CacheSize; break;
+            case 2: m_cacheL2 += cur->Cache.CacheSize; break;
+            case 3: m_cacheL3 += cur->Cache.CacheSize; break;
+            }
+        }
+        p += cur->Size;
+    }
 }
 
 // CurrentVoltage isn't available through any other user-mode API — WMI is the
