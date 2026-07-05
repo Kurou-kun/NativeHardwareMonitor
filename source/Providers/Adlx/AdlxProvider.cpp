@@ -4,6 +4,7 @@
 
 #include "ADLXHelper.h"
 #include "IPerformanceMonitoring2.h"
+#include "ISystem1.h"
 #include "ISystem2.h"
 
 extern ADLXHelper g_ADLX;
@@ -68,6 +69,20 @@ uint32_t AdlxProvider::GetDeviceCount() const
     return static_cast<uint32_t>(m_gpus.size());
 }
 
+// ADLX reports PCIe link as a bus-type enum, not a generation number — map it.
+static int PcieGenFromBusType(adlx::ADLX_PCI_BUS_TYPE t)
+{
+    switch (t)
+    {
+    case adlx::PCIE:     return 1;
+    case adlx::PCIE_2_0: return 2;
+    case adlx::PCIE_3_0: return 3;
+    case adlx::PCIE_4_0: return 4;
+    case adlx::PCIE_5_0: return 5;
+    default:             return 0; // UNDEFINED / PCI / AGP — not PCI Express
+    }
+}
+
 void AdlxProvider::GatherSnapshot(uint32_t deviceIndex, Snapshot& snap)
 {
     if (!m_perf || deviceIndex >= m_gpus.size())
@@ -108,6 +123,25 @@ void AdlxProvider::GatherSnapshot(uint32_t deviceIndex, Snapshot& snap)
     }
 
     metrics->Release();
+
+    // PCIe link gen + width — on the IADLXGPU1 extension interface (static per GPU,
+    // but querying per tick keeps it consistent with the memtemp block above).
+    adlx::IADLXGPU1* gpu1 = nullptr;
+    if (m_gpus[deviceIndex]->QueryInterface(adlx::IADLXGPU1::IID(), (void**)&gpu1) == ADLX_OK && gpu1)
+    {
+        adlx::ADLX_PCI_BUS_TYPE busType = adlx::UNDEFINED;
+        if (gpu1->PCIBusType(&busType) == ADLX_OK)
+        {
+            int gen = PcieGenFromBusType(busType);
+            if (gen > 0) snap.Set(static_cast<uint32_t>(GpuMetric::PcieLinkGen), gen);
+        }
+
+        adlx_uint laneWidth = 0;
+        if (gpu1->PCIBusLaneWidth(&laneWidth) == ADLX_OK && laneWidth > 0)
+            snap.Set(static_cast<uint32_t>(GpuMetric::PcieLinkWidth), laneWidth);
+
+        gpu1->Release();
+    }
 }
 
 static std::wstring ToWide(const char* s)
