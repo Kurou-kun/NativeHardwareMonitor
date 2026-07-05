@@ -213,10 +213,15 @@ void WinApiStorageProvider::UpdateIdentity(Device& dev)
 
     if (GetVolumeInformationW(path.c_str(), label, MAX_PATH, nullptr, nullptr, nullptr, fileSystem, MAX_PATH))
     {
+        UINT type       = GetDriveTypeW(path.c_str());
         dev.volumeLabel = label;
         dev.fileSystem  = fileSystem;
-        dev.driveType   = DriveTypeToString(GetDriveTypeW(path.c_str()));
+        dev.driveType   = DriveTypeToString(type);
         dev.identityRead = true;
+
+        // Unlabeled drive: match Explorer's default display name instead of "".
+        if (dev.volumeLabel.empty())
+            dev.volumeLabel = (type == DRIVE_REMOVABLE) ? L"Removable Disk" : L"Local Disk";
     }
 }
 
