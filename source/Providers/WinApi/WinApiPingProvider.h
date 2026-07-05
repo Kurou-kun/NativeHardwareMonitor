@@ -43,10 +43,20 @@ private:
         uint32_t                      intervalMs = 1000;
         std::unique_ptr<PollerThread> poller;
 
-        std::mutex       mutex;      // guards the four fields below
+        std::mutex       mutex;      // guards every field below
         double            rtt        = 9999.0;
         double            packetLoss = 0.0;
-        std::deque<bool>  history;   // true = reply received, capped at kHistorySize
+        double            minRtt     = 9999.0;
+        double            maxRtt     = 9999.0;
+        double            avgRtt     = 9999.0;
+        double            jitter     = 0.0;
+        double            ttl        = 0.0;   // last reply's TTL (hop-count hint)
+        uint64_t          packetsSent     = 0;
+        uint64_t          packetsReceived = 0;
+        std::wstring      resolvedIp;         // dotted IPv4, empty until resolved
+        std::wstring      status;             // "reachable" / "timeout" / "dns-fail"
+        std::deque<bool>   history;    // true = reply received, capped at kHistorySize
+        std::deque<double> rttHistory; // successful RTTs only, capped at kHistorySize
     };
 
     void PingOnce(Target* target);

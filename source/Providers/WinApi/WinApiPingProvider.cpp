@@ -3,6 +3,7 @@
 #include "Utils/Debug.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cwctype>
 
 #pragma comment(lib, "iphlpapi.lib")
@@ -65,13 +66,44 @@ void WinApiPingProvider::GatherSnapshot(uint32_t deviceIndex, Snapshot& snap)
     }
 
     std::lock_guard<std::mutex> lock(target->mutex);
-    snap.Set(static_cast<uint32_t>(PingMetric::Rtt),        target->rtt);
-    snap.Set(static_cast<uint32_t>(PingMetric::PacketLoss), target->packetLoss);
+    snap.Set(static_cast<uint32_t>(PingMetric::Rtt),             target->rtt);
+    snap.Set(static_cast<uint32_t>(PingMetric::PacketLoss),      target->packetLoss);
+    snap.Set(static_cast<uint32_t>(PingMetric::MinRtt),          target->minRtt);
+    snap.Set(static_cast<uint32_t>(PingMetric::MaxRtt),          target->maxRtt);
+    snap.Set(static_cast<uint32_t>(PingMetric::AvgRtt),          target->avgRtt);
+    snap.Set(static_cast<uint32_t>(PingMetric::Jitter),         target->jitter);
+    snap.Set(static_cast<uint32_t>(PingMetric::Ttl),            target->ttl);
+    snap.Set(static_cast<uint32_t>(PingMetric::PacketsSent),     static_cast<double>(target->packetsSent));
+    snap.Set(static_cast<uint32_t>(PingMetric::PacketsReceived), static_cast<double>(target->packetsReceived));
 }
 
-bool WinApiPingProvider::GetString(uint32_t, uint32_t, std::wstring&)
+bool WinApiPingProvider::GetString(uint32_t metricId, uint32_t deviceIndex, std::wstring& out)
 {
-    return false;
+    Target* target = nullptr;
+    {
+        std::lock_guard<std::mutex> lock(m_targetsMutex);
+        if (deviceIndex >= m_targets.size())
+            return false;
+        target = m_targets[deviceIndex].get();
+    }
+
+    std::lock_guard<std::mutex> lock(target->mutex);
+    switch (static_cast<PingMetric>(metricId))
+    {
+    case PingMetric::ResolvedIp: out = target->resolvedIp; return true;
+    case PingMetric::Status:     out = target->status;     return true;
+    default:                     return false;
+    }
+}
+
+static std::wstring FormatIPv4(IPAddr address)
+{
+    in_addr ia{};
+    ia.s_addr = address;
+    wchar_t buf[INET_ADDRSTRLEN] = {};
+    if (InetNtopW(AF_INET, &ia, buf, INET_ADDRSTRLEN))
+        return buf;
+    return L"";
 }
 
 static bool ResolveIPv4(const std::wstring& host, IPAddr& out)
@@ -98,7 +130,9 @@ void WinApiPingProvider::PingOnce(Target* target)
         target->resolved = ResolveIPv4(target->host, target->address);
 
     bool   success = false;
+    bool   sent    = false;
     double rttMs   = 9999.0;
+    double ttl     = 0.0;
 
     if (target->resolved)
     {
@@ -116,6 +150,7 @@ void WinApiPingProvider::PingOnce(Target* target)
 
             DWORD timeout = std::min(target->intervalMs, 1000u);
 
+            sent = true;
             DWORD result = IcmpSendEcho(
                 target->icmpHandle,
                 target->address,
@@ -131,6 +166,7 @@ void WinApiPingProvider::PingOnce(Target* target)
                 {
                     success = true;
                     rttMs   = static_cast<double>(reply->RoundTripTime);
+                    ttl     = static_cast<double>(reply->Options.Ttl);
                 }
             }
         }
@@ -149,6 +185,53 @@ void WinApiPingProvider::PingOnce(Target* target)
     target->rtt        = success ? rttMs : 9999.0;
     target->packetLoss = target->history.empty() ? 0.0
                         : (static_cast<double>(misses) / target->history.size()) * 100.0;
+
+    if (sent)            ++target->packetsSent;
+    if (success)
+    {
+        ++target->packetsReceived;
+        target->ttl = ttl;
+
+        target->rttHistory.push_back(rttMs);
+        if (target->rttHistory.size() > kHistorySize)
+            target->rttHistory.pop_front();
+    }
+
+    // Min/Max/Avg over the successful-RTT window; 9999 sentinel until we get one.
+    if (target->rttHistory.empty())
+    {
+        target->minRtt = target->maxRtt = target->avgRtt = 9999.0;
+        target->jitter = 0.0;
+    }
+    else
+    {
+        double lo = target->rttHistory.front();
+        double hi = lo, sum = 0.0;
+        for (double v : target->rttHistory)
+        {
+            lo = std::min(lo, v);
+            hi = std::max(hi, v);
+            sum += v;
+        }
+        target->minRtt = lo;
+        target->maxRtt = hi;
+        target->avgRtt = sum / target->rttHistory.size();
+
+        // ponytail: jitter = mean absolute consecutive RTT difference (RFC-3550-ish).
+        // Good enough for a status readout; swap for smoothed IPDV if a graph needs it.
+        double diffSum = 0.0;
+        for (size_t i = 1; i < target->rttHistory.size(); ++i)
+            diffSum += std::abs(target->rttHistory[i] - target->rttHistory[i - 1]);
+        target->jitter = target->rttHistory.size() > 1
+                       ? diffSum / (target->rttHistory.size() - 1) : 0.0;
+    }
+
+    if (target->resolvedIp.empty() && target->resolved)
+        target->resolvedIp = FormatIPv4(target->address);
+
+    target->status = !target->resolved ? L"dns-fail"
+                   : success            ? L"reachable"
+                   :                      L"timeout";
 }
 
 uint32_t WinApiPingProvider::ResolveTarget(const std::wstring& host, uint32_t intervalMs)

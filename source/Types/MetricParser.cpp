@@ -126,8 +126,17 @@ uint32_t ParseMetric(Category category, const std::wstring& input)
         return static_cast<uint32_t>(NetworkMetric::Unknown);
 
     case Category::Ping:
-        if (str == L"rtt")        return static_cast<uint32_t>(PingMetric::Rtt);
-        if (str == L"packetloss") return static_cast<uint32_t>(PingMetric::PacketLoss);
+        if (str == L"rtt")             return static_cast<uint32_t>(PingMetric::Rtt);
+        if (str == L"packetloss")      return static_cast<uint32_t>(PingMetric::PacketLoss);
+        if (str == L"minrtt")          return static_cast<uint32_t>(PingMetric::MinRtt);
+        if (str == L"maxrtt")          return static_cast<uint32_t>(PingMetric::MaxRtt);
+        if (str == L"avgrtt")          return static_cast<uint32_t>(PingMetric::AvgRtt);
+        if (str == L"jitter")          return static_cast<uint32_t>(PingMetric::Jitter);
+        if (str == L"ttl")             return static_cast<uint32_t>(PingMetric::Ttl);
+        if (str == L"packetssent")     return static_cast<uint32_t>(PingMetric::PacketsSent);
+        if (str == L"packetsreceived") return static_cast<uint32_t>(PingMetric::PacketsReceived);
+        if (str == L"resolvedip")      return static_cast<uint32_t>(PingMetric::ResolvedIp);
+        if (str == L"status")          return static_cast<uint32_t>(PingMetric::Status);
         return static_cast<uint32_t>(PingMetric::Unknown);
 
     case Category::Storage:
