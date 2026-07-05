@@ -19,5 +19,10 @@ enum class NetworkMetric : uint32_t
     Description,
     PhysicalAddress,
     ConnectionStatus,
+    WifiSignal,      // % (0-100), wireless adapters only
+    WifiRxRate,      // Mbps
+    WifiTxRate,      // Mbps
+    Ssid,            // string
+    WifiRadioType,   // string, e.g. "802.11ax"
     Unknown
 };

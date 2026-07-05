@@ -4,7 +4,42 @@
 
 #include <cstdio>
 #include <iphlpapi.h>
+#include <wlanapi.h>
 #pragma comment(lib, "iphlpapi.lib")
+#pragma comment(lib, "wlanapi.lib")
+
+static std::wstring PhyTypeName(DOT11_PHY_TYPE phy)
+{
+    switch (phy)
+    {
+    case dot11_phy_type_hrdsss: return L"802.11b";
+    case dot11_phy_type_ofdm:   return L"802.11a";
+    case dot11_phy_type_erp:    return L"802.11g";
+    case dot11_phy_type_ht:     return L"802.11n";
+    case dot11_phy_type_vht:    return L"802.11ac";
+    case dot11_phy_type_he:     return L"802.11ax";  // Wi-Fi 6
+    case dot11_phy_type_eht:    return L"802.11be";  // Wi-Fi 7
+    default:                    return L"";
+    }
+}
+
+static std::wstring SsidToWide(const DOT11_SSID& ssid)
+{
+    if (ssid.uSSIDLength == 0)
+        return L"";
+
+    int len = MultiByteToWideChar(CP_UTF8, 0,
+        reinterpret_cast<const char*>(ssid.ucSSID), static_cast<int>(ssid.uSSIDLength),
+        nullptr, 0);
+    if (len <= 0)
+        return L"";
+
+    std::wstring out(len, L'\0');
+    MultiByteToWideChar(CP_UTF8, 0,
+        reinterpret_cast<const char*>(ssid.ucSSID), static_cast<int>(ssid.uSSIDLength),
+        out.data(), len);
+    return out;
+}
 
 static std::wstring FormatPhysicalAddress(const UCHAR* addr, ULONG length)
 {
@@ -32,6 +67,45 @@ static std::wstring FormatConnectionStatus(NET_IF_MEDIA_CONNECT_STATE state)
     }
 }
 
+WinApiNetworkProvider::~WinApiNetworkProvider()
+{
+    if (m_wlanHandle)
+        WlanCloseHandle(m_wlanHandle, nullptr);
+}
+
+void WinApiNetworkProvider::UpdateWifi(Device& dev)
+{
+    dev.wifiSignal = -1.0;
+    dev.wifiRxRate = -1.0;
+    dev.wifiTxRate = -1.0;
+    dev.ssid.clear();
+    dev.wifiRadioType.clear();
+
+    if (!m_wlanHandle)
+        return;
+
+    PWLAN_CONNECTION_ATTRIBUTES info = nullptr;
+    DWORD size = 0;
+    // Non-Wi-Fi GUIDs return ERROR_NOT_FOUND etc — just leave the fields at -1.
+    DWORD res = WlanQueryInterface(m_wlanHandle, &dev.guid,
+        wlan_intf_opcode_current_connection, nullptr, &size,
+        reinterpret_cast<PVOID*>(&info), nullptr);
+
+    if (res == ERROR_SUCCESS && info)
+    {
+        if (info->isState == wlan_interface_state_connected)
+        {
+            const auto& a = info->wlanAssociationAttributes;
+            dev.wifiSignal    = static_cast<double>(a.wlanSignalQuality); // 0-100
+            dev.wifiRxRate    = a.ulRxRate / 1000.0;  // kbps -> Mbps
+            dev.wifiTxRate    = a.ulTxRate / 1000.0;
+            dev.ssid          = SsidToWide(a.dot11Ssid);
+            dev.wifiRadioType = PhyTypeName(a.dot11PhyType);
+        }
+        WlanFreeMemory(info);
+    }
+}
+
 bool WinApiNetworkProvider::Initialize()
 {
     PMIB_IF_TABLE2 table = nullptr;
@@ -41,6 +115,11 @@ bool WinApiNetworkProvider::Initialize()
         return false;
     }
 
+    // Open a WLAN handle for Wi-Fi metrics; absence (no wireless service) is fine.
+    DWORD negotiated = 0;
+    if (WlanOpenHandle(WLAN_API_VERSION_2_0, nullptr, &negotiated, &m_wlanHandle) != ERROR_SUCCESS)
+        m_wlanHandle = nullptr;
+
     for (ULONG i = 0; i < table->NumEntries; ++i)
     {
         auto& row = table->Table[i];
@@ -49,6 +128,7 @@ bool WinApiNetworkProvider::Initialize()
 
         Device dev;
         dev.luid             = row.InterfaceLuid;
+        dev.guid             = row.InterfaceGuid;
         dev.prevRx           = row.InOctets;
         dev.prevTx           = row.OutOctets;
         dev.rxTotal          = row.InOctets;
@@ -143,6 +223,8 @@ void WinApiNetworkProvider::GatherSnapshot(uint32_t deviceIndex, Snapshot& snap)
 
     FreeMibTable(table);
 
+    UpdateWifi(dev);
+
     snap.Set(static_cast<uint32_t>(NetworkMetric::Download),         dev.rxSpeed);
     snap.Set(static_cast<uint32_t>(NetworkMetric::Upload),           dev.txSpeed);
     snap.Set(static_cast<uint32_t>(NetworkMetric::DownloadTotal),    static_cast<double>(dev.rxTotal));
@@ -156,6 +238,14 @@ void WinApiNetworkProvider::GatherSnapshot(uint32_t deviceIndex, Snapshot& snap)
     snap.Set(static_cast<uint32_t>(NetworkMetric::DiscardsReceived), dev.discardsRxSpeed);
     snap.Set(static_cast<uint32_t>(NetworkMetric::DiscardsSent),     dev.discardsTxSpeed);
     snap.Set(static_cast<uint32_t>(NetworkMetric::Mtu),              static_cast<double>(dev.mtu));
+
+    // Wi-Fi only — leave unset (reads -1) on wired/disconnected adapters.
+    if (dev.wifiSignal >= 0.0)
+    {
+        snap.Set(static_cast<uint32_t>(NetworkMetric::WifiSignal), dev.wifiSignal);
+        snap.Set(static_cast<uint32_t>(NetworkMetric::WifiRxRate), dev.wifiRxRate);
+        snap.Set(static_cast<uint32_t>(NetworkMetric::WifiTxRate), dev.wifiTxRate);
+    }
 }
 
 bool WinApiNetworkProvider::GetString(uint32_t metricId, uint32_t deviceIndex, std::wstring& out)
@@ -171,6 +261,8 @@ bool WinApiNetworkProvider::GetString(uint32_t metricId, uint32_t deviceIndex, s
     case NetworkMetric::Description:      if (dev.description.empty())      return false; out = dev.description;      return true;
     case NetworkMetric::PhysicalAddress:  if (dev.physicalAddress.empty())  return false; out = dev.physicalAddress;  return true;
     case NetworkMetric::ConnectionStatus: if (dev.connectionStatus.empty()) return false; out = dev.connectionStatus; return true;
+    case NetworkMetric::Ssid:             if (dev.ssid.empty())             return false; out = dev.ssid;             return true;
+    case NetworkMetric::WifiRadioType:    if (dev.wifiRadioType.empty())    return false; out = dev.wifiRadioType;    return true;
     default:                              return false;
     }
 }

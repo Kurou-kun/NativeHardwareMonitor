@@ -123,6 +123,11 @@ uint32_t ParseMetric(Category category, const std::wstring& input)
         if (str == L"description")      return static_cast<uint32_t>(NetworkMetric::Description);
         if (str == L"physicaladdress")  return static_cast<uint32_t>(NetworkMetric::PhysicalAddress);
         if (str == L"connectionstatus") return static_cast<uint32_t>(NetworkMetric::ConnectionStatus);
+        if (str == L"wifisignal")       return static_cast<uint32_t>(NetworkMetric::WifiSignal);
+        if (str == L"wifirxrate")       return static_cast<uint32_t>(NetworkMetric::WifiRxRate);
+        if (str == L"wifitxrate")       return static_cast<uint32_t>(NetworkMetric::WifiTxRate);
+        if (str == L"ssid")             return static_cast<uint32_t>(NetworkMetric::Ssid);
+        if (str == L"wifiradiotype")    return static_cast<uint32_t>(NetworkMetric::WifiRadioType);
         return static_cast<uint32_t>(NetworkMetric::Unknown);
 
     case Category::Ping:
