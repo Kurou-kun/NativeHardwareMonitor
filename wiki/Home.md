@@ -1,70 +1,73 @@
 # NativeHardwareMonitor
 
-A native C++ Rainmeter plugin that reads real-time hardware metrics (GPU, CPU, Memory, Network, Storage) directly from vendor APIs (NVML, NVAPI, ADLX, ADL2) and Windows APIs — no third-party monitoring tool required.
+A native C++ [Rainmeter](https://www.rainmeter.net/) plugin that reads real-time hardware metrics — **GPU, CPU, Memory, Network, Storage, and Ping** — directly from vendor APIs (NVML, NVAPI, ADLX, ADL2) and Windows APIs (WMI, PDH, Win32). No third-party monitoring tool, no kernel driver, no service — a single DLL.
+
+## Contents
+
+- **[Installation](Installation)** — download/build, deploy the DLL, requirements.
+- **[Configuring Measures](Configuring-Measures)** — every measure option in detail.
+- **[Metrics Reference](Metrics-Reference)** — every `Category`/`Metric`, its unit, device indexing, and per-vendor support.
+- **[How It Works](How-It-Works)** — architecture, the update/polling model, per-vendor GPU fallback.
+- **[Quirks & Troubleshooting](Quirks-and-Troubleshooting)** — value semantics (`-1`/`-2`), what needs a driver, and the gotchas.
 
 ## Requirements
 
-- Windows 10/11, x64
+- Windows 10/11, **x64** (the plugin is 64-bit; Rainmeter is 64-bit)
 - [Rainmeter](https://www.rainmeter.net/) installed
-- NVIDIA GPU: NVML/NVAPI ship with the driver, nothing extra needed
-- AMD GPU: ADLX/ADL2 ship with the driver, nothing extra needed
-- No kernel driver, no service, no elevated install — the plugin is a single DLL
+- NVIDIA GPU: NVML/NVAPI ship with the driver — nothing extra
+- AMD GPU: ADLX/ADL2 ship with the driver — nothing extra
+- No kernel driver, no service, no elevated install
 
-## Installation
+## Install
 
-1. Download `NativeHardwareMonitor.dll` (or build it yourself — see below)
+1. Get `NativeHardwareMonitor.dll` (download, or build — see [Installation](Installation))
 2. Copy it into `%APPDATA%\Rainmeter\Plugins\`
 3. Restart Rainmeter
-4. Reference it from any skin measure with `Plugin=NativeHardwareMonitor`
+4. Reference it from any measure with `Plugin=NativeHardwareMonitor`
 
-### Building from source
-
-Open `NativeHardwareMonitor.slnx` in Visual Studio (2022+), build `Release|x64`. The post-build step copies the DLL into `%APPDATA%\Rainmeter\Plugins\` automatically (skip this step on CI runners — it's guarded with an `if exist` check). Rainmeter must be closed while building, since it locks the DLL while loaded.
-
-## Basic usage
+## Quick example
 
 ```ini
-[MeasureExample]
+[MeasureGpuTemp]
 Measure=Plugin
 Plugin=NativeHardwareMonitor
 Category=GPU
 Metric=Temperature
 Device=0
-Debug=0
+
+[MeterGpuTemp]
+Meter=String
+MeasureName=MeasureGpuTemp
+Text=GPU: %1 °C
 ```
+
+## Measure options (summary)
 
 | Option | Required | Values | Notes |
 |---|---|---|---|
-| `Category` | yes | `GPU`, `CPU`, `Memory`, `Network`, `Storage` | Case-insensitive |
+| `Category` | yes | `GPU`, `CPU`, `Memory`, `Network`, `Storage`, `Ping` | Case-insensitive |
 | `Metric` | yes | category-dependent — see [Metrics Reference](Metrics-Reference) | Case-insensitive |
-| `Device` | no (default `0`) | integer index | Which physical device/core/adapter/disk — see per-category notes |
-| `Debug` | no (default `0`) | `0`, `1`, `2` | `1` = startup-only logging, `2` = all registration/reload events. Never logs the actual metric *values*. |
-| `UpdateOverride` | no | milliseconds | Poll this category faster than the skin's own `Update=` rate. Omit to just follow Rainmeter's normal tick. (`UpdateRate` is a reserved Rainmeter keyword — don't use it here.) |
+| `Device` | no (default `0`) | integer index | Which GPU / core / RAM pool / adapter / disk — meaning is per-category |
+| `Host` | Ping only | hostname or IP | The target to ping. Replaces `Device=` for the Ping category |
+| `PingInterval` | Ping only (default `1000`) | milliseconds | How often the background ICMP echo fires |
+| `UpdateOverride` | no | milliseconds | Poll this category on a background thread at this rate, independent of the skin's `Update=`. Omit to follow Rainmeter's tick. (`UpdateRate` is a reserved Rainmeter keyword — do **not** use it) |
+| `Debug` | no (default `0`) | `0`, `1`, `2` | `1` = startup logging, `2` = all registration/reload events to the Rainmeter log. Never logs metric *values* |
+
+Full detail: **[Configuring Measures](Configuring-Measures)**.
 
 ## Reading the value
 
-Every measure exposes **both** a numeric value and (for some metrics) a string value — Rainmeter picks whichever fits the meter:
+Every measure exposes a numeric value and, for identity metrics, a string value — Rainmeter picks whichever fits the meter:
 
-```ini
-[MeterExample]
-Meter=String
-MeasureName=MeasureExample
-Text=%1
-```
-
-- Numeric-only metrics (e.g. `Usage`, `Temperature`) — `%1` shows the formatted number.
-- String-typed metrics (e.g. GPU `Name`, CPU `Vendor`) — `%1` shows the actual text, but **only inside a `Meter=String`**. Binding a string metric to a Bar/Histogram/Line meter shows `-1` instead, since those meter types only ever read the numeric side.
+- **Numeric** metrics (`Usage`, `Temperature`, …) → `%1` shows the number.
+- **String** metrics (GPU `Name`, CPU `Vendor`, Storage `VolumeLabel`, GPU `ThrottleReasons`, …) → `%1` shows the text, but **only inside a `Meter=String`**. Bound to a Bar/Line/Histogram meter, a string metric reads `-1` (those meters only use the numeric side).
 
 ### Value semantics (numeric side)
 
 | Value | Meaning |
 |---|---|
 | `-2` | Plugin-level error (bad handle, module failed to initialize) |
-| `-1` | This metric isn't supported on your hardware/driver/BIOS — not an error, just genuinely unavailable here |
+| `-1` | Metric not supported on this hardware/driver/BIOS — not an error, genuinely unavailable |
 | `0` or positive | A real reading |
 
-`-1` shows up often and is expected — not every vendor SDK or every motherboard exposes every value (e.g. AMD GPUs don't expose `FanSpeedRPM`; most BIOSes don't expose real CPU voltage at all). See [Metrics Reference](Metrics-Reference) for the per-category support matrix.
-
-## Full metric list, per category
-
-See **[Metrics Reference](Metrics-Reference)** for every `Category`/`Metric` combination, which vendor/API each comes from, and known hardware limitations.
+`-1` is common and expected — not every vendor SDK or motherboard exposes every value. See [Metrics Reference](Metrics-Reference) for the per-category support, and [Quirks & Troubleshooting](Quirks-and-Troubleshooting) for what's permanently unavailable and why.
