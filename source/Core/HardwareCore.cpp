@@ -7,6 +7,8 @@
 #include "Modules/Storage/StorageModule.h"
 #include "Modules/Ping/PingModule.h"
 #include "Modules/Battery/BatteryModule.h"
+#include "Modules/System/SystemModule.h"
+#include "Modules/Motherboard/MotherboardModule.h"
 
 #include <algorithm>
 #include <windows.h>
@@ -32,6 +34,8 @@ HardwareCore::HardwareCore()
     m_modules[Category::Storage] = make(std::make_unique<StorageModule>());
     m_modules[Category::Ping]    = make(std::make_unique<PingModule>());
     m_modules[Category::Battery] = make(std::make_unique<BatteryModule>());
+    m_modules[Category::System]  = make(std::make_unique<SystemModule>());
+    m_modules[Category::Motherboard] = make(std::make_unique<MotherboardModule>());
 }
 
 uint32_t HardwareCore::RegisterMeasure(

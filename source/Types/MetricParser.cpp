@@ -7,6 +7,8 @@
 #include "Types/StorageMetric.h"
 #include "Types/PingMetric.h"
 #include "Types/BatteryMetric.h"
+#include "Types/SystemMetric.h"
+#include "Types/MotherboardMetric.h"
 
 #include <algorithm>
 #include <cwctype>
@@ -38,6 +40,8 @@ Category ParseCategory(const std::wstring& input)
     if (str == L"storage") return Category::Storage;
     if (str == L"ping")    return Category::Ping;
     if (str == L"battery") return Category::Battery;
+    if (str == L"system")  return Category::System;
+    if (str == L"motherboard") return Category::Motherboard;
 
     return Category::Unknown;
 }
@@ -181,6 +185,29 @@ uint32_t ParseMetric(Category category, const std::wstring& input)
         if (str == L"serialnumber")       return static_cast<uint32_t>(BatteryMetric::SerialNumber);
         if (str == L"devicename")         return static_cast<uint32_t>(BatteryMetric::DeviceName);
         return static_cast<uint32_t>(BatteryMetric::Unknown);
+
+    case Category::System:
+        if (str == L"uptime")       return static_cast<uint32_t>(SystemMetric::Uptime);
+        if (str == L"processcount") return static_cast<uint32_t>(SystemMetric::ProcessCount);
+        if (str == L"threadcount")  return static_cast<uint32_t>(SystemMetric::ThreadCount);
+        if (str == L"handlecount")  return static_cast<uint32_t>(SystemMetric::HandleCount);
+        if (str == L"osname")       return static_cast<uint32_t>(SystemMetric::OsName);
+        if (str == L"osversion")    return static_cast<uint32_t>(SystemMetric::OsVersion);
+        if (str == L"osbuild")      return static_cast<uint32_t>(SystemMetric::OsBuild);
+        if (str == L"hostname")     return static_cast<uint32_t>(SystemMetric::Hostname);
+        if (str == L"username")     return static_cast<uint32_t>(SystemMetric::UserName);
+        if (str == L"boottime")     return static_cast<uint32_t>(SystemMetric::BootTime);
+        return static_cast<uint32_t>(SystemMetric::Unknown);
+
+    case Category::Motherboard:
+        if (str == L"manufacturer")       return static_cast<uint32_t>(MotherboardMetric::Manufacturer);
+        if (str == L"product")            return static_cast<uint32_t>(MotherboardMetric::Product);
+        if (str == L"serialnumber")       return static_cast<uint32_t>(MotherboardMetric::SerialNumber);
+        if (str == L"biosversion")        return static_cast<uint32_t>(MotherboardMetric::BiosVersion);
+        if (str == L"biosdate")           return static_cast<uint32_t>(MotherboardMetric::BiosDate);
+        if (str == L"systemmanufacturer") return static_cast<uint32_t>(MotherboardMetric::SystemManufacturer);
+        if (str == L"systemproduct")      return static_cast<uint32_t>(MotherboardMetric::SystemProduct);
+        return static_cast<uint32_t>(MotherboardMetric::Unknown);
 
     default:
         return static_cast<uint32_t>(-1);

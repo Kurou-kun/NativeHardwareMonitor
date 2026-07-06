@@ -9,5 +9,7 @@ enum class Category
     Storage,
     Ping,
     Battery,
+    System,
+    Motherboard,
     Unknown
 };
