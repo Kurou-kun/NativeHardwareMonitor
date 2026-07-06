@@ -32,7 +32,6 @@ private:
     std::wstring m_userName;
     std::wstring m_bootTime;
 
-    void InitWmi();
     void ReadOsInfo();   // Win32_OperatingSystem
     void ReadIdentity(); // hostname / username / boot time (Win32)
 };

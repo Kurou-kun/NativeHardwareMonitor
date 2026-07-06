@@ -1,10 +1,7 @@
 #include "Providers/WinApi/WinApiBatteryProvider.h"
+#include "Utils/WmiUtil.h"
 #include "Types/BatteryMetric.h"
 #include "Utils/Debug.h"
-
-#include <comdef.h>
-
-#pragma comment(lib, "wbemuuid.lib")
 
 WinApiBatteryProvider::~WinApiBatteryProvider()
 {
@@ -21,81 +18,11 @@ bool WinApiBatteryProvider::Initialize()
         return false;
     }
 
-    InitWmi();        // best-effort — capacity/identity just stay unsupported if unavailable
-    ReadStaticData(); // best-effort battery identity
+    m_wmiServices = Wmi::Connect(L"ROOT\\WMI", m_comInitialized); // best-effort
+    ReadStaticData();
 
     LOG_STARTUP(L"WinApiBatteryProvider: initialized");
     return true;
-}
-
-void WinApiBatteryProvider::InitWmi()
-{
-    // Same COM-apartment handling as WinApiMemoryProvider: RPC_E_CHANGED_MODE is fine.
-    HRESULT coInit = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
-    m_comInitialized = SUCCEEDED(coInit);
-
-    IWbemLocator* locator = nullptr;
-    if (FAILED(CoCreateInstance(CLSID_WbemLocator, nullptr, CLSCTX_INPROC_SERVER,
-                                 IID_IWbemLocator, (LPVOID*)&locator)) || !locator)
-        return;
-
-    HRESULT hr = locator->ConnectServer(_bstr_t(L"ROOT\\WMI"), nullptr, nullptr, nullptr,
-                                         0, nullptr, nullptr, &m_wmiServices);
-    if (FAILED(hr) || !m_wmiServices)
-    {
-        m_wmiServices = nullptr;
-        locator->Release();
-        return;
-    }
-
-    CoSetProxyBlanket(m_wmiServices, RPC_C_AUTHN_WINNT, RPC_C_AUTHZ_NONE, nullptr,
-                       RPC_C_AUTHN_LEVEL_CALL, RPC_C_IMP_LEVEL_IMPERSONATE, nullptr, EOAC_NONE);
-
-    locator->Release();
-}
-
-IWbemClassObject* WinApiBatteryProvider::QueryFirst(const wchar_t* wql)
-{
-    if (!m_wmiServices)
-        return nullptr;
-
-    IEnumWbemClassObject* enumerator = nullptr;
-    HRESULT hr = m_wmiServices->ExecQuery(_bstr_t(L"WQL"), _bstr_t(wql),
-        WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY, nullptr, &enumerator);
-
-    if (FAILED(hr) || !enumerator)
-        return nullptr;
-
-    IWbemClassObject* obj = nullptr;
-    ULONG returned = 0;
-    enumerator->Next(WBEM_INFINITE, 1, &obj, &returned); // first instance only
-    enumerator->Release();
-
-    return returned == 1 ? obj : nullptr;
-}
-
-static double GetU32(IWbemClassObject* obj, const wchar_t* name, bool& ok)
-{
-    VARIANT v; VariantInit(&v);
-    ok = false;
-    double out = 0.0;
-    if (SUCCEEDED(obj->Get(name, 0, &v, nullptr, nullptr)))
-    {
-        if      (v.vt == VT_I4)  { out = v.lVal;  ok = true; }
-        else if (v.vt == VT_UI4) { out = v.ulVal; ok = true; }
-    }
-    VariantClear(&v);
-    return out;
-}
-
-static std::wstring GetStr(IWbemClassObject* obj, const wchar_t* name)
-{
-    VARIANT v; VariantInit(&v);
-    std::wstring out;
-    if (SUCCEEDED(obj->Get(name, 0, &v, nullptr, nullptr)) && v.vt == VT_BSTR && v.bstrVal)
-        out = v.bstrVal;
-    VariantClear(&v);
-    return out;
 }
 
 // BatteryStaticData.Chemistry is a uint8[] of ASCII bytes, e.g. {'L','I','O','N'}.
@@ -122,18 +49,18 @@ static std::wstring GetChemistry(IWbemClassObject* obj)
 
 void WinApiBatteryProvider::ReadStaticData()
 {
-    IWbemClassObject* obj = QueryFirst(L"SELECT * FROM BatteryStaticData");
+    IWbemClassObject* obj = Wmi::QueryFirst(m_wmiServices, L"SELECT * FROM BatteryStaticData");
     if (!obj)
         return;
 
-    bool ok = false;
-    double design = GetU32(obj, L"DesignedCapacity", ok); // mWh
-    if (ok) m_designCapacity = design;
+    double design = 0.0;
+    if (Wmi::GetU32(obj, L"DesignedCapacity", design)) // mWh
+        m_designCapacity = design;
 
     m_chemistry    = GetChemistry(obj);
-    m_manufacturer = GetStr(obj, L"ManufactureName");
-    m_serialNumber = GetStr(obj, L"SerialNumber");
-    m_deviceName   = GetStr(obj, L"DeviceName");
+    m_manufacturer = Wmi::GetStr(obj, L"ManufactureName");
+    m_serialNumber = Wmi::GetStr(obj, L"SerialNumber");
+    m_deviceName   = Wmi::GetStr(obj, L"DeviceName");
 
     obj->Release();
 }
@@ -187,18 +114,16 @@ void WinApiBatteryProvider::GatherSnapshot(uint32_t deviceIndex, Snapshot& snap)
 
 void WinApiBatteryProvider::GatherWmi(Snapshot& snap)
 {
+    double value        = 0.0;
     double fullCapacity = 0.0;
     bool   haveFull     = false;
 
-    if (IWbemClassObject* obj = QueryFirst(L"SELECT * FROM BatteryStatus"))
+    if (IWbemClassObject* obj = Wmi::QueryFirst(m_wmiServices, L"SELECT * FROM BatteryStatus"))
     {
-        bool ok = false;
-
-        double voltage = GetU32(obj, L"Voltage", ok); // mV
-        if (ok) snap.Set(static_cast<uint32_t>(BatteryMetric::Voltage), voltage);
-
-        double remaining = GetU32(obj, L"RemainingCapacity", ok); // mWh
-        if (ok) snap.Set(static_cast<uint32_t>(BatteryMetric::RemainingCapacity), remaining);
+        if (Wmi::GetU32(obj, L"Voltage", value))           // mV
+            snap.Set(static_cast<uint32_t>(BatteryMetric::Voltage), value);
+        if (Wmi::GetU32(obj, L"RemainingCapacity", value)) // mWh
+            snap.Set(static_cast<uint32_t>(BatteryMetric::RemainingCapacity), value);
 
         // Rate is already signed (+ charging / - discharging), mW.
         VARIANT vr; VariantInit(&vr);
@@ -209,9 +134,9 @@ void WinApiBatteryProvider::GatherWmi(Snapshot& snap)
         obj->Release();
     }
 
-    if (IWbemClassObject* obj = QueryFirst(L"SELECT * FROM BatteryFullChargedCapacity"))
+    if (IWbemClassObject* obj = Wmi::QueryFirst(m_wmiServices, L"SELECT * FROM BatteryFullChargedCapacity"))
     {
-        fullCapacity = GetU32(obj, L"FullChargedCapacity", haveFull); // mWh
+        haveFull = Wmi::GetU32(obj, L"FullChargedCapacity", fullCapacity); // mWh
         if (haveFull)
             snap.Set(static_cast<uint32_t>(BatteryMetric::FullChargeCapacity), fullCapacity);
         obj->Release();
@@ -225,11 +150,10 @@ void WinApiBatteryProvider::GatherWmi(Snapshot& snap)
                      100.0 * (1.0 - fullCapacity / m_designCapacity));
     }
 
-    if (IWbemClassObject* obj = QueryFirst(L"SELECT * FROM BatteryCycleCount"))
+    if (IWbemClassObject* obj = Wmi::QueryFirst(m_wmiServices, L"SELECT * FROM BatteryCycleCount"))
     {
-        bool ok = false;
-        double cycles = GetU32(obj, L"CycleCount", ok);
-        if (ok) snap.Set(static_cast<uint32_t>(BatteryMetric::CycleCount), cycles);
+        if (Wmi::GetU32(obj, L"CycleCount", value))
+            snap.Set(static_cast<uint32_t>(BatteryMetric::CycleCount), value);
         obj->Release();
     }
 }

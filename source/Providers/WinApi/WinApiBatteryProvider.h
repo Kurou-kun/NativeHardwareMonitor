@@ -36,10 +36,6 @@ private:
     // Derived status string, refreshed each gather (read by GetString).
     std::wstring m_statusText;
 
-    void InitWmi();          // connects to ROOT\WMI
     void ReadStaticData();   // BatteryStaticData — one query at startup
     void GatherWmi(Snapshot& snap); // BatteryStatus / FullChargedCapacity / CycleCount
-
-    // Runs a single-row WQL query on m_wmiServices; returns first object or nullptr.
-    IWbemClassObject* QueryFirst(const wchar_t* wql);
 };

@@ -141,6 +141,7 @@
     <ClCompile Include="source\Providers\WinApi\WinApiDisplayProvider.cpp" />
     <ClCompile Include="source\Types\MetricParser.cpp" />
     <ClCompile Include="source\Utils\Debug.cpp" />
+    <ClCompile Include="source\Utils\WmiUtil.cpp" />
     <!-- SDK -->
     <ClCompile Include="sdk\adlx\SDK\ADLXHelper\Windows\Cpp\ADLXHelper.cpp" />
     <ClCompile Include="sdk\adlx\SDK\Platform\Windows\WinAPIs.cpp" />
@@ -201,6 +202,7 @@
     <ClInclude Include="source\Types\DisplayMetric.h" />
     <ClInclude Include="source\Types\MetricParser.h" />
     <ClInclude Include="source\Utils\Debug.h" />
+    <ClInclude Include="source\Utils\WmiUtil.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
 

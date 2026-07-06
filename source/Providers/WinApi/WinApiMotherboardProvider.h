@@ -32,6 +32,5 @@ private:
     std::wstring m_systemManufacturer;
     std::wstring m_systemProduct;
 
-    void InitWmi();
     void ReadIdentity();
 };

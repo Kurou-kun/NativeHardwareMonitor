@@ -1,10 +1,7 @@
 #include "Providers/WinApi/WinApiMotherboardProvider.h"
+#include "Utils/WmiUtil.h"
 #include "Types/MotherboardMetric.h"
 #include "Utils/Debug.h"
-
-#include <comdef.h>
-
-#pragma comment(lib, "wbemuuid.lib")
 
 WinApiMotherboardProvider::~WinApiMotherboardProvider()
 {
@@ -14,72 +11,11 @@ WinApiMotherboardProvider::~WinApiMotherboardProvider()
 
 bool WinApiMotherboardProvider::Initialize()
 {
-    InitWmi();
+    m_wmiServices = Wmi::Connect(L"ROOT\\CIMV2", m_comInitialized);
     ReadIdentity();
 
     LOG_STARTUP(L"WinApiMotherboardProvider: initialized");
     return true;
-}
-
-void WinApiMotherboardProvider::InitWmi()
-{
-    HRESULT coInit = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
-    m_comInitialized = SUCCEEDED(coInit);
-
-    IWbemLocator* locator = nullptr;
-    if (FAILED(CoCreateInstance(CLSID_WbemLocator, nullptr, CLSCTX_INPROC_SERVER,
-                                 IID_IWbemLocator, (LPVOID*)&locator)) || !locator)
-        return;
-
-    HRESULT hr = locator->ConnectServer(_bstr_t(L"ROOT\\CIMV2"), nullptr, nullptr, nullptr,
-                                         0, nullptr, nullptr, &m_wmiServices);
-    if (FAILED(hr) || !m_wmiServices)
-    {
-        m_wmiServices = nullptr;
-        locator->Release();
-        return;
-    }
-
-    CoSetProxyBlanket(m_wmiServices, RPC_C_AUTHN_WINNT, RPC_C_AUTHZ_NONE, nullptr,
-                       RPC_C_AUTHN_LEVEL_CALL, RPC_C_IMP_LEVEL_IMPERSONATE, nullptr, EOAC_NONE);
-
-    locator->Release();
-}
-
-static std::wstring TrimBstr(const wchar_t* s)
-{
-    if (!s) return L"";
-    std::wstring v = s;
-    size_t start = v.find_first_not_of(L' ');
-    size_t end   = v.find_last_not_of(L' ');
-    return start == std::wstring::npos ? L"" : v.substr(start, end - start + 1);
-}
-
-// Runs a single-row WQL query and returns the named string field (trimmed).
-static std::wstring QueryStr(IWbemServices* svc, const wchar_t* wql, const wchar_t* field)
-{
-    if (!svc) return L"";
-
-    IEnumWbemClassObject* enumerator = nullptr;
-    HRESULT hr = svc->ExecQuery(_bstr_t(L"WQL"), _bstr_t(wql),
-        WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY, nullptr, &enumerator);
-
-    if (FAILED(hr) || !enumerator)
-        return L"";
-
-    std::wstring out;
-    IWbemClassObject* obj = nullptr;
-    ULONG returned = 0;
-    if (enumerator->Next(WBEM_INFINITE, 1, &obj, &returned) == S_OK && obj)
-    {
-        VARIANT v; VariantInit(&v);
-        if (SUCCEEDED(obj->Get(field, 0, &v, nullptr, nullptr)) && v.vt == VT_BSTR)
-            out = TrimBstr(v.bstrVal);
-        VariantClear(&v);
-        obj->Release();
-    }
-    enumerator->Release();
-    return out;
 }
 
 void WinApiMotherboardProvider::ReadIdentity()
@@ -87,15 +23,15 @@ void WinApiMotherboardProvider::ReadIdentity()
     if (!m_wmiServices)
         return;
 
-    m_manufacturer       = QueryStr(m_wmiServices, L"SELECT Manufacturer FROM Win32_BaseBoard", L"Manufacturer");
-    m_product            = QueryStr(m_wmiServices, L"SELECT Product FROM Win32_BaseBoard", L"Product");
-    m_serialNumber       = QueryStr(m_wmiServices, L"SELECT SerialNumber FROM Win32_BaseBoard", L"SerialNumber");
-    m_biosVersion        = QueryStr(m_wmiServices, L"SELECT SMBIOSBIOSVersion FROM Win32_BIOS", L"SMBIOSBIOSVersion");
-    m_systemManufacturer = QueryStr(m_wmiServices, L"SELECT Manufacturer FROM Win32_ComputerSystem", L"Manufacturer");
-    m_systemProduct      = QueryStr(m_wmiServices, L"SELECT Model FROM Win32_ComputerSystem", L"Model");
+    m_manufacturer       = Wmi::QueryStr(m_wmiServices, L"SELECT Manufacturer FROM Win32_BaseBoard", L"Manufacturer");
+    m_product            = Wmi::QueryStr(m_wmiServices, L"SELECT Product FROM Win32_BaseBoard", L"Product");
+    m_serialNumber       = Wmi::QueryStr(m_wmiServices, L"SELECT SerialNumber FROM Win32_BaseBoard", L"SerialNumber");
+    m_biosVersion        = Wmi::QueryStr(m_wmiServices, L"SELECT SMBIOSBIOSVersion FROM Win32_BIOS", L"SMBIOSBIOSVersion");
+    m_systemManufacturer = Wmi::QueryStr(m_wmiServices, L"SELECT Manufacturer FROM Win32_ComputerSystem", L"Manufacturer");
+    m_systemProduct      = Wmi::QueryStr(m_wmiServices, L"SELECT Model FROM Win32_ComputerSystem", L"Model");
 
     // ReleaseDate is a WMI datetime (yyyymmddHHMMSS...) — keep just the date as YYYY-MM-DD.
-    std::wstring rawDate = QueryStr(m_wmiServices, L"SELECT ReleaseDate FROM Win32_BIOS", L"ReleaseDate");
+    std::wstring rawDate = Wmi::QueryStr(m_wmiServices, L"SELECT ReleaseDate FROM Win32_BIOS", L"ReleaseDate");
     if (rawDate.size() >= 8)
         m_biosDate = rawDate.substr(0, 4) + L"-" + rawDate.substr(4, 2) + L"-" + rawDate.substr(6, 2);
 }

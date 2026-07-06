@@ -37,6 +37,18 @@
     <Filter Include="Source Files\Modules\Ping">
       <UniqueIdentifier>{a1b2c3d4-0001-0001-0001-000000000019}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Modules\Battery">
+      <UniqueIdentifier>{a1b2c3d4-0001-0001-0001-000000000020}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Modules\System">
+      <UniqueIdentifier>{a1b2c3d4-0001-0001-0001-000000000021}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Modules\Motherboard">
+      <UniqueIdentifier>{a1b2c3d4-0001-0001-0001-000000000022}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Modules\Display">
+      <UniqueIdentifier>{a1b2c3d4-0001-0001-0001-000000000023}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Source Files\Providers">
       <UniqueIdentifier>{a1b2c3d4-0001-0001-0001-000000000009}</UniqueIdentifier>
     </Filter>
@@ -120,6 +132,34 @@
     <ClCompile Include="source\Modules\Ping\PingResolver.cpp">
       <Filter>Source Files\Modules\Ping</Filter>
     </ClCompile>
+    <!-- Modules\Battery -->
+    <ClCompile Include="source\Modules\Battery\BatteryModule.cpp">
+      <Filter>Source Files\Modules\Battery</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Modules\Battery\BatteryResolver.cpp">
+      <Filter>Source Files\Modules\Battery</Filter>
+    </ClCompile>
+    <!-- Modules\System -->
+    <ClCompile Include="source\Modules\System\SystemModule.cpp">
+      <Filter>Source Files\Modules\System</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Modules\System\SystemResolver.cpp">
+      <Filter>Source Files\Modules\System</Filter>
+    </ClCompile>
+    <!-- Modules\Motherboard -->
+    <ClCompile Include="source\Modules\Motherboard\MotherboardModule.cpp">
+      <Filter>Source Files\Modules\Motherboard</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Modules\Motherboard\MotherboardResolver.cpp">
+      <Filter>Source Files\Modules\Motherboard</Filter>
+    </ClCompile>
+    <!-- Modules\Display -->
+    <ClCompile Include="source\Modules\Display\DisplayModule.cpp">
+      <Filter>Source Files\Modules\Display</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Modules\Display\DisplayResolver.cpp">
+      <Filter>Source Files\Modules\Display</Filter>
+    </ClCompile>
     <!-- Providers\Nvml -->
     <ClCompile Include="source\Providers\Nvml\NvmlProvider.cpp">
       <Filter>Source Files\Providers\Nvml</Filter>
@@ -155,12 +195,27 @@
     <ClCompile Include="source\Providers\WinApi\WinApiStorageProvider.cpp">
       <Filter>Source Files\Providers\WinApi</Filter>
     </ClCompile>
+    <ClCompile Include="source\Providers\WinApi\WinApiBatteryProvider.cpp">
+      <Filter>Source Files\Providers\WinApi</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Providers\WinApi\WinApiSystemProvider.cpp">
+      <Filter>Source Files\Providers\WinApi</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Providers\WinApi\WinApiMotherboardProvider.cpp">
+      <Filter>Source Files\Providers\WinApi</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Providers\WinApi\WinApiDisplayProvider.cpp">
+      <Filter>Source Files\Providers\WinApi</Filter>
+    </ClCompile>
     <!-- Types -->
     <ClCompile Include="source\Types\MetricParser.cpp">
       <Filter>Source Files\Types</Filter>
     </ClCompile>
     <!-- Utils -->
     <ClCompile Include="source\Utils\Debug.cpp">
+      <Filter>Source Files\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Utils\WmiUtil.cpp">
       <Filter>Source Files\Utils</Filter>
     </ClCompile>
     <!-- SDK -->
@@ -232,6 +287,34 @@
     <ClInclude Include="source\Modules\Ping\PingResolver.h">
       <Filter>Header Files\Modules\Ping</Filter>
     </ClInclude>
+    <!-- Modules\Battery -->
+    <ClInclude Include="source\Modules\Battery\BatteryModule.h">
+      <Filter>Header Files\Modules\Battery</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Modules\Battery\BatteryResolver.h">
+      <Filter>Header Files\Modules\Battery</Filter>
+    </ClInclude>
+    <!-- Modules\System -->
+    <ClInclude Include="source\Modules\System\SystemModule.h">
+      <Filter>Header Files\Modules\System</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Modules\System\SystemResolver.h">
+      <Filter>Header Files\Modules\System</Filter>
+    </ClInclude>
+    <!-- Modules\Motherboard -->
+    <ClInclude Include="source\Modules\Motherboard\MotherboardModule.h">
+      <Filter>Header Files\Modules\Motherboard</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Modules\Motherboard\MotherboardResolver.h">
+      <Filter>Header Files\Modules\Motherboard</Filter>
+    </ClInclude>
+    <!-- Modules\Display -->
+    <ClInclude Include="source\Modules\Display\DisplayModule.h">
+      <Filter>Header Files\Modules\Display</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Modules\Display\DisplayResolver.h">
+      <Filter>Header Files\Modules\Display</Filter>
+    </ClInclude>
     <!-- Providers\Nvml -->
     <ClInclude Include="source\Providers\Nvml\NvmlProvider.h">
       <Filter>Header Files\Providers\Nvml</Filter>
@@ -267,6 +350,18 @@
     <ClInclude Include="source\Providers\WinApi\WinApiStorageProvider.h">
       <Filter>Header Files\Providers\WinApi</Filter>
     </ClInclude>
+    <ClInclude Include="source\Providers\WinApi\WinApiBatteryProvider.h">
+      <Filter>Header Files\Providers\WinApi</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Providers\WinApi\WinApiSystemProvider.h">
+      <Filter>Header Files\Providers\WinApi</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Providers\WinApi\WinApiMotherboardProvider.h">
+      <Filter>Header Files\Providers\WinApi</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Providers\WinApi\WinApiDisplayProvider.h">
+      <Filter>Header Files\Providers\WinApi</Filter>
+    </ClInclude>
     <!-- Types -->
     <ClInclude Include="source\Types\Category.h">
       <Filter>Header Files\Types</Filter>
@@ -292,11 +387,26 @@
     <ClInclude Include="source\Types\PingMetric.h">
       <Filter>Header Files\Types</Filter>
     </ClInclude>
+    <ClInclude Include="source\Types\BatteryMetric.h">
+      <Filter>Header Files\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Types\SystemMetric.h">
+      <Filter>Header Files\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Types\MotherboardMetric.h">
+      <Filter>Header Files\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Types\DisplayMetric.h">
+      <Filter>Header Files\Types</Filter>
+    </ClInclude>
     <ClInclude Include="source\Types\MetricParser.h">
       <Filter>Header Files\Types</Filter>
     </ClInclude>
     <!-- Utils -->
     <ClInclude Include="source\Utils\Debug.h">
+      <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Utils\WmiUtil.h">
       <Filter>Header Files\Utils</Filter>
     </ClInclude>
     <!-- Root -->
@@ -339,6 +449,18 @@
     </Filter>
     <Filter Include="Header Files\Modules\Ping">
       <UniqueIdentifier>{b1b2c3d4-0001-0001-0001-000000000018}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Modules\Battery">
+      <UniqueIdentifier>{b1b2c3d4-0001-0001-0001-000000000020}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Modules\System">
+      <UniqueIdentifier>{b1b2c3d4-0001-0001-0001-000000000021}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Modules\Motherboard">
+      <UniqueIdentifier>{b1b2c3d4-0001-0001-0001-000000000022}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Modules\Display">
+      <UniqueIdentifier>{b1b2c3d4-0001-0001-0001-000000000023}</UniqueIdentifier>
     </Filter>
     <Filter Include="Header Files\Providers">
       <UniqueIdentifier>{b1b2c3d4-0001-0001-0001-000000000009}</UniqueIdentifier>
