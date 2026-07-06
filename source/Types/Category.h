@@ -11,5 +11,6 @@ enum class Category
     Battery,
     System,
     Motherboard,
+    Display,
     Unknown
 };

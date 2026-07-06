@@ -123,6 +123,8 @@
     <ClCompile Include="source\Modules\System\SystemResolver.cpp" />
     <ClCompile Include="source\Modules\Motherboard\MotherboardModule.cpp" />
     <ClCompile Include="source\Modules\Motherboard\MotherboardResolver.cpp" />
+    <ClCompile Include="source\Modules\Display\DisplayModule.cpp" />
+    <ClCompile Include="source\Modules\Display\DisplayResolver.cpp" />
     <ClCompile Include="source\Providers\Nvml\NvmlProvider.cpp" />
     <ClCompile Include="source\Providers\Nvapi\NvapiProvider.cpp" />
     <ClCompile Include="source\Providers\Adlx\AdlxProvider.cpp" />
@@ -136,6 +138,7 @@
     <ClCompile Include="source\Providers\WinApi\WinApiBatteryProvider.cpp" />
     <ClCompile Include="source\Providers\WinApi\WinApiSystemProvider.cpp" />
     <ClCompile Include="source\Providers\WinApi\WinApiMotherboardProvider.cpp" />
+    <ClCompile Include="source\Providers\WinApi\WinApiDisplayProvider.cpp" />
     <ClCompile Include="source\Types\MetricParser.cpp" />
     <ClCompile Include="source\Utils\Debug.cpp" />
     <!-- SDK -->
@@ -168,6 +171,8 @@
     <ClInclude Include="source\Modules\System\SystemResolver.h" />
     <ClInclude Include="source\Modules\Motherboard\MotherboardModule.h" />
     <ClInclude Include="source\Modules\Motherboard\MotherboardResolver.h" />
+    <ClInclude Include="source\Modules\Display\DisplayModule.h" />
+    <ClInclude Include="source\Modules\Display\DisplayResolver.h" />
     <ClInclude Include="source\Providers\Nvml\NvmlProvider.h" />
     <ClInclude Include="source\Providers\Nvapi\NvapiProvider.h" />
     <ClInclude Include="source\Providers\Adlx\AdlxProvider.h" />
@@ -181,6 +186,7 @@
     <ClInclude Include="source\Providers\WinApi\WinApiBatteryProvider.h" />
     <ClInclude Include="source\Providers\WinApi\WinApiSystemProvider.h" />
     <ClInclude Include="source\Providers\WinApi\WinApiMotherboardProvider.h" />
+    <ClInclude Include="source\Providers\WinApi\WinApiDisplayProvider.h" />
     <ClInclude Include="source\Types\Category.h" />
     <ClInclude Include="source\Types\Snapshot.h" />
     <ClInclude Include="source\Types\GpuMetric.h" />
@@ -192,6 +198,7 @@
     <ClInclude Include="source\Types\BatteryMetric.h" />
     <ClInclude Include="source\Types\SystemMetric.h" />
     <ClInclude Include="source\Types\MotherboardMetric.h" />
+    <ClInclude Include="source\Types\DisplayMetric.h" />
     <ClInclude Include="source\Types\MetricParser.h" />
     <ClInclude Include="source\Utils\Debug.h" />
     <ClInclude Include="resource.h" />

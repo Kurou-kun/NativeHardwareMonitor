@@ -9,6 +9,7 @@
 #include "Types/BatteryMetric.h"
 #include "Types/SystemMetric.h"
 #include "Types/MotherboardMetric.h"
+#include "Types/DisplayMetric.h"
 
 #include <algorithm>
 #include <cwctype>
@@ -42,6 +43,7 @@ Category ParseCategory(const std::wstring& input)
     if (str == L"battery") return Category::Battery;
     if (str == L"system")  return Category::System;
     if (str == L"motherboard") return Category::Motherboard;
+    if (str == L"display") return Category::Display;
 
     return Category::Unknown;
 }
@@ -208,6 +210,18 @@ uint32_t ParseMetric(Category category, const std::wstring& input)
         if (str == L"systemmanufacturer") return static_cast<uint32_t>(MotherboardMetric::SystemManufacturer);
         if (str == L"systemproduct")      return static_cast<uint32_t>(MotherboardMetric::SystemProduct);
         return static_cast<uint32_t>(MotherboardMetric::Unknown);
+
+    case Category::Display:
+        if (str == L"width")        return static_cast<uint32_t>(DisplayMetric::Width);
+        if (str == L"height")       return static_cast<uint32_t>(DisplayMetric::Height);
+        if (str == L"refreshrate")  return static_cast<uint32_t>(DisplayMetric::RefreshRate);
+        if (str == L"bitsperpixel") return static_cast<uint32_t>(DisplayMetric::BitsPerPixel);
+        if (str == L"primary")      return static_cast<uint32_t>(DisplayMetric::Primary);
+        if (str == L"count")        return static_cast<uint32_t>(DisplayMetric::Count);
+        if (str == L"name")         return static_cast<uint32_t>(DisplayMetric::Name);
+        if (str == L"devicename")   return static_cast<uint32_t>(DisplayMetric::DeviceName);
+        if (str == L"resolution")   return static_cast<uint32_t>(DisplayMetric::Resolution);
+        return static_cast<uint32_t>(DisplayMetric::Unknown);
 
     default:
         return static_cast<uint32_t>(-1);

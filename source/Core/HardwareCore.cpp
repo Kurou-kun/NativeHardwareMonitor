@@ -9,6 +9,7 @@
 #include "Modules/Battery/BatteryModule.h"
 #include "Modules/System/SystemModule.h"
 #include "Modules/Motherboard/MotherboardModule.h"
+#include "Modules/Display/DisplayModule.h"
 
 #include <algorithm>
 #include <windows.h>
@@ -36,6 +37,7 @@ HardwareCore::HardwareCore()
     m_modules[Category::Battery] = make(std::make_unique<BatteryModule>());
     m_modules[Category::System]  = make(std::make_unique<SystemModule>());
     m_modules[Category::Motherboard] = make(std::make_unique<MotherboardModule>());
+    m_modules[Category::Display]  = make(std::make_unique<DisplayModule>());
 }
 
 uint32_t HardwareCore::RegisterMeasure(
