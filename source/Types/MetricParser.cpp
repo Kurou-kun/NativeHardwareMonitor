@@ -6,6 +6,7 @@
 #include "Types/NetworkMetric.h"
 #include "Types/StorageMetric.h"
 #include "Types/PingMetric.h"
+#include "Types/BatteryMetric.h"
 
 #include <algorithm>
 #include <cwctype>
@@ -36,6 +37,7 @@ Category ParseCategory(const std::wstring& input)
     if (str == L"network") return Category::Network;
     if (str == L"storage") return Category::Storage;
     if (str == L"ping")    return Category::Ping;
+    if (str == L"battery") return Category::Battery;
 
     return Category::Unknown;
 }
@@ -160,6 +162,25 @@ uint32_t ParseMetric(Category category, const std::wstring& input)
         if (str == L"filesystem") return static_cast<uint32_t>(StorageMetric::FileSystem);
         if (str == L"drivetype")  return static_cast<uint32_t>(StorageMetric::DriveType);
         return static_cast<uint32_t>(StorageMetric::Unknown);
+
+    case Category::Battery:
+        if (str == L"chargelevel")        return static_cast<uint32_t>(BatteryMetric::ChargeLevel);
+        if (str == L"charging")           return static_cast<uint32_t>(BatteryMetric::Charging);
+        if (str == L"aconline")           return static_cast<uint32_t>(BatteryMetric::AcOnline);
+        if (str == L"timetoempty")        return static_cast<uint32_t>(BatteryMetric::TimeToEmpty);
+        if (str == L"rate")               return static_cast<uint32_t>(BatteryMetric::Rate);
+        if (str == L"voltage")            return static_cast<uint32_t>(BatteryMetric::Voltage);
+        if (str == L"remainingcapacity")  return static_cast<uint32_t>(BatteryMetric::RemainingCapacity);
+        if (str == L"fullchargecapacity") return static_cast<uint32_t>(BatteryMetric::FullChargeCapacity);
+        if (str == L"designcapacity")     return static_cast<uint32_t>(BatteryMetric::DesignCapacity);
+        if (str == L"wearlevel")          return static_cast<uint32_t>(BatteryMetric::WearLevel);
+        if (str == L"cyclecount")         return static_cast<uint32_t>(BatteryMetric::CycleCount);
+        if (str == L"status")             return static_cast<uint32_t>(BatteryMetric::Status);
+        if (str == L"chemistry")          return static_cast<uint32_t>(BatteryMetric::Chemistry);
+        if (str == L"manufacturer")       return static_cast<uint32_t>(BatteryMetric::Manufacturer);
+        if (str == L"serialnumber")       return static_cast<uint32_t>(BatteryMetric::SerialNumber);
+        if (str == L"devicename")         return static_cast<uint32_t>(BatteryMetric::DeviceName);
+        return static_cast<uint32_t>(BatteryMetric::Unknown);
 
     default:
         return static_cast<uint32_t>(-1);

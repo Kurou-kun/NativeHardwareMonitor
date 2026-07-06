@@ -8,5 +8,6 @@ enum class Category
     Network,
     Storage,
     Ping,
+    Battery,
     Unknown
 };

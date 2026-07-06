@@ -117,6 +117,8 @@
     <ClCompile Include="source\Modules\Storage\StorageResolver.cpp" />
     <ClCompile Include="source\Modules\Ping\PingModule.cpp" />
     <ClCompile Include="source\Modules\Ping\PingResolver.cpp" />
+    <ClCompile Include="source\Modules\Battery\BatteryModule.cpp" />
+    <ClCompile Include="source\Modules\Battery\BatteryResolver.cpp" />
     <ClCompile Include="source\Providers\Nvml\NvmlProvider.cpp" />
     <ClCompile Include="source\Providers\Nvapi\NvapiProvider.cpp" />
     <ClCompile Include="source\Providers\Adlx\AdlxProvider.cpp" />
@@ -127,6 +129,7 @@
     <ClCompile Include="source\Providers\WinApi\WinApiNetworkProvider.cpp" />
     <ClCompile Include="source\Providers\WinApi\WinApiPingProvider.cpp" />
     <ClCompile Include="source\Providers\WinApi\WinApiStorageProvider.cpp" />
+    <ClCompile Include="source\Providers\WinApi\WinApiBatteryProvider.cpp" />
     <ClCompile Include="source\Types\MetricParser.cpp" />
     <ClCompile Include="source\Utils\Debug.cpp" />
     <!-- SDK -->
@@ -153,6 +156,8 @@
     <ClInclude Include="source\Modules\Storage\StorageResolver.h" />
     <ClInclude Include="source\Modules\Ping\PingModule.h" />
     <ClInclude Include="source\Modules\Ping\PingResolver.h" />
+    <ClInclude Include="source\Modules\Battery\BatteryModule.h" />
+    <ClInclude Include="source\Modules\Battery\BatteryResolver.h" />
     <ClInclude Include="source\Providers\Nvml\NvmlProvider.h" />
     <ClInclude Include="source\Providers\Nvapi\NvapiProvider.h" />
     <ClInclude Include="source\Providers\Adlx\AdlxProvider.h" />
@@ -163,6 +168,7 @@
     <ClInclude Include="source\Providers\WinApi\WinApiNetworkProvider.h" />
     <ClInclude Include="source\Providers\WinApi\WinApiPingProvider.h" />
     <ClInclude Include="source\Providers\WinApi\WinApiStorageProvider.h" />
+    <ClInclude Include="source\Providers\WinApi\WinApiBatteryProvider.h" />
     <ClInclude Include="source\Types\Category.h" />
     <ClInclude Include="source\Types\Snapshot.h" />
     <ClInclude Include="source\Types\GpuMetric.h" />
@@ -171,6 +177,7 @@
     <ClInclude Include="source\Types\NetworkMetric.h" />
     <ClInclude Include="source\Types\StorageMetric.h" />
     <ClInclude Include="source\Types\PingMetric.h" />
+    <ClInclude Include="source\Types\BatteryMetric.h" />
     <ClInclude Include="source\Types\MetricParser.h" />
     <ClInclude Include="source\Utils\Debug.h" />
     <ClInclude Include="resource.h" />
