@@ -1,11 +1,10 @@
 #include "Providers/WinApi/WinApiMemoryProvider.h"
 #include "Types/MemoryMetric.h"
 #include "Utils/Debug.h"
+#include "Utils/WmiUtil.h"
 
 #include <psapi.h>
 #include <comdef.h>
-
-#pragma comment(lib, "wbemuuid.lib")
 
 bool WinApiMemoryProvider::Initialize()
 {
@@ -32,30 +31,8 @@ WinApiMemoryProvider::~WinApiMemoryProvider()
 
 void WinApiMemoryProvider::InitWmi()
 {
-    // RPC_E_CHANGED_MODE means the calling thread already has COM initialized in a
-    // different apartment (Rainmeter's own thread does) — that's not fatal, WMI works
-    // fine in either apartment; we just must not call CoUninitialize for one we didn't init.
-    HRESULT coInit = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
-    m_comInitialized = SUCCEEDED(coInit);
-
-    IWbemLocator* locator = nullptr;
-    if (FAILED(CoCreateInstance(CLSID_WbemLocator, nullptr, CLSCTX_INPROC_SERVER,
-                                 IID_IWbemLocator, (LPVOID*)&locator)) || !locator)
-        return;
-
-    HRESULT hr = locator->ConnectServer(_bstr_t(L"ROOT\\CIMV2"), nullptr, nullptr, nullptr,
-                                         0, nullptr, nullptr, &m_wmiServices);
-    if (FAILED(hr) || !m_wmiServices)
-    {
-        m_wmiServices = nullptr;
-        locator->Release();
-        return;
-    }
-
-    CoSetProxyBlanket(m_wmiServices, RPC_C_AUTHN_WINNT, RPC_C_AUTHZ_NONE, nullptr,
-                       RPC_C_AUTHN_LEVEL_CALL, RPC_C_IMP_LEVEL_IMPERSONATE, nullptr, EOAC_NONE);
-
-    locator->Release();
+    // Connection kept alive across gathers (see header) — QueryPageFileUsage reuses it.
+    m_wmiServices = Wmi::Connect(L"ROOT\\CIMV2", m_comInitialized);
 }
 
 bool WinApiMemoryProvider::QueryPageFileUsage(double& usedBytes, double& totalBytes)
@@ -78,19 +55,13 @@ bool WinApiMemoryProvider::QueryPageFileUsage(double& usedBytes, double& totalBy
     ULONG returned = 0;
     while (enumerator->Next(WBEM_INFINITE, 1, &obj, &returned) == S_OK && obj)
     {
-        VARIANT used, total;
-        VariantInit(&used);
-        VariantInit(&total);
-
-        if (SUCCEEDED(obj->Get(L"CurrentUsage", 0, &used, nullptr, nullptr)) && used.vt == VT_I4)
-            usedMb += used.lVal;
-        if (SUCCEEDED(obj->Get(L"AllocatedBaseSize", 0, &total, nullptr, nullptr)) && total.vt == VT_I4)
-            totalMb += total.lVal;
+        double used = 0.0, total = 0.0; // absent fields stay 0 — a pagefile can report either
+        Wmi::GetU32(obj, L"CurrentUsage", used);
+        Wmi::GetU32(obj, L"AllocatedBaseSize", total);
+        usedMb  += used;
+        totalMb += total;
 
         found = true;
-
-        VariantClear(&used);
-        VariantClear(&total);
         obj->Release();
     }
     enumerator->Release();
@@ -195,15 +166,6 @@ static const wchar_t* SmbiosMemoryTypeToString(long type)
     }
 }
 
-static std::wstring TrimBstr(const wchar_t* s)
-{
-    if (!s) return L"";
-    std::wstring v = s;
-    size_t start = v.find_first_not_of(L' ');
-    size_t end   = v.find_last_not_of(L' ');
-    return start == std::wstring::npos ? L"" : v.substr(start, end - start + 1);
-}
-
 // Win32_PhysicalMemory: static RAM hardware identity, read once. Modules are near
 // always identical, so report the first instance's fields + a module count.
 void WinApiMemoryProvider::ReadPhysicalMemory()
@@ -227,33 +189,15 @@ void WinApiMemoryProvider::ReadPhysicalMemory()
 
         if (m_moduleCount == 1) // take identity from the first module
         {
-            auto getU32 = [&](const wchar_t* name) -> long {
-                VARIANT v; VariantInit(&v);
-                long out = 0;
-                if (SUCCEEDED(obj->Get(name, 0, &v, nullptr, nullptr)))
-                {
-                    if      (v.vt == VT_I4)  out = v.lVal;
-                    else if (v.vt == VT_UI4) out = static_cast<long>(v.ulVal);
-                }
-                VariantClear(&v);
-                return out;
-            };
-            auto getStr = [&](const wchar_t* name) -> std::wstring {
-                VARIANT v; VariantInit(&v);
-                std::wstring out;
-                if (SUCCEEDED(obj->Get(name, 0, &v, nullptr, nullptr)) && v.vt == VT_BSTR)
-                    out = TrimBstr(v.bstrVal);
-                VariantClear(&v);
-                return out;
-            };
+            double configured = 0.0, rated = 0.0, smbiosType = 0.0;
+            Wmi::GetU32(obj, L"ConfiguredClockSpeed", configured);
+            Wmi::GetU32(obj, L"Speed", rated);
+            Wmi::GetU32(obj, L"SMBIOSMemoryType", smbiosType);
 
-            long configured = getU32(L"ConfiguredClockSpeed");
-            long rated       = getU32(L"Speed");
-            m_ramSpeed       = static_cast<double>(configured > 0 ? configured : rated); // MT/s
-
-            m_memoryType   = SmbiosMemoryTypeToString(getU32(L"SMBIOSMemoryType"));
-            m_manufacturer = getStr(L"Manufacturer");
-            m_partNumber   = getStr(L"PartNumber");
+            m_ramSpeed     = configured > 0 ? configured : rated; // MT/s
+            m_memoryType   = SmbiosMemoryTypeToString(static_cast<long>(smbiosType));
+            m_manufacturer = Wmi::GetStr(obj, L"Manufacturer");
+            m_partNumber   = Wmi::GetStr(obj, L"PartNumber");
         }
 
         obj->Release();

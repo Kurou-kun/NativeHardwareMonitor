@@ -1,16 +1,14 @@
 #include "Providers/WinApi/WinApiCpuProvider.h"
 #include "Types/CpuMetric.h"
 #include "Utils/Debug.h"
+#include "Utils/WmiUtil.h"
 
 #include <algorithm>
 #include <cstdio>
 #include <powrprof.h>
 #include <powerbase.h>
-#include <comdef.h>
-#include <Wbemidl.h>
 
 #pragma comment(lib, "powrprof.lib")
-#pragma comment(lib, "wbemuuid.lib")
 
 #define SystemProcessorPerformanceInformation 8
 
@@ -252,62 +250,26 @@ void WinApiCpuProvider::ReadTopology()
 
 // CurrentVoltage isn't available through any other user-mode API — WMI is the
 // only no-driver source, so this pays the one-time COM cost at startup only.
-//
-// RPC_E_CHANGED_MODE means the calling thread already has COM initialized in a
-// different apartment (Rainmeter's own thread does) — not fatal, WMI works fine
-// in either apartment; we just must not call CoUninitialize for one we didn't init.
 void WinApiCpuProvider::ReadVoltage()
 {
-    HRESULT coInit = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
-    bool    ownsCom = SUCCEEDED(coInit);
-
-    IWbemLocator* locator = nullptr;
-    if (FAILED(CoCreateInstance(CLSID_WbemLocator, nullptr, CLSCTX_INPROC_SERVER,
-                                 IID_IWbemLocator, (LPVOID*)&locator)) || !locator)
+    bool ownsCom = false;
+    IWbemServices* svc = Wmi::Connect(L"ROOT\\CIMV2", ownsCom);
+    if (svc)
     {
-        if (ownsCom) CoUninitialize();
-        return;
-    }
-
-    IWbemServices* services = nullptr;
-    HRESULT hr = locator->ConnectServer(_bstr_t(L"ROOT\\CIMV2"), nullptr, nullptr, nullptr,
-                                         0, nullptr, nullptr, &services);
-    if (FAILED(hr) || !services)
-    {
-        locator->Release();
-        if (ownsCom) CoUninitialize();
-        return;
-    }
-
-    CoSetProxyBlanket(services, RPC_C_AUTHN_WINNT, RPC_C_AUTHZ_NONE, nullptr,
-                       RPC_C_AUTHN_LEVEL_CALL, RPC_C_IMP_LEVEL_IMPERSONATE, nullptr, EOAC_NONE);
-
-    IEnumWbemClassObject* enumerator = nullptr;
-    hr = services->ExecQuery(_bstr_t(L"WQL"), _bstr_t(L"SELECT CurrentVoltage FROM Win32_Processor"),
-                              WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY, nullptr, &enumerator);
-
-    if (SUCCEEDED(hr) && enumerator)
-    {
-        IWbemClassObject* obj = nullptr;
-        ULONG returned = 0;
-        if (enumerator->Next(WBEM_INFINITE, 1, &obj, &returned) == S_OK && obj)
+        if (IWbemClassObject* obj = Wmi::QueryFirst(svc, L"SELECT CurrentVoltage FROM Win32_Processor"))
         {
-            VARIANT val;
-            VariantInit(&val);
-            if (SUCCEEDED(obj->Get(L"CurrentVoltage", 0, &val, nullptr, nullptr)) && val.vt == VT_I4)
+            double raw = 0.0;
+            if (Wmi::GetU32(obj, L"CurrentVoltage", raw))
             {
                 // High bit set = valid reading, low 7 bits = voltage in tenths of a volt.
                 // High bit clear = legacy enumerated value (not an actual reading) — unsupported.
-                if (val.lVal & 0x80)
-                    m_voltage = (val.lVal & 0x7F) / 10.0;
+                long v = static_cast<long>(raw);
+                if (v & 0x80)
+                    m_voltage = (v & 0x7F) / 10.0;
             }
-            VariantClear(&val);
             obj->Release();
         }
-        enumerator->Release();
+        svc->Release();
     }
-
-    services->Release();
-    locator->Release();
     if (ownsCom) CoUninitialize();
 }
