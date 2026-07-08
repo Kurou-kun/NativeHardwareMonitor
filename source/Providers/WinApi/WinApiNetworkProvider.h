@@ -24,6 +24,7 @@ private:
     {
         NET_LUID luid{};
         GUID     guid{};   // matches a WLAN interface for Wi-Fi metrics
+        bool     isWifi = false; // true only for real wireless adapters (set in Initialize)
         uint64_t prevRx = 0, prevTx = 0;
         uint64_t rxTotal = 0, txTotal = 0;
         double   rxSpeed = 0, txSpeed = 0;
@@ -60,4 +61,5 @@ private:
     ULONGLONG           m_prevTime  = 0;
     double              m_deltaTime = 1.0;
     void*               m_wlanHandle = nullptr; // HANDLE from WlanOpenHandle, null if unavailable
+    PMIB_IF_TABLE2      m_table = nullptr;      // interface table, fetched once per gather cycle
 };

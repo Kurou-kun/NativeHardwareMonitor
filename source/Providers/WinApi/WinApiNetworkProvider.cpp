@@ -71,6 +71,8 @@ WinApiNetworkProvider::~WinApiNetworkProvider()
 {
     if (m_wlanHandle)
         WlanCloseHandle(m_wlanHandle, nullptr);
+    if (m_table)
+        FreeMibTable(m_table);
 }
 
 void WinApiNetworkProvider::UpdateWifi(Device& dev)
@@ -81,7 +83,9 @@ void WinApiNetworkProvider::UpdateWifi(Device& dev)
     dev.ssid.clear();
     dev.wifiRadioType.clear();
 
-    if (!m_wlanHandle)
+    // Skip the WlanQueryInterface RPC entirely for non-wireless adapters — querying
+    // every wired/virtual adapter each tick is what made the network category lag.
+    if (!m_wlanHandle || !dev.isWifi)
         return;
 
     PWLAN_CONNECTION_ATTRIBUTES info = nullptr;
@@ -120,6 +124,20 @@ bool WinApiNetworkProvider::Initialize()
     if (WlanOpenHandle(WLAN_API_VERSION_2_0, nullptr, &negotiated, &m_wlanHandle) != ERROR_SUCCESS)
         m_wlanHandle = nullptr;
 
+    // Enumerate the real wireless interfaces once, so GatherSnapshot only WLAN-queries
+    // those adapters instead of every wired/virtual one every tick.
+    std::vector<GUID> wifiGuids;
+    if (m_wlanHandle)
+    {
+        PWLAN_INTERFACE_INFO_LIST list = nullptr;
+        if (WlanEnumInterfaces(m_wlanHandle, nullptr, &list) == ERROR_SUCCESS && list)
+        {
+            for (DWORD i = 0; i < list->dwNumberOfItems; ++i)
+                wifiGuids.push_back(list->InterfaceInfo[i].InterfaceGuid);
+            WlanFreeMemory(list);
+        }
+    }
+
     for (ULONG i = 0; i < table->NumEntries; ++i)
     {
         auto& row = table->Table[i];
@@ -129,6 +147,8 @@ bool WinApiNetworkProvider::Initialize()
         Device dev;
         dev.luid             = row.InterfaceLuid;
         dev.guid             = row.InterfaceGuid;
+        for (const auto& g : wifiGuids)
+            if (IsEqualGUID(g, dev.guid)) { dev.isWifi = true; break; }
         dev.prevRx           = row.InOctets;
         dev.prevTx           = row.OutOctets;
         dev.rxTotal          = row.InOctets;
@@ -166,24 +186,28 @@ void WinApiNetworkProvider::GatherSnapshot(uint32_t deviceIndex, Snapshot& snap)
     if (deviceIndex >= m_devices.size())
         return;
 
-    PMIB_IF_TABLE2 table = nullptr;
-    if (GetIfTable2(&table) != NO_ERROR)
-        return;
-
-    // Compute deltaTime once per cycle (device 0) so all adapters share the same interval
+    // Fetch the interface table once per gather cycle (at device 0) and reuse it for
+    // every adapter, instead of re-fetching the whole table once per adapter.
     if (deviceIndex == 0)
     {
+        if (m_table) { FreeMibTable(m_table); m_table = nullptr; }
+        if (GetIfTable2(&m_table) != NO_ERROR)
+            m_table = nullptr;
+
         ULONGLONG now  = GetTickCount64();
         double    dt   = (now - m_prevTime) / 1000.0;
         m_deltaTime    = dt > 0.0 ? dt : 1.0;
         m_prevTime     = now;
     }
 
+    if (!m_table)
+        return;
+
     auto& dev = m_devices[deviceIndex];
 
-    for (ULONG i = 0; i < table->NumEntries; ++i)
+    for (ULONG i = 0; i < m_table->NumEntries; ++i)
     {
-        auto& row = table->Table[i];
+        auto& row = m_table->Table[i];
         if (row.InterfaceLuid.Value != dev.luid.Value) continue;
 
         uint64_t rxDelta       = row.InOctets    - dev.prevRx;
@@ -220,8 +244,6 @@ void WinApiNetworkProvider::GatherSnapshot(uint32_t deviceIndex, Snapshot& snap)
         dev.connectionStatus = FormatConnectionStatus(row.MediaConnectState);
         break;
     }
-
-    FreeMibTable(table);
 
     UpdateWifi(dev);
 
