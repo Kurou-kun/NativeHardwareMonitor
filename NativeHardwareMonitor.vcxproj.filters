@@ -409,10 +409,6 @@
     <ClInclude Include="source\Utils\WmiUtil.h">
       <Filter>Header Files\Utils</Filter>
     </ClInclude>
-    <!-- Root -->
-    <ClInclude Include="resource.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
 
   <ItemGroup>

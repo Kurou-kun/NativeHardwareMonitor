@@ -203,7 +203,6 @@
     <ClInclude Include="source\Types\MetricParser.h" />
     <ClInclude Include="source\Utils\Debug.h" />
     <ClInclude Include="source\Utils\WmiUtil.h" />
-    <ClInclude Include="resource.h" />
   </ItemGroup>
 
   <!-- Resource Files -->

@@ -26,7 +26,6 @@ resource.h
 !/NativeHardwareMonitor.vcxproj.filters
 !/NativeHardwareMonitor.slnx
 !/NativeHardwareMonitor.rc
-!/resource.h
 
 # Mono auto generated files
 mono_crash.*
