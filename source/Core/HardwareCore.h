@@ -27,6 +27,9 @@ public:
     double GetValue(uint32_t handle);
     bool   GetString(uint32_t handle, std::wstring& out);
 
+    // Debug=2 diagnostic: dump every metric for one category+device to a UTF-8 file.
+    void   DumpDevice(Category category, uint32_t deviceIndex, const std::wstring& path);
+
 private:
     HardwareCore();
     ~HardwareCore() = default;

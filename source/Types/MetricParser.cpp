@@ -51,6 +51,83 @@ Category ParseCategory(const std::wstring& input)
     return Category::Unknown;
 }
 
+std::wstring CategoryName(Category category)
+{
+    switch (category)
+    {
+    case Category::GPU:         return L"GPU";
+    case Category::CPU:         return L"CPU";
+    case Category::Memory:      return L"Memory";
+    case Category::Network:     return L"Network";
+    case Category::Storage:     return L"Storage";
+    case Category::Ping:        return L"Ping";
+    case Category::Battery:     return L"Battery";
+    case Category::System:      return L"System";
+    case Category::Motherboard: return L"Motherboard";
+    case Category::Display:     return L"Display";
+    default:                    return L"Unknown";
+    }
+}
+
+uint32_t MetricCount(Category category)
+{
+    switch (category)
+    {
+    case Category::GPU:         return static_cast<uint32_t>(GpuMetric::Unknown);
+    case Category::CPU:         return static_cast<uint32_t>(CpuMetric::Unknown);
+    case Category::Memory:      return static_cast<uint32_t>(MemoryMetric::Unknown);
+    case Category::Network:     return static_cast<uint32_t>(NetworkMetric::Unknown);
+    case Category::Storage:     return static_cast<uint32_t>(StorageMetric::Unknown);
+    case Category::Ping:        return static_cast<uint32_t>(PingMetric::Unknown);
+    case Category::Battery:     return static_cast<uint32_t>(BatteryMetric::Unknown);
+    case Category::System:      return static_cast<uint32_t>(SystemMetric::Unknown);
+    case Category::Motherboard: return static_cast<uint32_t>(MotherboardMetric::Unknown);
+    case Category::Display:     return static_cast<uint32_t>(DisplayMetric::Unknown);
+    default:                    return 0;
+    }
+}
+
+// Canonical names for the Debug=2 dump. GPU is spelled out (the feature's purpose —
+// Intel verification); other categories fall back to Metric[<id>], readable enough
+// for a diagnostic file. ponytail: extend per-category only if dumps need it.
+std::wstring MetricName(Category category, uint32_t id)
+{
+    if (category == Category::GPU)
+    {
+        switch (static_cast<GpuMetric>(id))
+        {
+        case GpuMetric::Usage:              return L"Usage";
+        case GpuMetric::CoreClock:          return L"CoreClock";
+        case GpuMetric::MemoryClock:        return L"MemoryClock";
+        case GpuMetric::Temperature:        return L"Temperature";
+        case GpuMetric::HotspotTemperature: return L"HotspotTemperature";
+        case GpuMetric::MemoryTemperature:  return L"MemoryTemperature";
+        case GpuMetric::VramUsed:           return L"VramUsed";
+        case GpuMetric::VramTotal:          return L"VramTotal";
+        case GpuMetric::FanSpeed:           return L"FanSpeed";
+        case GpuMetric::FanSpeedRPM:        return L"FanSpeedRPM";
+        case GpuMetric::Power:              return L"Power";
+        case GpuMetric::PowerLimit:         return L"PowerLimit";
+        case GpuMetric::Voltage:            return L"Voltage";
+        case GpuMetric::IntakeTemperature:  return L"IntakeTemperature";
+        case GpuMetric::TotalBoardPower:    return L"TotalBoardPower";
+        case GpuMetric::MaxCoreClock:       return L"MaxCoreClock";
+        case GpuMetric::PcieLinkGen:        return L"PcieLinkGen";
+        case GpuMetric::PcieLinkWidth:      return L"PcieLinkWidth";
+        case GpuMetric::EncoderUsage:       return L"EncoderUsage";
+        case GpuMetric::DecoderUsage:       return L"DecoderUsage";
+        case GpuMetric::PerfState:          return L"PerfState";
+        case GpuMetric::Name:               return L"Name";
+        case GpuMetric::DriverVersion:      return L"DriverVersion";
+        case GpuMetric::VbiosVersion:       return L"VbiosVersion";
+        case GpuMetric::PciDeviceId:        return L"PciDeviceId";
+        case GpuMetric::ThrottleReasons:    return L"ThrottleReasons";
+        default: break;
+        }
+    }
+    return L"Metric[" + std::to_wstring(id) + L"]";
+}
+
 uint32_t ParseMetric(Category category, const std::wstring& input)
 {
     std::wstring str = Normalize(input);

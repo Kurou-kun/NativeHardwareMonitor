@@ -7,6 +7,32 @@
 
 #include "RainmeterAPI.h"
 
+#include <string>
+
+// Debug=2 diagnostic dump. Overwrites %TEMP%\NativeHardwareMonitor\<Category>_dev<N>.txt
+// with every metric for this measure's category+device — the file to send back for
+// hardware we can't test locally (e.g. Intel GPUs). Throttled per measure.
+static void MaybeDump(MeasureContext* ctx)
+{
+    if (ctx->debugLevel < 2 || !ctx->valid)
+        return;
+
+    uint64_t now = GetTickCount64();
+    if (ctx->lastDumpMs != 0 && now - ctx->lastDumpMs < 2000) // ponytail: 2s is plenty for a debug snapshot
+        return;
+    ctx->lastDumpMs = now;
+
+    wchar_t dir[MAX_PATH];
+    if (GetTempPathW(MAX_PATH, dir) == 0)
+        return;
+    std::wstring folder = std::wstring(dir) + L"NativeHardwareMonitor";
+    CreateDirectoryW(folder.c_str(), nullptr); // no-op if it already exists
+
+    std::wstring path = folder + L"\\" + CategoryName(ctx->category) +
+                        L"_dev" + std::to_wstring(ctx->deviceIndex) + L".txt";
+    HardwareCore::Instance().DumpDevice(ctx->category, ctx->deviceIndex, path);
+}
+
 static HardwareCore& GetCore()
 {
     return HardwareCore::Instance();
@@ -110,6 +136,8 @@ PLUGIN_EXPORT double Update(void* data)
     auto* ctx = static_cast<MeasureContext*>(data);
     if (!ctx || !ctx->valid)
         return -2.0;
+
+    MaybeDump(ctx);
 
     return GetCore().GetValue(ctx->handle);
 }

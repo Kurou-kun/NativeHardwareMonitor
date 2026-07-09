@@ -15,6 +15,7 @@ struct MeasureContext
     int       debugLevel       = 0;
     uint32_t  updateOverrideMs = 0;
     uint32_t  pingIntervalMs   = 1000;
+    uint64_t  lastDumpMs       = 0; // Debug=2 dump throttle
 
     std::wstring categoryStr;
     std::wstring metricStr;

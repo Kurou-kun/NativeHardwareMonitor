@@ -1,4 +1,5 @@
 #include "Core/HardwareCore.h"
+#include "Types/MetricParser.h"
 
 #include "Modules/GPU/GpuModule.h"
 #include "Modules/CPU/CpuModule.h"
@@ -12,6 +13,8 @@
 #include "Modules/Display/DisplayModule.h"
 
 #include <algorithm>
+#include <fstream>
+#include <string>
 #include <windows.h>
 
 HardwareCore& HardwareCore::Instance()
@@ -164,6 +167,70 @@ bool HardwareCore::GetString(uint32_t handle, std::wstring& out)
         return false;
 
     return state->module->GetString(entry.metricId, entry.deviceIndex, out);
+}
+
+void HardwareCore::DumpDevice(Category category, uint32_t deviceIndex, const std::wstring& path)
+{
+    ModuleState* state = GetModuleState(category);
+    if (!state || !state->module)
+        return;
+
+    std::wstring body;
+    {
+        std::lock_guard<std::mutex> lock(state->mutex);
+
+        if (!state->initialized)
+            state->initialized = state->module->Initialize();
+        if (!state->initialized)
+            return;
+
+        state->module->GatherAll(); // refresh so the dump reflects the latest tick
+        state->lastGatherTime = GetTimeMs();
+
+        SYSTEMTIME st;
+        GetLocalTime(&st);
+        wchar_t hdr[256];
+        swprintf_s(hdr,
+            L"NativeHardwareMonitor (built %S %S)\r\n%s / device %u of %u  -  %04u-%02u-%02u %02u:%02u:%02u\r\n\r\n",
+            __DATE__, __TIME__, CategoryName(category).c_str(), deviceIndex,
+            state->module->GetDeviceCount(),
+            st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond);
+        body = hdr;
+
+        uint32_t count = MetricCount(category);
+        for (uint32_t id = 0; id < count; ++id)
+        {
+            std::wstring name = MetricName(category, id);
+            if (name.size() < 20) name.append(20 - name.size(), L' ');
+
+            std::wstring s;
+            if (state->module->GetString(id, deviceIndex, s))
+            {
+                body += name + L"= \"" + s + L"\"\r\n";
+            }
+            else
+            {
+                double v = state->module->GetValue(id, deviceIndex);
+                wchar_t val[64];
+                if (v == -1.0)      swprintf_s(val, L"%g  (unsupported)", v);
+                else if (v == -2.0) swprintf_s(val, L"%g  (error)", v);
+                else                swprintf_s(val, L"%g", v);
+                body += name + L"= " + val + L"\r\n";
+            }
+        }
+    }
+
+    int n = WideCharToMultiByte(CP_UTF8, 0, body.c_str(), static_cast<int>(body.size()),
+                                nullptr, 0, nullptr, nullptr);
+    if (n <= 0)
+        return;
+    std::string utf8(static_cast<size_t>(n), '\0');
+    WideCharToMultiByte(CP_UTF8, 0, body.c_str(), static_cast<int>(body.size()),
+                        utf8.data(), n, nullptr, nullptr);
+
+    std::ofstream f(path, std::ios::binary | std::ios::trunc);
+    if (f)
+        f.write(utf8.data(), static_cast<std::streamsize>(utf8.size()));
 }
 
 HardwareCore::ModuleState* HardwareCore::GetModuleState(Category category)
