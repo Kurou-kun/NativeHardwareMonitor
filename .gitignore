@@ -375,3 +375,6 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Internal design docs (superpowers brainstorm/plan specs) — not shipped
+docs/superpowers/
