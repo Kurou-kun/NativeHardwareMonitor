@@ -216,9 +216,10 @@ void IgclProvider::GatherSnapshot(uint32_t deviceIndex, Snapshot& snap)
 
     if (t.gpuVoltage.bSupported)
     {
-        double v = ItemVal(t.gpuVoltage);
-        if (t.gpuVoltage.units == CTL_UNITS_VOLTAGE_MILLIVOLTS) v /= 1000.0;
-        set(GpuMetric::Voltage, v);
+        // GpuMetric::Voltage convention is millivolts (matches ADLX).
+        double mv = ItemVal(t.gpuVoltage);
+        if (t.gpuVoltage.units == CTL_UNITS_VOLTAGE_VOLTS) mv *= 1000.0;
+        set(GpuMetric::Voltage, mv);
     }
 
     // Fan: first supported entry; RPM or percent depending on units.
