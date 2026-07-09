@@ -6,6 +6,17 @@
 
 static constexpr uint32_t PCI_VENDOR_INTEL = 0x8086;
 
+// Two-call IGCL enumeration (count, then fill) into a vector of component handles.
+template<class Fn, class H>
+static bool EnumFirst(Fn fn, ctl_device_adapter_handle_t adapter, std::vector<H>& out)
+{
+    uint32_t n = 0;
+    if (fn(adapter, &n, nullptr) != CTL_RESULT_SUCCESS || n == 0)
+        return false;
+    out.assign(n, nullptr);
+    return fn(adapter, &n, out.data()) == CTL_RESULT_SUCCESS;
+}
+
 // Read a telemetry item's value as a double regardless of its declared data type.
 static double ItemVal(const ctl_oc_telemetry_item_t& it)
 {
@@ -105,52 +116,31 @@ bool IgclProvider::Initialize()
         }
 
         // Static GPU-domain max clock (MHz) — enumerate once, cache the value.
-        if (m_EnumFreq && m_GetFreqProps)
+        std::vector<ctl_freq_handle_t> freqs;
+        if (m_EnumFreq && m_GetFreqProps && EnumFirst(m_EnumFreq, handles[i], freqs))
         {
-            uint32_t fCount = 0;
-            if (m_EnumFreq(handles[i], &fCount, nullptr) == CTL_RESULT_SUCCESS && fCount > 0)
+            for (auto* fh : freqs)
             {
-                std::vector<ctl_freq_handle_t> freqs(fCount, nullptr);
-                if (m_EnumFreq(handles[i], &fCount, freqs.data()) == CTL_RESULT_SUCCESS)
+                ctl_freq_properties_t fp{};
+                fp.Size = sizeof(fp);
+                if (fh && m_GetFreqProps(fh, &fp) == CTL_RESULT_SUCCESS &&
+                    fp.type == CTL_FREQ_DOMAIN_GPU)
                 {
-                    for (auto* fh : freqs)
-                    {
-                        ctl_freq_properties_t fp{};
-                        fp.Size = sizeof(fp);
-                        if (fh && m_GetFreqProps(fh, &fp) == CTL_RESULT_SUCCESS &&
-                            fp.type == CTL_FREQ_DOMAIN_GPU)
-                        {
-                            dev.maxCoreClock = fp.max;
-                            break;
-                        }
-                    }
+                    dev.maxCoreClock = fp.max;
+                    break;
                 }
             }
         }
 
         // First power-domain handle for the sustained power limit.
-        if (m_EnumPower && m_GetPowerLimits)
-        {
-            uint32_t pCount = 0;
-            if (m_EnumPower(handles[i], &pCount, nullptr) == CTL_RESULT_SUCCESS && pCount > 0)
-            {
-                std::vector<ctl_pwr_handle_t> pwr(pCount, nullptr);
-                if (m_EnumPower(handles[i], &pCount, pwr.data()) == CTL_RESULT_SUCCESS)
-                    dev.pwrHandle = pwr[0];
-            }
-        }
+        std::vector<ctl_pwr_handle_t> pwr;
+        if (m_EnumPower && m_GetPowerLimits && EnumFirst(m_EnumPower, handles[i], pwr))
+            dev.pwrHandle = pwr[0];
 
-        // Cache the first VRAM module handle so per-tick reads skip re-enumeration.
-        if (m_EnumMemory && m_GetMemState)
-        {
-            uint32_t memCount = 0;
-            if (m_EnumMemory(handles[i], &memCount, nullptr) == CTL_RESULT_SUCCESS && memCount > 0)
-            {
-                std::vector<ctl_mem_handle_t> mods(memCount, nullptr);
-                if (m_EnumMemory(handles[i], &memCount, mods.data()) == CTL_RESULT_SUCCESS)
-                    dev.memHandle = mods[0];
-            }
-        }
+        // First VRAM module handle, so per-tick reads skip re-enumeration.
+        std::vector<ctl_mem_handle_t> mods;
+        if (m_EnumMemory && m_GetMemState && EnumFirst(m_EnumMemory, handles[i], mods))
+            dev.memHandle = mods[0];
 
         m_devices.push_back(std::move(dev));
     }
