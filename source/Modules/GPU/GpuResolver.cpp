@@ -4,12 +4,14 @@
 #include "Providers/Nvapi/NvapiProvider.h"
 #include "Providers/Adlx/AdlxProvider.h"
 #include "Providers/Adl2/Adl2Provider.h"
+#include "Providers/Igcl/IgclProvider.h"
 
 #include "Types/GpuMetric.h"
 #include "Utils/Debug.h"
 
 static constexpr uint32_t PCI_VENDOR_NVIDIA = 0x10DE;
 static constexpr uint32_t PCI_VENDOR_AMD    = 0x1002;
+static constexpr uint32_t PCI_VENDOR_INTEL  = 0x8086;
 
 bool GpuResolver::Initialize()
 {
@@ -95,6 +97,20 @@ bool GpuResolver::Initialize()
         }
     }
 
+    // Intel: IGCL only (single driverless API — no per-metric backup).
+    {
+        auto igcl = std::make_unique<IgclProvider>();
+        if (igcl->Initialize() && igcl->GetDeviceCount() > 0)
+        {
+            uint32_t count = igcl->GetDeviceCount();
+            for (uint32_t i = 0; i < count; ++i)
+                m_devices.push_back({ igcl.get(), i, GpuVendor::Intel });
+
+            LOG_STARTUP(L"GpuResolver: IGCL initialized (%u device(s))", count);
+            m_providers.push_back(std::move(igcl));
+        }
+    }
+
     if (m_devices.empty())
         LOG_ERROR(L"GpuResolver: no GPU provider initialized successfully");
 
@@ -143,6 +159,7 @@ bool GpuResolver::GetString(uint32_t metricId, uint32_t deviceIndex, std::wstrin
 
     uint32_t pciVendorId = dev.vendor == GpuVendor::Nvidia ? PCI_VENDOR_NVIDIA
                           : dev.vendor == GpuVendor::AMD   ? PCI_VENDOR_AMD
+                          : dev.vendor == GpuVendor::Intel ? PCI_VENDOR_INTEL
                           : 0;
     if (pciVendorId == 0)
         return false;

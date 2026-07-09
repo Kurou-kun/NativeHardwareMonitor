@@ -64,6 +64,9 @@
     <Filter Include="Source Files\Providers\Adl2">
       <UniqueIdentifier>{a1b2c3d4-0001-0001-0001-000000000013}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Providers\Igcl">
+      <UniqueIdentifier>{a1b2c3d4-0001-0001-0001-000000000017}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Source Files\Providers\WinApi">
       <UniqueIdentifier>{a1b2c3d4-0001-0001-0001-000000000014}</UniqueIdentifier>
     </Filter>
@@ -175,6 +178,9 @@
     <!-- Providers\Adl2 -->
     <ClCompile Include="source\Providers\Adl2\Adl2Provider.cpp">
       <Filter>Source Files\Providers\Adl2</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Providers\Igcl\IgclProvider.cpp">
+      <Filter>Source Files\Providers\Igcl</Filter>
     </ClCompile>
     <!-- Providers\WinApi -->
     <ClCompile Include="source\Providers\WinApi\WinApiCpuProvider.cpp">
@@ -331,6 +337,9 @@
     <ClInclude Include="source\Providers\Adl2\Adl2Provider.h">
       <Filter>Header Files\Providers\Adl2</Filter>
     </ClInclude>
+    <ClInclude Include="source\Providers\Igcl\IgclProvider.h">
+      <Filter>Header Files\Providers\Igcl</Filter>
+    </ClInclude>
     <!-- Providers\WinApi -->
     <ClInclude Include="source\Providers\WinApi\WinApiCpuProvider.h">
       <Filter>Header Files\Providers\WinApi</Filter>
@@ -472,6 +481,9 @@
     </Filter>
     <Filter Include="Header Files\Providers\Adl2">
       <UniqueIdentifier>{b1b2c3d4-0001-0001-0001-000000000013}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Providers\Igcl">
+      <UniqueIdentifier>{b1b2c3d4-0001-0001-0001-000000000017}</UniqueIdentifier>
     </Filter>
     <Filter Include="Header Files\Providers\WinApi">
       <UniqueIdentifier>{b1b2c3d4-0001-0001-0001-000000000014}</UniqueIdentifier>

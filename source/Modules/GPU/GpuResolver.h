@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-enum class GpuVendor { Nvidia, AMD, Unknown };
+enum class GpuVendor { Nvidia, AMD, Intel, Unknown };
 
 class GpuResolver
 {
