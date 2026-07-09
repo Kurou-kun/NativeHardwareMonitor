@@ -25,6 +25,7 @@ private:
     struct Device
     {
         ctl_device_adapter_handle_t handle = nullptr;
+        ctl_mem_handle_t memHandle = nullptr; // first VRAM module, cached at Initialize()
         std::string name;           // cached at Initialize()
         uint32_t    pciDeviceId = 0;
 
@@ -48,4 +49,8 @@ private:
     decltype(&ctlEnumerateDevices)    m_Enumerate     = nullptr;
     decltype(&ctlGetDeviceProperties) m_GetProperties = nullptr;
     decltype(&ctlPowerTelemetryGet)   m_GetTelemetry  = nullptr;
+
+    // Optional — VRAM used/total via a separate call; absent shouldn't fail init.
+    decltype(&ctlEnumMemoryModules)   m_EnumMemory    = nullptr;
+    decltype(&ctlMemoryGetState)      m_GetMemState   = nullptr;
 };

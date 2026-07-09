@@ -91,6 +91,19 @@ bool IgclProvider::Initialize()
         dev.handle      = handles[i];
         dev.pciDeviceId = props.pci_device_id;
         dev.name        = std::string(props.name, ::strnlen(props.name, sizeof(props.name)));
+
+        // Cache the first VRAM module handle so per-tick reads skip re-enumeration.
+        if (m_EnumMemory && m_GetMemState)
+        {
+            uint32_t memCount = 0;
+            if (m_EnumMemory(handles[i], &memCount, nullptr) == CTL_RESULT_SUCCESS && memCount > 0)
+            {
+                std::vector<ctl_mem_handle_t> mods(memCount, nullptr);
+                if (m_EnumMemory(handles[i], &memCount, mods.data()) == CTL_RESULT_SUCCESS)
+                    dev.memHandle = mods[0];
+            }
+        }
+
         m_devices.push_back(std::move(dev));
     }
 
@@ -119,6 +132,10 @@ bool IgclProvider::LoadFunctions()
     LOAD(ctlPowerTelemetryGet,   m_GetTelemetry)
 
 #undef LOAD
+
+    // Optional — VRAM used/total. Skip silently if the runtime doesn't export them.
+    m_EnumMemory  = reinterpret_cast<decltype(m_EnumMemory)>(GetProcAddress(m_module, "ctlEnumMemoryModules"));
+    m_GetMemState = reinterpret_cast<decltype(m_GetMemState)>(GetProcAddress(m_module, "ctlMemoryGetState"));
     return true;
 }
 
@@ -194,8 +211,17 @@ void IgclProvider::GatherSnapshot(uint32_t deviceIndex, Snapshot& snap)
         dev.seeded       = true;
     }
 
-    // ponytail: VramUsed/Total aren't in ctl_power_telemetry_t — would need
-    // ctlMemoryGetState (separate IGCL call). Left unsupported (-1) for now.
+    // VRAM used/total — separate call (not in the telemetry struct). Bytes.
+    if (dev.memHandle)
+    {
+        ctl_mem_state_t mem{};
+        mem.Size = sizeof(mem);
+        if (m_GetMemState(dev.memHandle, &mem) == CTL_RESULT_SUCCESS && mem.size > 0)
+        {
+            set(GpuMetric::VramTotal, static_cast<double>(mem.size));
+            set(GpuMetric::VramUsed,  static_cast<double>(mem.size - mem.free));
+        }
+    }
 }
 
 bool IgclProvider::GetString(uint32_t metricId, uint32_t deviceIndex, std::wstring& out)
