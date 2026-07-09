@@ -92,6 +92,54 @@ bool IgclProvider::Initialize()
         dev.pciDeviceId = props.pci_device_id;
         dev.name        = std::string(props.name, ::strnlen(props.name, sizeof(props.name)));
 
+        // VBIOS/firmware version, if the driver populated it (often "not implemented").
+        const ctl_firmware_version_t& fw = props.firmware_version;
+        if (fw.major_version || fw.minor_version || fw.build_number)
+        {
+            char b[48];
+            _snprintf_s(b, sizeof(b), _TRUNCATE, "%llu.%llu.%llu",
+                        (unsigned long long)fw.major_version,
+                        (unsigned long long)fw.minor_version,
+                        (unsigned long long)fw.build_number);
+            dev.vbios = b;
+        }
+
+        // Static GPU-domain max clock (MHz) — enumerate once, cache the value.
+        if (m_EnumFreq && m_GetFreqProps)
+        {
+            uint32_t fCount = 0;
+            if (m_EnumFreq(handles[i], &fCount, nullptr) == CTL_RESULT_SUCCESS && fCount > 0)
+            {
+                std::vector<ctl_freq_handle_t> freqs(fCount, nullptr);
+                if (m_EnumFreq(handles[i], &fCount, freqs.data()) == CTL_RESULT_SUCCESS)
+                {
+                    for (auto* fh : freqs)
+                    {
+                        ctl_freq_properties_t fp{};
+                        fp.Size = sizeof(fp);
+                        if (fh && m_GetFreqProps(fh, &fp) == CTL_RESULT_SUCCESS &&
+                            fp.type == CTL_FREQ_DOMAIN_GPU)
+                        {
+                            dev.maxCoreClock = fp.max;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        // First power-domain handle for the sustained power limit.
+        if (m_EnumPower && m_GetPowerLimits)
+        {
+            uint32_t pCount = 0;
+            if (m_EnumPower(handles[i], &pCount, nullptr) == CTL_RESULT_SUCCESS && pCount > 0)
+            {
+                std::vector<ctl_pwr_handle_t> pwr(pCount, nullptr);
+                if (m_EnumPower(handles[i], &pCount, pwr.data()) == CTL_RESULT_SUCCESS)
+                    dev.pwrHandle = pwr[0];
+            }
+        }
+
         // Cache the first VRAM module handle so per-tick reads skip re-enumeration.
         if (m_EnumMemory && m_GetMemState)
         {
@@ -133,9 +181,14 @@ bool IgclProvider::LoadFunctions()
 
 #undef LOAD
 
-    // Optional — VRAM used/total. Skip silently if the runtime doesn't export them.
-    m_EnumMemory  = reinterpret_cast<decltype(m_EnumMemory)>(GetProcAddress(m_module, "ctlEnumMemoryModules"));
-    m_GetMemState = reinterpret_cast<decltype(m_GetMemState)>(GetProcAddress(m_module, "ctlMemoryGetState"));
+    // Optional extras — skip silently if the runtime doesn't export them.
+    m_EnumMemory     = reinterpret_cast<decltype(m_EnumMemory)>(GetProcAddress(m_module, "ctlEnumMemoryModules"));
+    m_GetMemState    = reinterpret_cast<decltype(m_GetMemState)>(GetProcAddress(m_module, "ctlMemoryGetState"));
+    m_PciGetState    = reinterpret_cast<decltype(m_PciGetState)>(GetProcAddress(m_module, "ctlPciGetState"));
+    m_EnumPower      = reinterpret_cast<decltype(m_EnumPower)>(GetProcAddress(m_module, "ctlEnumPowerDomains"));
+    m_GetPowerLimits = reinterpret_cast<decltype(m_GetPowerLimits)>(GetProcAddress(m_module, "ctlPowerGetLimits"));
+    m_EnumFreq       = reinterpret_cast<decltype(m_EnumFreq)>(GetProcAddress(m_module, "ctlEnumFrequencyDomains"));
+    m_GetFreqProps   = reinterpret_cast<decltype(m_GetFreqProps)>(GetProcAddress(m_module, "ctlFrequencyGetProperties"));
     return true;
 }
 
@@ -187,28 +240,63 @@ void IgclProvider::GatherSnapshot(uint32_t deviceIndex, Snapshot& snap)
         break;
     }
 
-    // Counter-derived: power (ΔJoules/Δs → W) and usage (Δbusy-seconds/Δs → %).
+    // Counter-derived metrics: energy→power (ΔJoules/Δs = W), activity→util (Δbusy/Δs = %).
     // ponytail: monotonic counters — first tick only seeds; real values from the 2nd tick.
-    if (t.timeStamp.bSupported && t.gpuEnergyCounter.bSupported && t.globalActivityCounter.bSupported)
+    if (t.timeStamp.bSupported)
     {
-        double now      = ItemVal(t.timeStamp);
-        double energy   = ItemVal(t.gpuEnergyCounter);
-        double activity = ItemVal(t.globalActivityCounter);
+        double now = ItemVal(t.timeStamp);
+        double dt  = now - dev.prevTime;
 
-        if (dev.seeded)
+        if (dev.seeded && dt > 0.0)
         {
-            double dt = now - dev.prevTime;
-            if (dt > 0.0)
+            if (t.gpuEnergyCounter.bSupported)
+                set(GpuMetric::Power, (ItemVal(t.gpuEnergyCounter) - dev.prevEnergy) / dt);
+            if (t.globalActivityCounter.bSupported)
+                set(GpuMetric::Usage, (ItemVal(t.globalActivityCounter) - dev.prevActivity) / dt * 100.0);
+            if (t.totalCardEnergyCounter.bSupported)
+                set(GpuMetric::TotalBoardPower, (ItemVal(t.totalCardEnergyCounter) - dev.prevTotalEnergy) / dt);
+            if (t.mediaActivityCounter.bSupported)
             {
-                set(GpuMetric::Power, (energy   - dev.prevEnergy)   / dt);
-                set(GpuMetric::Usage, (activity - dev.prevActivity) / dt * 100.0);
+                // IGCL reports media engines combined (no encode/decode split) —
+                // report the same combined utilization on both.
+                double media = (ItemVal(t.mediaActivityCounter) - dev.prevMedia) / dt * 100.0;
+                set(GpuMetric::EncoderUsage, media);
+                set(GpuMetric::DecoderUsage, media);
             }
         }
 
-        dev.prevTime     = now;
-        dev.prevEnergy   = energy;
-        dev.prevActivity = activity;
-        dev.seeded       = true;
+        dev.prevTime        = now;
+        dev.prevEnergy      = ItemVal(t.gpuEnergyCounter);
+        dev.prevActivity    = ItemVal(t.globalActivityCounter);
+        dev.prevTotalEnergy = ItemVal(t.totalCardEnergyCounter);
+        dev.prevMedia       = ItemVal(t.mediaActivityCounter);
+        dev.seeded          = true;
+    }
+
+    // Static max GPU clock (cached at init).
+    if (dev.maxCoreClock > 0.0)
+        set(GpuMetric::MaxCoreClock, dev.maxCoreClock);
+
+    // Sustained power limit (mW → W).
+    if (dev.pwrHandle)
+    {
+        ctl_power_limits_t lim{};
+        lim.Size = sizeof(lim);
+        if (m_GetPowerLimits(dev.pwrHandle, &lim) == CTL_RESULT_SUCCESS &&
+            lim.sustainedPowerLimit.enabled)
+            set(GpuMetric::PowerLimit, lim.sustainedPowerLimit.power / 1000.0);
+    }
+
+    // PCIe link generation / width (-1 == unknown).
+    if (m_PciGetState)
+    {
+        ctl_pci_state_t pci{};
+        pci.Size = sizeof(pci);
+        if (m_PciGetState(dev.handle, &pci) == CTL_RESULT_SUCCESS)
+        {
+            if (pci.speed.gen   >= 0) set(GpuMetric::PcieLinkGen,   pci.speed.gen);
+            if (pci.speed.width >= 0) set(GpuMetric::PcieLinkWidth, pci.speed.width);
+        }
     }
 
     // VRAM used/total — separate call (not in the telemetry struct). Bytes.
@@ -244,6 +332,32 @@ bool IgclProvider::GetString(uint32_t metricId, uint32_t deviceIndex, std::wstri
         wchar_t buf[16];
         swprintf_s(buf, L"%04X:%04X", PCI_VENDOR_INTEL, dev.pciDeviceId & 0xFFFFu);
         out = buf;
+        return true;
+    }
+
+    case GpuMetric::VbiosVersion:
+        if (dev.vbios.empty()) return false;
+        out.assign(dev.vbios.begin(), dev.vbios.end());
+        return true;
+
+    case GpuMetric::ThrottleReasons:
+    {
+        ctl_power_telemetry_t t{};
+        t.Size = sizeof(t);
+        if (m_GetTelemetry(dev.handle, &t) != CTL_RESULT_SUCCESS)
+            return false;
+
+        auto add = [&](bool on, const wchar_t* label) {
+            if (!on) return;
+            if (!out.empty()) out += L", ";
+            out += label;
+        };
+        add(t.gpuPowerLimited,       L"Power Limit");
+        add(t.gpuTemperatureLimited, L"Thermal");
+        add(t.gpuCurrentLimited,     L"Current");
+        add(t.gpuVoltageLimited,     L"Voltage");
+        add(t.gpuUtilizationLimited, L"Utilization");
+        if (out.empty()) out = L"None";
         return true;
     }
 
