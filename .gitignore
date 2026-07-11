@@ -378,6 +378,3 @@ FodyWeavers.xsd
 
 # Internal design docs (superpowers brainstorm/plan specs) — not shipped
 docs/superpowers/
-
-# Changelog staged locally until v2 release
-CHANGELOG.md
