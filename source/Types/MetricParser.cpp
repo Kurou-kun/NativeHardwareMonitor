@@ -132,6 +132,17 @@ uint32_t ParseMetric(Category category, const std::wstring& input)
 {
     std::wstring str = Normalize(input);
 
+    if (category == Category::Unknown)
+        return static_cast<uint32_t>(-1);
+
+    // Device count is the same question in every category, so it is answered
+    // centrally in HardwareCore rather than metric-by-metric in every module.
+    // Display has carried its own DisplayMetric::Count since v2 and it means the
+    // same thing ("total active monitors"), so routing the name here reads the
+    // same number a Display skin read before.
+    if (str == L"count" || str == L"devicecount")
+        return METRIC_DEVICE_COUNT;
+
     switch (category)
     {
     case Category::GPU:

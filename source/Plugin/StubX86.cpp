@@ -20,3 +20,17 @@ PLUGIN_EXPORT void Reload(void* /*data*/, void* /*rm*/, double* /*maxValue*/) {}
 PLUGIN_EXPORT double Update(void* /*data*/) { return -1.0; } // -1 = hardware unsupported
 PLUGIN_EXPORT LPCWSTR GetString(void* /*data*/) { return nullptr; }
 PLUGIN_EXPORT void Finalize(void* /*data*/) {}
+
+// Section variables ([MeasureName:GPU(temp)]) answer the same unsupported
+// sentinel, so a skin written for x64 still resolves on 32-bit Rainmeter
+// instead of leaving the literal [Measure:GPU(...)] text in the meter.
+PLUGIN_EXPORT LPCWSTR GPU(void* /*data*/, const int /*argc*/, const WCHAR* /*argv*/[]) { return L"-1"; }
+PLUGIN_EXPORT LPCWSTR CPU(void* /*data*/, const int /*argc*/, const WCHAR* /*argv*/[]) { return L"-1"; }
+PLUGIN_EXPORT LPCWSTR Memory(void* /*data*/, const int /*argc*/, const WCHAR* /*argv*/[]) { return L"-1"; }
+PLUGIN_EXPORT LPCWSTR Network(void* /*data*/, const int /*argc*/, const WCHAR* /*argv*/[]) { return L"-1"; }
+PLUGIN_EXPORT LPCWSTR Storage(void* /*data*/, const int /*argc*/, const WCHAR* /*argv*/[]) { return L"-1"; }
+PLUGIN_EXPORT LPCWSTR Ping(void* /*data*/, const int /*argc*/, const WCHAR* /*argv*/[]) { return L"-1"; }
+PLUGIN_EXPORT LPCWSTR Battery(void* /*data*/, const int /*argc*/, const WCHAR* /*argv*/[]) { return L"-1"; }
+PLUGIN_EXPORT LPCWSTR System(void* /*data*/, const int /*argc*/, const WCHAR* /*argv*/[]) { return L"-1"; }
+PLUGIN_EXPORT LPCWSTR Motherboard(void* /*data*/, const int /*argc*/, const WCHAR* /*argv*/[]) { return L"-1"; }
+PLUGIN_EXPORT LPCWSTR Display(void* /*data*/, const int /*argc*/, const WCHAR* /*argv*/[]) { return L"-1"; }

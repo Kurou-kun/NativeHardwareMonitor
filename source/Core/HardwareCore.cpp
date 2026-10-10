@@ -136,6 +136,10 @@ double HardwareCore::GetValue(uint32_t handle)
     if (!state->initialized)
         return -2.0;
 
+    // Device count needs no snapshot, so it is answered before any gather work.
+    if (entry.metricId == METRIC_DEVICE_COUNT)
+        return static_cast<double>(state->module->GetDeviceCount());
+
     if (state->currentOverrideMs == 0)
     {
         uint64_t now = GetTimeMs();
@@ -165,6 +169,9 @@ bool HardwareCore::GetString(uint32_t handle, std::wstring& out)
 
     if (!state->initialized)
         return false;
+
+    if (entry.metricId == METRIC_DEVICE_COUNT)
+        return false; // numeric only — a module must never see the reserved id
 
     return state->module->GetString(entry.metricId, entry.deviceIndex, out);
 }
