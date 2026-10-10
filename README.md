@@ -44,6 +44,43 @@ Metric=Usage
 A value of `-1` means the metric is unsupported by your hardware/SDK; `-2` means
 a plugin error. Everything else is a real reading.
 
+## One measure, every metric
+
+A measure with no `Category=` is a hub: read any metric off it as a section
+variable, instead of declaring a measure per value.
+
+```ini
+[NHM]
+Measure=Plugin
+Plugin=NativeHardwareMonitor
+
+[MeterStats]
+Meter=String
+Text=[NHM:GPU(name)] — [NHM:GPU(temp)]C — [NHM:CPU(usage)]% — [NHM:GPU(count)] GPUs
+DynamicVariables=1
+```
+
+One function per category — `GPU`, `CPU`, `Memory`, `Network`, `Storage`,
+`Ping`, `Battery`, `System`, `Motherboard`, `Display` — each taking
+`(metric, [device], [decimals])`. The metric name accepts the same aliases as
+`Metric=`. Options need `DynamicVariables=1` to re-resolve; actions do not.
+
+Numbers print with up to three decimals, trailing zeros trimmed, so whole
+numbers and byte counts stay whole. `NumOfDecimals` cannot change that — a
+section variable is already text by the time the meter sees it — so pass the
+decimals instead: `[NHM:CPU(usage,,0)]` rounds to a whole number (an omitted
+middle argument still means device 0).
+
+The same thing from Lua, with no measure per value:
+
+```lua
+local usage = tonumber(SKIN:ReplaceVariables('[NHM:GPU("usage")]'))
+local name  = SKIN:ReplaceVariables('[NHM:GPU("name")]')
+```
+
+`package/Skins/plugin_test/sectionvariables.ini` reads every metric through both
+paths side by side, and `lua.ini` does the same from a script.
+
 ## Documentation
 
 Full docs live in the **[Wiki](https://github.com/Kurou-kun/NativeHardwareMonitor/wiki)**:

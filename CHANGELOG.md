@@ -4,17 +4,70 @@ All notable changes to NativeHardwareMonitor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/);
 this project uses a four-part `MAJOR.MINOR.PATCH.BUILD` version in the DLL resource.
 
-## [Unreleased]
+## [2.1.0] — 2026-10-10
+
+### Added
+
+- **Section variables — one measure for every metric.** Each category now exports a
+  function callable as a section variable, so a skin no longer needs one measure per
+  data point:
+
+  ```ini
+  [NHM]
+  Measure=Plugin
+  Plugin=NativeHardwareMonitor
+
+  [MeterTemp]
+  Meter=String
+  Text=[NHM:GPU(temp)] / [NHM:GPU(name, 1)] / [NHM:CPU(usage)]
+  DynamicVariables=1
+  ```
+
+  `GPU`, `CPU`, `Memory`, `Network`, `Storage`, `Ping`, `Battery`, `System`,
+  `Motherboard` and `Display`, each taking `(metric, [device], [decimals])`.
+  Numbers print with up to three decimals, trailing zeros trimmed, because a
+  section variable reaches the meter as text and `NumOfDecimals` can no longer
+  act on it; `[NHM:CPU(usage,,0)]` sets the decimals explicitly. Metric names go
+  through the same parser as `Metric=`, so every alias works here too, and string
+  metrics (`Name`, `DriverVersion`, ...) return their string. Each distinct
+  category/metric/device triple registers one handle on first read and is released
+  with the measure; the poller still runs once per category however many metrics a
+  skin reads. Requested on the forum for Lua, where
+  `SKIN:ReplaceVariables('[NHM:GPU("usage")]')` now replaces one
+  `SKIN:GetMeasure(...)` plus one measure declaration per value.
+- **`Count` metric in every category.** `Metric=Count` or `[NHM:GPU(count)]` returns the
+  number of devices, so skins can clamp a device index against the real count instead of
+  a hardcoded maximum. Answered centrally from `IModule::GetDeviceCount()`.
+- **A measure with no `Category=` is now a valid hub measure.** It has no reading of its
+  own (it reads `0`), hosts section variables, and no longer logs a configuration
+  warning. A *wrong* `Category=` still warns and still reads `-2`.
+- **`package/` + `tools/build-package.ps1`** — the `.rmskin` layout and its build are now
+  in the repo instead of being assembled by hand: `RMSKIN.ini`, the `plugin_test` skins,
+  and both architecture DLLs, zipped with the footer Rainmeter expects. The script
+  refuses to package DLLs whose version resource disagrees with `RMSKIN.ini` or whose
+  architecture marker is wrong.
+- **`plugin_test/sectionvariables.ini`** — reads five GPU metrics through both paths side
+  by side so the columns can be compared, and scrolls between devices by clamping against
+  `[NHM:GPU(count)]`. `lua.ini` / `lua_test.lua` now show the single-measure path next to
+  the original per-measure one.
+- **CI builds `Win32` as well as `x64`**, uploading an artifact per platform.
 
 ### Fixed
 
-- **32-bit plugin had no version resource.** `NativeHardwareMonitor.rc` hardcoded the
-  `(64-bit)` ProductVersion marker, and the x86 stub was built outside the project, so the
-  `Plugins/32bit/` DLL shipped in 2.0.0 reported an empty FileVersion — the Rainmeter skin
-  installer therefore saw it as 0.0.0.0 and could refuse to upgrade it. The `.rc` now picks
-  the marker with `#ifdef _WIN64`, matching the Rainmeter SDK samples.
+- **The x64 DLL advertised itself as 32-bit.** `rc.exe` does not define `_WIN64` the way
+  `cl.exe` does, so the `.rc`'s `#ifdef _WIN64` always took the 32-bit branch and every
+  x64 build — 2.0.0 included — shipped the `(32-bit)` Rainmeter ProductVersion marker.
+  The x64 configurations now pass `_WIN64` to `ResourceCompile`, as the Rainmeter SDK's
+  own sample plugins do.
+- **32-bit plugin had no version resource.** The x86 stub was built outside the project, so
+  the `Plugins/32bit/` DLL shipped in 2.0.0 reported an empty FileVersion — the Rainmeter
+  skin installer therefore saw it as 0.0.0.0 and could refuse to upgrade it. It is built
+  from the project now and carries the same version as the x64 DLL.
+- **2.0.0's "Lua support" claim was overstated.** Nothing Lua-specific shipped in 2.0.0;
+  plugin measures were readable from Lua because any measure is. The single-call API that
+  entry implied is what the section variables above actually add.
 
-### Added
+### Added (project)
 
 - **`Win32` platform in the project.** Builds `source/Plugin/StubX86.cpp` (now tracked) plus
   the version resource, and nothing else — the real providers stay x64-only. The Win32
