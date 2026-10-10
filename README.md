@@ -25,6 +25,22 @@ No third-party monitoring tool, no kernel driver, no service — a single DLL.
 3. Restart Rainmeter
 4. Reference it from any measure with `Plugin=NativeHardwareMonitor`
 
+## Upgrading from an earlier version
+
+**2.1.4 fixes a freeze that affects every build before it.** Rainmeter could stop
+responding for good whenever it unloaded the plugin — a skin refresh that removed the last
+NativeHardwareMonitor measure, `!Quit`, or a Skin Installer package replacing the DLL. The
+skins stayed on screen, the CPU sat idle and nothing more reached the log, because the
+unload ran AMD's `ADLXTerminate()` from `DllMain` while Windows held the loader lock, and
+it waits there on a driver thread that cannot finish until that lock is released. The same
+teardown could instead fault inside `nvml.dll`. 2.1.4 performs no vendor-API teardown at
+unload at all, and no longer calls a driver from Rainmeter's own thread.
+
+**Close Rainmeter before replacing the DLL.** Nothing can overwrite a plugin that a loaded
+skin still has mapped: an installer writes the skins and the `@Vault` copy, leaves the old
+DLL alone, and the plugin still running is the previous one — which, on a build before
+2.1.4, is also the one that freezes on the way out. See the [changelog](CHANGELOG.md).
+
 ## Quick example
 
 ```ini
