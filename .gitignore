@@ -378,3 +378,6 @@ FodyWeavers.xsd
 
 # Internal design docs (superpowers brainstorm/plan specs) — not shipped
 docs/superpowers/
+
+# Packaged .rmskin output (tools/build-package.ps1)
+dist/
