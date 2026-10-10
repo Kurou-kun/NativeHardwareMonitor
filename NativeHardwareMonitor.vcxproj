@@ -97,6 +97,13 @@
     <Manifest>
       <EnableSegmentHeap>true</EnableSegmentHeap>
     </Manifest>
+    <ResourceCompile>
+      <!-- rc.exe does not define _WIN64 the way cl.exe does, so the .rc's
+           "#ifdef _WIN64" would stamp an x64 build with the (32-bit) Rainmeter
+           ProductVersion marker and the package installer would read this
+           plugin as 32-bit. The SDK's own sample plugins pass it the same way. -->
+      <PreprocessorDefinitions>_WIN64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
     <PostBuildEvent>
       <Command>if exist "$(APPDATA)\Rainmeter\Plugins" copy /Y "$(OutDir)NativeHardwareMonitor.dll" "$(APPDATA)\Rainmeter\Plugins\NativeHardwareMonitor.dll"</Command>
     </PostBuildEvent>
@@ -124,6 +131,13 @@
     <Manifest>
       <EnableSegmentHeap>true</EnableSegmentHeap>
     </Manifest>
+    <ResourceCompile>
+      <!-- rc.exe does not define _WIN64 the way cl.exe does, so the .rc's
+           "#ifdef _WIN64" would stamp an x64 build with the (32-bit) Rainmeter
+           ProductVersion marker and the package installer would read this
+           plugin as 32-bit. The SDK's own sample plugins pass it the same way. -->
+      <PreprocessorDefinitions>_WIN64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
     <PostBuildEvent>
       <Command>if exist "$(APPDATA)\Rainmeter\Plugins" copy /Y "$(OutDir)NativeHardwareMonitor.dll" "$(APPDATA)\Rainmeter\Plugins\NativeHardwareMonitor.dll"</Command>
     </PostBuildEvent>
