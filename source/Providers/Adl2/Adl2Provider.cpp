@@ -16,7 +16,6 @@ using FnCreate      = int (__stdcall*)(ADL_MAIN_MALLOC_CALLBACK, int, ADL_CONTEX
 using FnDestroy     = int (__stdcall*)(ADL_CONTEXT_HANDLE);
 using FnNumAdapters = int (__stdcall*)(ADL_CONTEXT_HANDLE, int*);
 using FnAdapterInfo = int (__stdcall*)(ADL_CONTEXT_HANDLE, LPAdapterInfo, int);
-using FnActive      = int (__stdcall*)(ADL_CONTEXT_HANDLE, int, int*);
 using FnActivity    = int (__stdcall*)(ADL_CONTEXT_HANDLE, int, ADLPMActivity*);
 using FnTemperature = int (__stdcall*)(ADL_CONTEXT_HANDLE, int, int, ADLTemperature*);
 using FnFanSpeed    = int (__stdcall*)(ADL_CONTEXT_HANDLE, int, int, ADLFanSpeedValue*);
@@ -50,7 +49,7 @@ bool Adl2Provider::Initialize()
 
     if (m_adapterIndices.empty())
     {
-        LOG_STARTUP(L"Adl2Provider: no active AMD adapters found");
+        LOG_STARTUP(L"Adl2Provider: no AMD adapters found");
         Shutdown();
         return false;
     }
@@ -69,7 +68,6 @@ bool Adl2Provider::LoadFunctions()
     LOAD(ADL2_Main_Control_Destroy,             m_Destroy)
     LOAD(ADL2_Adapter_NumberOfAdapters_Get,     m_NumAdapters)
     LOAD(ADL2_Adapter_AdapterInfo_Get,          m_AdapterInfo)
-    LOAD(ADL2_Adapter_Active_Get,               m_Active)
     LOAD(ADL2_Overdrive5_CurrentActivity_Get,   m_Activity)
     LOAD(ADL2_Overdrive5_Temperature_Get,       m_Temperature)
     LOAD(ADL2_Overdrive5_FanSpeed_Get,          m_FanSpeed)
@@ -98,11 +96,15 @@ void Adl2Provider::EnumerateAdapters()
     std::set<int> seenBusNumbers;
     for (int i = 0; i < count; ++i)
     {
-        if (info[i].iVendorID != 0x1002) // AMD vendor ID
+        // ADL reports AMD's vendor id as the DECIMAL number 1002 (0x3EA), not PCI 0x1002.
+        // Comparing against 0x1002 alone skipped every AMD adapter on every machine.
+        if (info[i].iVendorID != 1002 && info[i].iVendorID != 0x1002)
             continue;
 
-        int isActive = 0;
-        if (FP<FnActive>(m_Active)(m_ctx, info[i].iAdapterIndex, &isActive) != ADL_OK || !isActive)
+        // iExist, not ADL2_Adapter_Active_Get: that call reports 0 even for the adapter
+        // currently driving the display (measured on a 4060 + Raphael iGPU), so it drops
+        // everything. iExist is the physical-existence flag, which is what we want here.
+        if (!info[i].iExist)
             continue;
 
         if (!seenBusNumbers.insert(info[i].iBusNumber).second)

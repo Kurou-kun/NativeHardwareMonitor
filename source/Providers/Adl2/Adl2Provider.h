@@ -32,7 +32,6 @@ private:
     void* m_Destroy     = nullptr;
     void* m_NumAdapters = nullptr;
     void* m_AdapterInfo = nullptr;
-    void* m_Active      = nullptr;
     void* m_Activity    = nullptr;
     void* m_Temperature = nullptr;
     void* m_FanSpeed    = nullptr;
