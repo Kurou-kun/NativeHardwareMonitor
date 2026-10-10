@@ -4,6 +4,52 @@ All notable changes to NativeHardwareMonitor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/);
 this project uses a four-part `MAJOR.MINOR.PATCH.BUILD` version in the DLL resource.
 
+## [2.1.2] — 2026-10-10
+
+### Fixed
+
+- **AMD GPUs were never enumerated through ADL2.** ADL reports AMD's vendor id as the
+  decimal number `1002` (`0x3EA`), not the PCI id `0x1002`. `Adl2Provider` compared against
+  `0x1002`, so every AMD adapter failed the vendor test, the adapter list came back empty,
+  and `Initialize()` always reported failure — that provider has not enumerated a single
+  device since the 2.0.0 rewrite. It went unnoticed because ADLX is tried first and succeeds
+  wherever a reasonably current Adrenalin driver is installed. On a machine without ADLX —
+  an older OEM driver that ships no `amdadlx64.dll` — the AMD side therefore registered no
+  device at all, which is the integrated-GPU-reads-nothing report from the forum: not a
+  metrics bug but an enumeration bug, the dump showing `GPU / device 0 of 1` on a hybrid
+  laptop.
+- **`ADL2_Adapter_Active_Get` is not usable as an adapter filter.** It returns 0 for every
+  adapter, including the discrete GPU currently driving the display (measured on an RTX 4060
+  plus a Raphael iGPU: nine adapters reported, none "active"), so it would have dropped
+  everything even with the vendor id corrected. Enumeration now gates on `iExist` — physical
+  existence — rather than on active or `iPresent`, the latter meaning "has an OS display
+  name", which is exactly what an iGPU driving no display lacks.
+
+  Device counts do not change for anyone whose ADLX already worked: a functioning ADL2
+  attaches as a per-metric backup on the same device and only fills gaps it finds missing,
+  never overriding ADLX or adding a duplicate GPU. It becomes a device in its own right only
+  on the ADLX-less path. Metrics on that path come from Overdrive5, which integrated
+  Renoir/Cezanne-class GPUs largely do not implement, so such a device may report its name
+  and little else.
+- **The 32-bit stub and the version resource** go to 2.1.2 together, as always, so the skin
+  installer replaces an installed 2.1.1 instead of deciding the versions match.
+
+### Changed
+
+- **The package now opens `plugin_test\gpu.ini` on install** instead of
+  `plugin_test\sectionvariables.ini`. Rainmeter was observed to stop responding shortly
+  after an install completed, tracking the skin the package opens rather than the install
+  itself — `sectionvariables.ini` reads five metrics through both the measure and the
+  section-variable path on every tick. The cause is not yet understood; the skin stays in
+  the package and can be loaded by hand, it is simply not the one opened automatically.
+
+### Added
+
+- **`tools/adl2_enum_check.py`** — runs the same adapter filter as the C++ against the live
+  ADL driver and fails if it enumerates nothing. On the development machine: nine adapters
+  reported, one AMD device after the bus deduplication, against zero for the old hex vendor
+  comparison and zero for the `Active_Get` gate.
+
 ## [2.1.0] — 2026-10-10
 
 ### Added
