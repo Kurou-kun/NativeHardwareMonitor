@@ -13,14 +13,22 @@
 #include "Modules/Display/DisplayModule.h"
 
 #include <algorithm>
+#include <chrono>
 #include <fstream>
 #include <string>
 #include <windows.h>
 
 HardwareCore& HardwareCore::Instance()
 {
-    static HardwareCore instance;
-    return instance;
+    // Leaked on purpose, for the same reason as g_ADLX in AdlxProvider.cpp: a
+    // static instance is destroyed from DllMain(DLL_PROCESS_DETACH) under the
+    // loader lock, where this destructor would join every poller thread (a thread
+    // cannot run its DLL_THREAD_DETACH there) and call vendor teardown -
+    // nvmlShutdown, NVAPI unload, ADL2 destroy, FreeLibrary. That deadlocks, or
+    // frees a module out from under a gather still in flight, which is the
+    // nvml.dll c0000005 that WER logged ten times on 2026-10-10.
+    static HardwareCore* instance = new HardwareCore();
+    return *instance;
 }
 
 HardwareCore::HardwareCore()
@@ -64,7 +72,7 @@ uint32_t HardwareCore::RegisterMeasure(
         {
             // ResolveTarget grows the module's snapshot vector — must not race
             // a PollerThread that's mid-GatherAll on this module.
-            std::lock_guard<std::mutex> lock(state->mutex);
+            std::lock_guard<std::timed_mutex> lock(state->mutex);
 
             if (!state->initialized)
                 state->initialized = state->module->Initialize();
@@ -75,6 +83,9 @@ uint32_t HardwareCore::RegisterMeasure(
     }
 
     m_measures.emplace(handle, MeasureEntry{ category, metricId, deviceIndex, updateOverrideMs });
+
+    if (ModuleState* state = GetModuleState(category))
+        EnsurePoller(*state);   // nothing may gather on Rainmeter's thread
 
     if (updateOverrideMs > 0)
     {
@@ -116,42 +127,29 @@ double HardwareCore::GetValue(uint32_t handle)
     if (it == m_measures.end())
         return -2.0;
 
-    const MeasureEntry& entry = it->second;
+    MeasureEntry& entry = it->second;
     ModuleState* state = GetModuleState(entry.category);
     if (!state || !state->module)
         return -2.0;
 
-    std::lock_guard<std::mutex> lock(state->mutex);
+    // Rainmeter's own thread calls this. It must never touch a vendor driver and
+    // must never wait on one: Initialize() and GatherAll() belong to the poller
+    // (see EnsurePoller), and a gather in flight holds the lock, so a reader that
+    // cannot take it immediately returns the value it last reported rather than
+    // blocking. A stalled NVML/ADL call used to freeze Rainmeter outright here.
+    std::unique_lock<std::timed_mutex> lock(state->mutex, std::defer_lock);
+    if (!lock.try_lock_for(std::chrono::milliseconds(2)))
+        return entry.lastValue;
 
     if (!state->initialized)
-    {
-        state->initialized = state->module->Initialize();
-        if (state->initialized)
-        {
-            state->module->GatherAll();
-            state->lastGatherTime = GetTimeMs();
-        }
-    }
-
-    if (!state->initialized)
-        return -2.0;
+        return entry.lastValue;   // poller has not finished the first gather yet
 
     // Device count needs no snapshot, so it is answered before any gather work.
     if (entry.metricId == METRIC_DEVICE_COUNT)
         return static_cast<double>(state->module->GetDeviceCount());
 
-    if (state->currentOverrideMs == 0)
-    {
-        uint64_t now = GetTimeMs();
-        if (now - state->lastGatherTime >= state->minIntervalMs)
-        {
-            state->module->GatherAll();
-            state->lastGatherTime = now;
-        }
-    }
-    // PollerThread is calling GatherAll() independently — just read the cache
-
-    return state->module->GetValue(entry.metricId, entry.deviceIndex);
+    entry.lastValue = state->module->GetValue(entry.metricId, entry.deviceIndex);
+    return entry.lastValue;
 }
 
 bool HardwareCore::GetString(uint32_t handle, std::wstring& out)
@@ -165,7 +163,9 @@ bool HardwareCore::GetString(uint32_t handle, std::wstring& out)
     if (!state || !state->module)
         return false;
 
-    std::lock_guard<std::mutex> lock(state->mutex);
+    std::unique_lock<std::timed_mutex> lock(state->mutex, std::defer_lock);
+    if (!lock.try_lock_for(std::chrono::milliseconds(2)))
+        return false;   // gather in flight: Rainmeter keeps the previous string
 
     if (!state->initialized)
         return false;
@@ -182,10 +182,9 @@ uint32_t HardwareCore::DeviceCount(Category category)
     if (!state || !state->module)
         return 0;
 
-    std::lock_guard<std::mutex> lock(state->mutex);
-
-    if (!state->initialized)
-        state->initialized = state->module->Initialize();
+    std::unique_lock<std::timed_mutex> lock(state->mutex, std::defer_lock);
+    if (!lock.try_lock_for(std::chrono::milliseconds(50)))
+        return 0;
 
     return state->initialized ? state->module->GetDeviceCount() : 0;
 }
@@ -198,14 +197,14 @@ void HardwareCore::DumpDevice(Category category, uint32_t deviceIndex, const std
 
     std::wstring body;
     {
-        std::lock_guard<std::mutex> lock(state->mutex);
-
-        if (!state->initialized)
-            state->initialized = state->module->Initialize();
-        if (!state->initialized)
+        // Diagnostic, and on Rainmeter's thread: skip this snapshot rather than
+        // wait on a gather. It is throttled anyway, so the next tick picks it up.
+        std::unique_lock<std::timed_mutex> lock(state->mutex, std::defer_lock);
+        if (!lock.try_lock_for(std::chrono::milliseconds(50)))
             return;
 
-        state->module->GatherAll(); // refresh so the dump reflects the latest tick
+        if (!state->initialized)
+            return;   // the poller initialises; nothing to dump yet
         state->lastGatherTime = GetTimeMs();
 
         SYSTEMTIME st;
@@ -267,12 +266,15 @@ void HardwareCore::UpdatePoller(ModuleState& state)
 {
     if (state.overrides.empty())
     {
-        if (state.poller)
+        // Do not Stop() here: that joins the poller thread from Rainmeter's own
+        // thread, which stalls it for as long as a gather takes (up to the 5 s
+        // timeout) every time a skin with an UpdateOverride refreshes.
+        if (state.currentOverrideMs != 0)
         {
-            state.poller->Stop(); // blocks until thread exits — mutex must NOT be held
-            state.poller.reset();
+            state.currentOverrideMs = 0;
+            uint32_t interval = state.minIntervalMs > 1000 ? state.minIntervalMs : 1000;
+            StartPoller(state, interval);
         }
-        state.currentOverrideMs = 0;
         return;
     }
 
@@ -290,13 +292,36 @@ void HardwareCore::UpdatePoller(ModuleState& state)
     else
         state.poller = std::make_unique<PollerThread>();
 
-    IModule*    module      = state.module.get();
-    std::mutex* mtx         = &state.mutex;
-    bool*       initialized = &state.initialized;
+    StartPoller(state, minMs);
+}
 
-    state.poller->Start(minMs, [module, mtx, initialized]()
+// Every category polls on its own thread, whether or not a skin asked for an
+// UpdateOverride, because the alternative is gathering on Rainmeter's thread.
+// Default cadence matches a typical skin's Update=1000; UpdateOverride= tightens it.
+void HardwareCore::EnsurePoller(ModuleState& state)
+{
+    if (state.poller)
+        return;
+
+    uint32_t interval = state.minIntervalMs > 1000 ? state.minIntervalMs : 1000;
+    state.currentOverrideMs = 0;
+    StartPoller(state, interval);
+}
+
+void HardwareCore::StartPoller(ModuleState& state, uint32_t intervalMs)
+{
+    if (!state.poller)
+        state.poller = std::make_unique<PollerThread>();
+
+    IModule*         module      = state.module.get();
+    std::timed_mutex* mtx        = &state.mutex;
+    bool*            initialized = &state.initialized;
+
+    state.poller->Start(intervalMs, [module, mtx, initialized]()
     {
-        std::lock_guard<std::mutex> lock(*mtx);
+        std::lock_guard<std::timed_mutex> lock(*mtx);
+        if (!*initialized)
+            *initialized = module->Initialize();
         if (*initialized)
             module->GatherAll();
     });

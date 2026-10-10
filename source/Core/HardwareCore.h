@@ -46,12 +46,16 @@ private:
         uint32_t metricId;
         uint32_t deviceIndex;
         uint32_t updateOverrideMs;
+
+        // Last value handed to Rainmeter. Returned again when a gather holds the
+        // lock, so a reader never waits on hardware (see GetValue).
+        double   lastValue = -1.0;
     };
 
     struct ModuleState
     {
         std::unique_ptr<IModule>      module;
-        std::mutex                    mutex;   // must outlive poller (destroyed after it)
+        std::timed_mutex              mutex;   // must outlive poller (destroyed after it)
         std::unique_ptr<PollerThread> poller;  // destroyed first: Stop() joins the thread
 
         uint64_t lastGatherTime    = 0;
@@ -69,5 +73,7 @@ private:
 
     ModuleState* GetModuleState(Category category);
     void         UpdatePoller(ModuleState& state);
+    void         EnsurePoller(ModuleState& state);
+    void         StartPoller(ModuleState& state, uint32_t intervalMs);
     uint64_t     GetTimeMs() const;
 };

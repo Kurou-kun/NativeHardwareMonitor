@@ -4,6 +4,47 @@ All notable changes to NativeHardwareMonitor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/);
 this project uses a four-part `MAJOR.MINOR.PATCH.BUILD` version in the DLL resource.
 
+## [2.1.4] — 2026-10-10
+
+### Fixed
+
+- **Rainmeter froze permanently whenever the plugin was unloaded.** Refreshing a skin until
+  the last NHM measure went away, `!Quit`, or an installer replacing the DLL would leave
+  Rainmeter unresponsive with the CPU idle and nothing further in the log. Captured stack of
+  a hung instance:
+
+  ```
+  Rainmeter -> KERNELBASE!FreeLibrary -> ntdll!LdrUnloadDll -> LdrpProcessDetachNode
+    -> NativeHardwareMonitor!dllmain_crt_process_detach
+    -> ucrtbase!execute_onexit_table
+    -> dynamic atexit destructor for 'g_ADLX' -> ADLXHelper::Terminate
+    -> amdadlx64!ADLXTerminate -> atiadlxx!ADL2_FeatureSync_Stop
+    -> KERNELBASE!WaitForSingleObjectEx -> ntdll!NtWaitForSingleObject
+  ```
+
+  The ADLX SDK's `ADLXHelper` is a file-scope global whose destructor calls
+  `ADLXTerminate()`, so it ran from `DllMain(DLL_PROCESS_DETACH)` with the loader lock
+  held. `ADLXTerminate` waits on an `amdadlx64` worker thread that cannot finish while that
+  lock is held — a deadlock with no timeout. The plugin now uses its own `ADLXHelper` that
+  is deliberately never destroyed, leaving the SDK's global uninitialised so its destructor
+  returns immediately.
+
+  `HardwareCore`'s singleton was the same hazard and is leaked for the same reason: as a
+  static it was destroyed at process detach, where its destructor joined every poller
+  thread (a thread cannot run `DLL_THREAD_DETACH` under the loader lock) and called
+  `nvmlShutdown`, NVAPI unload, ADL2 destroy and `FreeLibrary`. That also freed modules out
+  from under a gather still in flight, which is the `nvml.dll` `c0000005` Windows Error
+  Reporting logged ten times in one evening.
+
+- **No vendor driver is called from Rainmeter's thread any more.** `GetValue` used to run
+  `Initialize()` and `GatherAll()` inline whenever no skin set `UpdateOverride` — which is
+  the default — so provider initialisation and every gather happened on the UI thread while
+  holding the module mutex. One slow NVML or ADL call froze the whole application, worst of
+  all at skin load, where init and a full gather happen in the same call. Every category now
+  polls on its own thread whether or not an override is set, and readers take the lock with
+  a 2 ms timeout, returning the value they last reported rather than waiting on hardware.
+  `UpdateOverride=` still tightens the cadence; the default is 1 s.
+
 ## [2.1.3] — 2026-10-10
 
 ### Changed

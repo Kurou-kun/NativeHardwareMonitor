@@ -7,17 +7,33 @@
 #include "ISystem1.h"
 #include "ISystem2.h"
 
-extern ADLXHelper g_ADLX;
+// Our own ADLXHelper, heap-allocated and DELIBERATELY NEVER DESTROYED - do not
+// "fix" this leak. ADLXHelper's destructor calls ADLXTerminate(), and the SDK's
+// own g_ADLX is a file-scope global, so with that one the terminate ran from
+// DllMain(DLL_PROCESS_DETACH) while the loader lock was held. Captured stack of a
+// permanently hung Rainmeter (2026-10-10):
+//
+//   FreeLibrary -> LdrUnloadDll -> LdrpProcessDetachNode -> dllmain_dispatch
+//     -> execute_onexit_table -> dynamic atexit destructor for 'g_ADLX'
+//     -> ADLXHelper::Terminate -> amdadlx64!ADLXTerminate
+//     -> atiadlxx!ADL2_FeatureSync_Stop -> WaitForSingleObjectEx
+//
+// ADLXTerminate waits on an amdadlx64 worker thread that cannot finish while we
+// hold the loader lock, so Rainmeter's UI thread deadlocks for good every time it
+// unloads the plugin (skin refresh, !Quit, or an installer replacing the DLL).
+// The SDK's g_ADLX stays untouched, so its destructor finds nothing initialised
+// and returns immediately.
+static ADLXHelper& g_adlx = *new ADLXHelper();
 
 bool AdlxProvider::Initialize()
 {
-    if (g_ADLX.Initialize() != ADLX_OK)
+    if (g_adlx.Initialize() != ADLX_OK)
     {
         LOG_STARTUP(L"AdlxProvider: ADLX initialization failed");
         return false;
     }
 
-    m_system = g_ADLX.GetSystemServices();
+    m_system = g_adlx.GetSystemServices();
     if (!m_system)
     {
         LOG_STARTUP(L"AdlxProvider: system services unavailable");
