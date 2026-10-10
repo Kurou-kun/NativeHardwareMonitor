@@ -4,6 +4,29 @@ All notable changes to NativeHardwareMonitor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/);
 this project uses a four-part `MAJOR.MINOR.PATCH.BUILD` version in the DLL resource.
 
+## [2.1.3] — 2026-10-10
+
+### Changed
+
+- **`Debug=2` now dumps every device in the category, not just the measure's own.** One
+  measure with `Debug=2` writes `<Category>_dev0.txt` through `<Category>_devN-1.txt` for
+  however many devices the category enumerates. Diagnosing a device that is *missing* used
+  to be impossible: the dump was written for the measure's own `Device=`, and a measure
+  pointing at a device that does not exist is invalid, so it wrote nothing at all — which is
+  exactly how the ADL2 enumeration bug fixed in 2.1.2 stayed hidden. The reporter's GPU
+  measure could only ever produce `GPU_dev0.txt`, and the absence of `GPU_dev1.txt` read as
+  "the dump is broken" rather than "there is no device 1". If the category enumerates
+  nothing at all, the requested index is still dumped so the header's `device N of 0` says
+  so out loud. Note that a category with many devices now produces one file per device — a
+  `Debug=2` CPU measure writes one per core plus the total.
+- **The `Debug=2` throttle is now per category, not per measure.** A dump calls `GatherAll()`
+  under the module mutex on Rainmeter's own thread, and the test skins set `Debug=2` on every
+  measure — `gpu.ini` has 26 of them. Throttled per measure, that became roughly thirteen full
+  hardware gathers a second on the UI thread and Rainmeter stopped responding within seconds of
+  the skin loading. One dump per category per interval is all a diagnostic needs, since every
+  measure in a category reads the same snapshot. Verified with `gpu.ini` loaded: responsive for a
+  minute, flat memory, `GPU_dev0.txt` and `GPU_dev1.txt` both written.
+
 ## [2.1.2] — 2026-10-10
 
 ### Fixed

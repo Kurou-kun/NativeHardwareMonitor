@@ -30,6 +30,9 @@ public:
     // Debug=2 diagnostic: dump every metric for one category+device to a UTF-8 file.
     void   DumpDevice(Category category, uint32_t deviceIndex, const std::wstring& path);
 
+    // Device count for a category, so a dump can cover devices no measure reads.
+    uint32_t DeviceCount(Category category);
+
 private:
     HardwareCore();
     ~HardwareCore() = default;

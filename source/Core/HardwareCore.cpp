@@ -176,6 +176,20 @@ bool HardwareCore::GetString(uint32_t handle, std::wstring& out)
     return state->module->GetString(entry.metricId, entry.deviceIndex, out);
 }
 
+uint32_t HardwareCore::DeviceCount(Category category)
+{
+    ModuleState* state = GetModuleState(category);
+    if (!state || !state->module)
+        return 0;
+
+    std::lock_guard<std::mutex> lock(state->mutex);
+
+    if (!state->initialized)
+        state->initialized = state->module->Initialize();
+
+    return state->initialized ? state->module->GetDeviceCount() : 0;
+}
+
 void HardwareCore::DumpDevice(Category category, uint32_t deviceIndex, const std::wstring& path)
 {
     ModuleState* state = GetModuleState(category);

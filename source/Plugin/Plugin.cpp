@@ -8,20 +8,37 @@
 #include "RainmeterAPI.h"
 
 #include <cstdlib>
+#include <mutex>
 #include <string>
+#include <unordered_map>
 
 // Debug=2 diagnostic dump. Overwrites %TEMP%\NativeHardwareMonitor\<Category>_dev<N>.txt
-// with every metric for this measure's category+device — the file to send back for
-// hardware we can't test locally (e.g. Intel GPUs). Throttled per measure.
+// with every metric for every device in the category — the files to send back for
+// hardware we can't test locally (e.g. Intel GPUs).
+//
+// Throttled PER CATEGORY, not per measure: a dump calls GatherAll() under the module
+// mutex on Rainmeter's own thread, and the test skins put Debug=2 on every measure
+// (gpu.ini has 26). Per-measure throttling let that become ~13 full hardware gathers a
+// second on the UI thread, which wedges Rainmeter. One dump per category per interval is
+// all a diagnostic needs - every measure reads the same snapshot anyway.
 static void MaybeDump(MeasureContext* ctx)
 {
     if (ctx->debugLevel < 2 || !ctx->valid)
         return;
 
-    uint64_t now = GetTickCount64();
-    if (ctx->lastDumpMs != 0 && now - ctx->lastDumpMs < 2000) // ponytail: 2s is plenty for a debug snapshot
-        return;
-    ctx->lastDumpMs = now;
+    {
+        // ponytail: one flat mutex over a 10-entry map, contended once per tick at worst.
+        static std::mutex                             dumpMutex;
+        static std::unordered_map<Category, uint64_t> lastDumpMs;
+
+        uint64_t now = GetTickCount64();
+        std::lock_guard<std::mutex> lock(dumpMutex);
+
+        auto it = lastDumpMs.find(ctx->category);
+        if (it != lastDumpMs.end() && now - it->second < 2000) // 2s is plenty for a snapshot
+            return;
+        lastDumpMs[ctx->category] = now;
+    }
 
     wchar_t dir[MAX_PATH];
     if (GetTempPathW(MAX_PATH, dir) == 0)
@@ -29,9 +46,24 @@ static void MaybeDump(MeasureContext* ctx)
     std::wstring folder = std::wstring(dir) + L"NativeHardwareMonitor";
     CreateDirectoryW(folder.c_str(), nullptr); // no-op if it already exists
 
-    std::wstring path = folder + L"\\" + CategoryName(ctx->category) +
-                        L"_dev" + std::to_wstring(ctx->deviceIndex) + L".txt";
-    HardwareCore::Instance().DumpDevice(ctx->category, ctx->deviceIndex, path);
+    // Dump every device in the category, not just this measure's own. Diagnosing a
+    // device that is missing needs a dump of a device no measure can validly read -
+    // that is how the AMD iGPU enumeration bug stayed hidden: the reporter's measure
+    // could only ever write GPU_dev0.txt.
+    uint32_t count = HardwareCore::Instance().DeviceCount(ctx->category);
+    uint32_t first = 0, last = count;
+    if (count == 0) // nothing enumerated: still dump the requested index, header shows "0 of 0"
+    {
+        first = ctx->deviceIndex;
+        last  = ctx->deviceIndex + 1;
+    }
+
+    for (uint32_t dev = first; dev < last; ++dev)
+    {
+        std::wstring path = folder + L"\\" + CategoryName(ctx->category) +
+                            L"_dev" + std::to_wstring(dev) + L".txt";
+        HardwareCore::Instance().DumpDevice(ctx->category, dev, path);
+    }
 }
 
 static HardwareCore& GetCore()
