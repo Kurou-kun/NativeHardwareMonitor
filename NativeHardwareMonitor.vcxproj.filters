@@ -86,6 +86,9 @@
     <ClCompile Include="source\Plugin\Plugin.cpp">
       <Filter>Source Files\Plugin</Filter>
     </ClCompile>
+    <ClCompile Include="source\Plugin\StubX86.cpp">
+      <Filter>Source Files\Plugin</Filter>
+    </ClCompile>
     <!-- Core -->
     <ClCompile Include="source\Core\HardwareCore.cpp">
       <Filter>Source Files\Core</Filter>

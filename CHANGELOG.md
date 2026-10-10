@@ -4,6 +4,23 @@ All notable changes to NativeHardwareMonitor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/);
 this project uses a four-part `MAJOR.MINOR.PATCH.BUILD` version in the DLL resource.
 
+## [Unreleased]
+
+### Fixed
+
+- **32-bit plugin had no version resource.** `NativeHardwareMonitor.rc` hardcoded the
+  `(64-bit)` ProductVersion marker, and the x86 stub was built outside the project, so the
+  `Plugins/32bit/` DLL shipped in 2.0.0 reported an empty FileVersion — the Rainmeter skin
+  installer therefore saw it as 0.0.0.0 and could refuse to upgrade it. The `.rc` now picks
+  the marker with `#ifdef _WIN64`, matching the Rainmeter SDK samples.
+
+### Added
+
+- **`Win32` platform in the project.** Builds `source/Plugin/StubX86.cpp` (now tracked) plus
+  the version resource, and nothing else — the real providers stay x64-only. The Win32
+  configurations deliberately omit the PostBuildEvent so an x86 build can never overwrite the
+  installed 64-bit plugin.
+
 ## [2.0.0] — 2026-07-11
 
 A ground-up rewrite. v1.x was a 5-category plugin built on a "Backend" class
