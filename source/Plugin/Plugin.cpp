@@ -147,11 +147,17 @@ PLUGIN_EXPORT void Reload(void* data, void* rm, double* maxValue)
     if (!ctx)
         return;
 
-    if (ctx->valid)
-    {
-        GetCore().UnregisterMeasure(ctx->handle);
-        ctx->valid = false;
-    }
+    // Register the new handle BEFORE dropping the old one, never the other way round.
+    // Rainmeter calls Reload on every single update when a measure sets
+    // DynamicVariables=1 (measured: once per second per dynamic measure), and
+    // UnregisterMeasure stops every poller the moment the measure map empties. In a skin
+    // whose only NHM measure is a dynamic one, unregistering first empties that map for
+    // the instant between the two calls, so the category's poller is torn down and
+    // recreated once a second and only lands a gather by winning a race with the next
+    // tick. Keeping one handle registered throughout removes the window entirely.
+    uint32_t oldHandle = ctx->handle;
+    bool     hadOld    = ctx->valid;
+    ctx->valid = false;
 
     // Host=/PingInterval= may have changed and Ping handles were registered
     // against the old values. Dropping them is cheaper than diffing; they
@@ -165,6 +171,9 @@ PLUGIN_EXPORT void Reload(void* data, void* rm, double* maxValue)
 
     if (ctx->metricId == static_cast<uint32_t>(-1))
     {
+        if (hadOld)
+            GetCore().UnregisterMeasure(oldHandle);
+
         if (!ctx->hub)
             LOG_MEASURE(rm, ctx->debugLevel, L"[%s] Unknown category — skipped",
                 ctx->categoryStr.c_str());
@@ -181,6 +190,9 @@ PLUGIN_EXPORT void Reload(void* data, void* rm, double* maxValue)
     );
 
     ctx->valid = true;
+
+    if (hadOld)
+        GetCore().UnregisterMeasure(oldHandle);
 
     LOG_MEASURE(rm, ctx->debugLevel, L"[%s/%s/dev%u] Reloaded (handle=%u)",
         ctx->categoryStr.c_str(), ctx->metricStr.c_str(),

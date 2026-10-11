@@ -4,6 +4,32 @@ All notable changes to NativeHardwareMonitor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/);
 this project uses a four-part `MAJOR.MINOR.PATCH.BUILD` version in the DLL resource.
 
+## [2.1.7] — unreleased
+
+### Fixed
+
+- **A skin whose only NHM measure sets `DynamicVariables=1` tore down and rebuilt its
+  poller once a second.** Rainmeter calls `Reload` on *every update* for a measure with
+  `DynamicVariables=1` — measured here at once per second per dynamic measure — and
+  `Reload` unregistered the old handle before registering the new one. Since 2.1.5,
+  unregistering the last measure stops every poller, so in a skin with exactly one NHM
+  measure the plugin's measure map emptied for the instant between those two calls: the
+  category's poller was destroyed and recreated each second, and only landed a gather by
+  winning a race with the next tick. It did keep reading correct values on this machine —
+  12 distinct readings in 12 seconds, no thread growth — but it was reading them on luck,
+  and a slower gather or a slower machine loses that race and the skin goes stale.
+
+  `Reload` now registers the new handle before releasing the old one, so at least one
+  handle is registered throughout and the window never opens.
+
+### Checked, not changed
+
+- **`DynamicVariables=1` on measures works.** Reported in March (p=241552) as working
+  "bar initially" — on v1, with `Sensor=`/`GpuIndex=`. Verified on v2 with `Device=#dev#`:
+  switching the variable at runtime moves both a numeric and a string measure to the other
+  GPU (`AMD Radeon(TM) Graphics`, 0%) while a static control measure stays on the first
+  (29%), and switching back works too. The v2 rewrite fixed it; nothing here to repair.
+
 ## [2.1.6] — 2026-10-11
 
 ### Added
