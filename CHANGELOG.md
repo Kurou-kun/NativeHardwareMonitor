@@ -37,6 +37,19 @@ this project uses a four-part `MAJOR.MINOR.PATCH.BUILD` version in the DLL resou
   deactivate/reactivate cycles: no crash, no thread or handle growth, and polling restarts
   with live values after a full stop.
 
+### Changed
+
+- **The skins folder is `NHM` now, not `plugin_test`,** so every skin in the package is a
+  variant of one config in Rainmeter's menu instead of a folder named after a debug session.
+
+### Added
+
+- **`NHM\overview.ini`, the skin the package opens on install.** One panel with the hardware
+  worth seeing at a glance — CPU usage and clock, RAM, GPU name, load, temperature and VRAM,
+  network throughput, drive space — with bars on the three that have a range. The
+  per-category skins are still there as variants and still carry every metric the plugin
+  exposes; they are reference material, and this is the one meant to stay on a desktop.
+
 ## [2.1.4] — 2026-10-10
 
 ### Fixed

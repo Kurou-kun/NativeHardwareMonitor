@@ -94,7 +94,7 @@ local usage = tonumber(SKIN:ReplaceVariables('[NHM:GPU("usage")]'))
 local name  = SKIN:ReplaceVariables('[NHM:GPU("name")]')
 ```
 
-`package/Skins/plugin_test/sectionvariables.ini` reads every metric through both
+`package/Skins/NHM/sectionvariables.ini` reads every metric through both
 paths side by side, and `lua.ini` does the same from a script.
 
 ## Documentation
