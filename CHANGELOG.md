@@ -4,6 +4,45 @@ All notable changes to NativeHardwareMonitor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/);
 this project uses a four-part `MAJOR.MINOR.PATCH.BUILD` version in the DLL resource.
 
+## [2.1.6] — 2026-10-11
+
+### Added
+
+- **AMD without ADLX reads almost everything now.** `Adl2Provider` loaded three Overdrive5
+  entry points and nothing else, so on a machine with no ADLX — an older driver, or an
+  integrated GPU — usage and the two clocks worked and *every other metric read `-1`*. Not
+  because the driver refused, but because nothing asked. It now also calls, each one
+  optional so an older driver simply gets less:
+
+  | call | fills |
+  |---|---|
+  | `ADL2_New_QueryPMLogData_Get` | temperature, hotspot, memory temp, fan, power, board power, voltage, PCIe link gen/width, GFX activity, both clocks, throttle reasons |
+  | `ADL2_Adapter_VRAMUsage_Get` | VRAM in use |
+  | `ADL2_Adapter_MemoryInfo2_Get` | VRAM total |
+  | `ADL2_Adapter_VideoBiosInfo_Get` | VBIOS version |
+  | `AdapterInfo.strPNPString` | PCI device id, parsed to `1002:13C0` |
+
+  PMLog is the telemetry block GPU-Z and HWiNFO read, and it needs no `PMLog_Start` call.
+  Each sensor carries its own `supported` flag, so a chip that reports fourteen of them
+  gets fourteen and the rest stay `-1`. `Temperature` takes the first of EDGE, GFX, SOC,
+  HOTSPOT that answers: a discrete card reports EDGE, the Raphael iGPU reports neither
+  EDGE nor HOTSPOT but does report GFX and SOC.
+
+  Measured on a Raphael iGPU, which went from four live metrics to fourteen: 53 °C,
+  6.3 MB of 536.9 MB VRAM, 1339 mV, PCIe 3.0 x16, VBIOS `032.019.000.008`, `1002:13C0`.
+
+- **`WinApiGpuProvider` — Windows' own GPU counters, behind every vendor SDK.** The
+  `GPU Engine` and `GPU Adapter Memory` performance counters plus DXGI for the totals,
+  matched to a device by adapter LUID. It supplies only `Usage`, `VramUsed` and
+  `VramTotal`, it is merged last so a vendor reading always wins, and it answers on
+  hardware no SDK covers — an AMD iGPU with no ADLX, an Intel GPU with no ControlLib,
+  any card whose SDK is missing or too old. Usage is the busiest engine *type*, summed
+  across processes, which is the number Task Manager shows; adding every engine together
+  would read well over 100%.
+
+  Temperature, power, voltage and fan have no Windows-side source without a kernel
+  driver, so they are not offered here. That remains the line this plugin does not cross.
+
 ## [2.1.5] — 2026-10-11
 
 ### Fixed

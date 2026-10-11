@@ -3,6 +3,7 @@
 #include "Core/IProvider.h"
 #include "Types/Snapshot.h"
 #include "Providers/WinApi/WinApiGpuInfo.h"
+#include "Providers/WinApi/WinApiGpuProvider.h"
 
 #include <memory>
 #include <string>
@@ -28,7 +29,14 @@ private:
         // Secondary provider queried only for metrics the primary can't supply
         IProvider* backupProvider   = nullptr;
         uint32_t   backupLocalIndex = 0;
+
+        // Windows' own counters, queried after both of the above and only for what they
+        // still left unset — usage and VRAM on hardware whose SDK answers neither.
+        IProvider* winProvider      = nullptr;
+        uint32_t   winLocalIndex    = 0;
     };
+
+    void AttachWindowsCounters();
 
     std::vector<std::unique_ptr<IProvider>> m_providers;
     std::vector<DeviceEntry>                m_devices;

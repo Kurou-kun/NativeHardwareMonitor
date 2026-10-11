@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|x64">
@@ -213,6 +213,7 @@
     <ClCompile Include="source\Providers\Igcl\IgclProvider.cpp" />
     <ClCompile Include="source\Providers\WinApi\WinApiCpuProvider.cpp" />
     <ClCompile Include="source\Providers\WinApi\WinApiGpuInfo.cpp" />
+    <ClCompile Include="source\Providers\WinApi\WinApiGpuProvider.cpp" />
     <ClCompile Include="source\Providers\WinApi\WinApiMemoryProvider.cpp" />
     <ClCompile Include="source\Providers\WinApi\WinApiNetworkProvider.cpp" />
     <ClCompile Include="source\Providers\WinApi\WinApiPingProvider.cpp" />
@@ -268,6 +269,7 @@
     <ClInclude Include="source\Providers\Igcl\IgclProvider.h" />
     <ClInclude Include="source\Providers\WinApi\WinApiCpuProvider.h" />
     <ClInclude Include="source\Providers\WinApi\WinApiGpuInfo.h" />
+    <ClInclude Include="source\Providers\WinApi\WinApiGpuProvider.h" />
     <ClInclude Include="source\Providers\WinApi\WinApiMemoryProvider.h" />
     <ClInclude Include="source\Providers\WinApi\WinApiNetworkProvider.h" />
     <ClInclude Include="source\Providers\WinApi\WinApiPingProvider.h" />

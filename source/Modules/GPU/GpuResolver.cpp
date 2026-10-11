@@ -111,10 +111,55 @@ bool GpuResolver::Initialize()
         }
     }
 
+    AttachWindowsCounters();
+
     if (m_devices.empty())
         LOG_ERROR(L"GpuResolver: no GPU provider initialized successfully");
 
     return !m_devices.empty();
+}
+
+// Windows' own GPU counters, behind every vendor SDK and never in front of one. They
+// only carry Usage, VramUsed and VramTotal, and MergeMissing means a vendor reading
+// always wins — but on an AMD iGPU with no ADLX, or an Intel GPU with no ControlLib,
+// they are the difference between three live metrics and three -1s.
+//
+// A device is matched to an adapter by vendor and by position within that vendor, the
+// same way WinApiGpuInfo already resolves names, because DXGI and the vendor SDKs
+// enumerate independently and share no index.
+void GpuResolver::AttachWindowsCounters()
+{
+    if (m_devices.empty())
+        return;
+
+    auto win = std::make_unique<WinApiGpuProvider>();
+    if (!win->Initialize() || win->GetDeviceCount() == 0)
+        return;
+
+    uint32_t nvidia = 0, amd = 0, intel = 0, matched = 0;
+    for (auto& dev : m_devices)
+    {
+        uint32_t pciVendorId = 0, ordinal = 0;
+        switch (dev.vendor)
+        {
+        case GpuVendor::Nvidia: pciVendorId = PCI_VENDOR_NVIDIA; ordinal = nvidia++; break;
+        case GpuVendor::AMD:    pciVendorId = PCI_VENDOR_AMD;    ordinal = amd++;    break;
+        case GpuVendor::Intel:  pciVendorId = PCI_VENDOR_INTEL;  ordinal = intel++;  break;
+        default: continue;
+        }
+
+        int local = win->FindAdapter(pciVendorId, ordinal);
+        if (local < 0)
+            continue;
+
+        dev.winProvider   = win.get();
+        dev.winLocalIndex = static_cast<uint32_t>(local);
+        ++matched;
+    }
+
+    LOG_STARTUP(L"GpuResolver: Windows GPU counters attached to %u of %u device(s)",
+                matched, (uint32_t)m_devices.size());
+    m_providers.push_back(std::move(win));
 }
 
 uint32_t GpuResolver::GetDeviceCount() const
@@ -135,6 +180,13 @@ void GpuResolver::GatherSnapshot(uint32_t deviceIndex, Snapshot& snap)
         Snapshot backup;
         dev.backupProvider->GatherSnapshot(dev.backupLocalIndex, backup);
         snap.MergeMissing(backup);
+    }
+
+    if (dev.winProvider)
+    {
+        Snapshot win;
+        dev.winProvider->GatherSnapshot(dev.winLocalIndex, win);
+        snap.MergeMissing(win);
     }
 }
 
