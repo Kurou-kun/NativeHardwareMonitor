@@ -4,6 +4,39 @@ All notable changes to NativeHardwareMonitor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/);
 this project uses a four-part `MAJOR.MINOR.PATCH.BUILD` version in the DLL resource.
 
+## [2.1.5] — 2026-10-11
+
+### Fixed
+
+- **Rainmeter crashed when the last NativeHardwareMonitor measure went away.** Deactivating
+  the only skin that used the plugin — or refreshing until no NHM measure was left — killed
+  Rainmeter outright. Windows Error Reporting named the module exactly:
+
+  ```
+  P1: Rainmeter.exe                            P4: NativeHardwareMonitor.dll_unloaded
+  P5: 2.1.4.0                                  P7: 000000000000906c
+  P8: c0000005                                 P9: 0000000000000008
+  ```
+
+  Rainmeter calls `FreeLibrary` on a plugin as soon as its last measure is gone. 2.1.4 made
+  every category poll on its own thread and deliberately leaked `HardwareCore` so that no
+  thread is ever joined under the loader lock, which fixed the freeze — but it left those
+  threads running with nothing to stop them, so the unload unmapped the code they were
+  executing. `_unloaded` in the faulting-module name is that, literally.
+
+  The module is pinned now (`GetModuleHandleEx` with `GET_MODULE_HANDLE_EX_FLAG_PIN`), so
+  Rainmeter's unload is a no-op and the plugin's code stays mapped for the life of the
+  process. Nothing is lost by that: a DLL a loaded skin has mapped was never replaceable
+  anyway. Unregistering the last measure now also stops every poller, so a pinned module
+  with no measures left does no work and touches no driver.
+
+  Stopping a poller no longer waits for its thread either, anywhere. The stop event is
+  owned jointly by the poller and its thread, so signalling it is safe while a gather is
+  still in flight — Rainmeter's thread is never blocked for the length of a driver call,
+  and the thread closes the handle as it exits. Verified over repeated
+  deactivate/reactivate cycles: no crash, no thread or handle growth, and polling restarts
+  with live values after a full stop.
+
 ## [2.1.4] — 2026-10-10
 
 ### Fixed

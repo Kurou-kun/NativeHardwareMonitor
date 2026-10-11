@@ -56,7 +56,7 @@ private:
     {
         std::unique_ptr<IModule>      module;
         std::timed_mutex              mutex;   // must outlive poller (destroyed after it)
-        std::unique_ptr<PollerThread> poller;  // destroyed first: Stop() joins the thread
+        std::unique_ptr<PollerThread> poller;  // reset signals the thread; it is never joined
 
         uint64_t lastGatherTime    = 0;
         uint32_t minIntervalMs     = 100;

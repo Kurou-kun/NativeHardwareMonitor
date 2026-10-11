@@ -33,6 +33,21 @@ HardwareCore& HardwareCore::Instance()
 
 HardwareCore::HardwareCore()
 {
+    // Pin the module. Rainmeter frees the plugin DLL as soon as the last
+    // NativeHardwareMonitor measure disappears - deactivating the only skin that
+    // uses it, for instance - while the poller threads started below are still
+    // running. Those threads then execute unmapped code: Rainmeter died with
+    // c0000005 at NativeHardwareMonitor.dll_unloaded+0x906c on 2.1.4, which is
+    // what Yincognito hit unloading any of the test skins. Pinning makes that
+    // unload a no-op so our code stays mapped; polling is stopped separately in
+    // UnregisterMeasure, so a pinned-but-idle module costs nothing. Nothing is
+    // lost either way: a DLL a loaded skin has mapped was never replaceable.
+    HMODULE self = nullptr;
+    GetModuleHandleExW(
+        GET_MODULE_HANDLE_EX_FLAG_PIN | GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS,
+        reinterpret_cast<LPCWSTR>(&HardwareCore::Instance),
+        &self);
+
     auto make = [](auto mod) {
         auto s = std::make_unique<ModuleState>();
         s->module = std::move(mod);
@@ -119,6 +134,21 @@ void HardwareCore::UnregisterMeasure(uint32_t handle)
     }
 
     m_measures.erase(it);
+
+    // No measures left: stop polling hardware until one comes back. Rainmeter
+    // unloads the plugin at this point (see the pin in the constructor), and a
+    // poller left running would keep calling vendor drivers on behalf of a skin
+    // that is gone. Stop() signals and returns - joining here would stall
+    // Rainmeter's thread for the length of a gather.
+    if (m_measures.empty())
+    {
+        for (auto& [category, state] : m_modules)
+        {
+            state->poller.reset();   // ~PollerThread signals, does not join
+            state->currentOverrideMs = 0;
+            state->overrides.clear();
+        }
+    }
 }
 
 double HardwareCore::GetValue(uint32_t handle)

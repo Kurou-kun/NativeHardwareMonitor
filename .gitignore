@@ -381,3 +381,6 @@ docs/superpowers/
 
 # Packaged .rmskin output (tools/build-package.ps1)
 dist/
+
+# Local Claude Code settings
+.claude/settings.local.json

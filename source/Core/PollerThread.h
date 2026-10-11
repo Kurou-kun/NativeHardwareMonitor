@@ -3,6 +3,7 @@
 #include <windows.h>
 #include <cstdint>
 #include <functional>
+#include <memory>
 
 class PollerThread
 {
@@ -13,14 +14,21 @@ public:
     ~PollerThread();
 
     void Start(uint32_t intervalMs, Callback callback);
-    void Stop();
+    void Stop();   // signals the thread and returns; never joins - see the .cpp
 
 private:
-    static DWORD WINAPI ThreadProc(LPVOID param);
-    void Run();
+    // Owned jointly by this object and the thread, so the stop event outlives a
+    // Stop() that happens while the thread is still finishing a gather.
+    struct Context
+    {
+        HANDLE   stopEvent  = nullptr;
+        uint32_t intervalMs = 0;
+        Callback callback;
 
-    HANDLE   m_thread    = nullptr;
-    HANDLE   m_stopEvent = nullptr;
-    uint32_t m_intervalMs = 0;
-    Callback m_callback;
+        ~Context() { if (stopEvent) CloseHandle(stopEvent); }
+    };
+
+    static DWORD WINAPI ThreadProc(LPVOID param);
+
+    std::shared_ptr<Context> m_ctx;
 };
