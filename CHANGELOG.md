@@ -4,7 +4,7 @@ All notable changes to NativeHardwareMonitor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/);
 this project uses a four-part `MAJOR.MINOR.PATCH.BUILD` version in the DLL resource.
 
-## [2.1.8] — unreleased
+## [2.1.8] — 2026-10-11
 
 ### Fixed
 
@@ -46,7 +46,7 @@ this project uses a four-part `MAJOR.MINOR.PATCH.BUILD` version in the DLL resou
   and NVAPI evidently disagree. If NVML is the one reporting the near-zero clock, the
   question is which source should win for clocks, not what the arithmetic is.
 
-## [2.1.7] — unreleased
+## [2.1.7] — 2026-10-11 (shipped in 2.1.8)
 
 ### Fixed
 
