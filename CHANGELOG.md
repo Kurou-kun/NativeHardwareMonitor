@@ -4,6 +4,27 @@ All notable changes to NativeHardwareMonitor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/);
 this project uses a four-part `MAJOR.MINOR.PATCH.BUILD` version in the DLL resource.
 
+## [2.1.9] — unreleased
+
+### Changed
+
+- **A `Debug=2` dump now carries the provider chain with it.** Provider lines are written
+  to the Rainmeter log exactly once, when each provider first initialises — so by the time
+  anyone thinks to attach a log, they have scrolled away. A reporter concluded PMLog was
+  unavailable on his driver for precisely that reason, when it had in fact initialised and
+  was feeding ten metrics. Every dump now opens with what actually answered:
+
+  ```
+  --- providers ---
+    NvmlProvider: initialized (1 device(s))
+    GpuResolver: NVML initialized (1 device(s)), NVAPI available as metric backup
+    Adl2Provider: optional calls - PMLog=yes VRAMUsage=yes MemoryInfo2=yes VideoBios=yes
+    GpuResolver: Windows GPU counters attached to 2 of 2 device(s)
+  ```
+
+  One file now answers the first question every hardware report raises, without asking the
+  reporter for anything else.
+
 ## [2.1.8] — 2026-10-11
 
 ### Fixed

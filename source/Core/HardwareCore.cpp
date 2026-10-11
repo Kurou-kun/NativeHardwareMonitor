@@ -1,5 +1,6 @@
 #include "Core/HardwareCore.h"
 #include "Types/MetricParser.h"
+#include "Utils/Debug.h"
 
 #include "Modules/GPU/GpuModule.h"
 #include "Modules/CPU/CpuModule.h"
@@ -245,6 +246,15 @@ void HardwareCore::DumpDevice(Category category, uint32_t deviceIndex, const std
             state->module->GetDeviceCount(),
             st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond);
         body = hdr;
+
+        // The provider story, carried by the dump itself. These lines are written once,
+        // when each provider first initialises, so by the time someone thinks to attach a
+        // log they have scrolled off - a reporter concluded PMLog was unavailable on his
+        // driver for exactly that reason when it was working fine.
+        body += L"--- providers ---\r\n";
+        for (const std::wstring& line : StartupLog())
+            body += L"  " + line + L"\r\n";
+        body += L"\r\n";
 
         uint32_t count = MetricCount(category);
         for (uint32_t id = 0; id < count; ++id)
