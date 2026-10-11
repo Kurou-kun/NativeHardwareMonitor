@@ -6,6 +6,7 @@
 #include <mutex>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 #include "Types/Category.h"
 #include "Core/IModule.h"
@@ -72,6 +73,12 @@ private:
         bool     initialized       = false;
 
         std::unordered_map<uint32_t, uint32_t> overrides; // handle → ms
+
+        // Device indices some measure actually reads. The poller gathers only these;
+        // empty means everything, which is also what a Debug=2 dump needs - so a dump
+        // sets dumpAll and the category goes back to gathering the lot from then on.
+        std::vector<uint32_t> wantedDevices;
+        bool                  dumpAll = false;
     };
 
     std::unordered_map<uint32_t, MeasureEntry>                 m_measures;
@@ -81,6 +88,7 @@ private:
 
     ModuleState* GetModuleState(Category category);
     void         UpdatePoller(ModuleState& state);
+    void         RebuildWantedDevices(Category category);
     void         EnsurePoller(ModuleState& state);
     void         StartPoller(ModuleState& state, uint32_t intervalMs);
     uint64_t     GetTimeMs() const;

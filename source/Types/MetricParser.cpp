@@ -255,6 +255,7 @@ uint32_t ParseMetric(Category category, const std::wstring& input)
         if (str == L"busypercent" || str == L"busy")      return static_cast<uint32_t>(StorageMetric::BusyPercent);
         if (str == L"readspersec" || str == L"readiops")  return static_cast<uint32_t>(StorageMetric::ReadsPerSec);
         if (str == L"writespersec" || str == L"writeiops") return static_cast<uint32_t>(StorageMetric::WritesPerSec);
+        if (str == L"temperature" || str == L"temp")      return static_cast<uint32_t>(StorageMetric::Temperature);
         if (str == L"volumelabel" || str == L"label")     return static_cast<uint32_t>(StorageMetric::VolumeLabel);
         if (str == L"filesystem" || str == L"fs")         return static_cast<uint32_t>(StorageMetric::FileSystem);
         if (str == L"drivetype" || str == L"type")        return static_cast<uint32_t>(StorageMetric::DriveType);

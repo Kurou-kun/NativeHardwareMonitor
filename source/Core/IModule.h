@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <string>
+#include <vector>
 
 class IModule
 {
@@ -10,6 +11,13 @@ public:
 
     virtual bool     Initialize() = 0;
     virtual void     GatherAll() = 0;
+
+    // Gather only these device indices. An empty list means every device - which is what
+    // a Debug=2 dump needs, and what a single-device module does regardless. Modules that
+    // do not override this keep gathering everything, which is always correct, just not
+    // always cheap: a machine here enumerates 37 network adapters and 13 CPU devices, all
+    // of them read every tick for the sake of a skin showing one.
+    virtual void     GatherDevices(const std::vector<uint32_t>& devices) { GatherAll(); }
     virtual double   GetValue(uint32_t metricId, uint32_t deviceIndex) = 0;
     virtual bool     GetString(uint32_t metricId, uint32_t deviceIndex, std::wstring& out) = 0;
     virtual uint32_t GetDeviceCount() const = 0;

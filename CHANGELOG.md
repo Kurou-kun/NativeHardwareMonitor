@@ -4,7 +4,49 @@ All notable changes to NativeHardwareMonitor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/);
 this project uses a four-part `MAJOR.MINOR.PATCH.BUILD` version in the DLL resource.
 
-## [2.1.9] — unreleased
+## [2.2.1] — unreleased
+
+### Changed
+
+- **Only the devices a skin reads are gathered now.** Every module read *every* device
+  each tick regardless of what was being displayed: this machine enumerates **37 network
+  adapters** and **13 CPU devices**, and a skin showing one adapter paid for all 37, every
+  second. `HardwareCore` keeps the set of device indices some measure actually reads —
+  rebuilt when measures register, not per tick — and the poller gathers only those.
+
+  GPU, CPU, Network and Storage filter; the single-device modules inherit a default that
+  gathers everything, which is correct and already cheap.
+
+  **A `Debug=2` dump still sees every device.** A dump exists precisely to show hardware no
+  measure reads — that is how the AMD iGPU enumeration bug was found — so the first dump
+  switches its category back to gathering the lot. It is not gathered inside the dump
+  itself: doing that on Rainmeter's thread under the module mutex is what wedged the app
+  before 2.1.3.
+
+## [2.2.0] — unreleased
+
+### Added
+
+- **`Category=Storage` / `Metric=Temperature`** — drive temperature, read through
+  `IOCTL_STORAGE_QUERY_PROPERTY`. This is the only temperature the plugin can read without
+  a kernel driver, and it needs **no administrator rights**: the handle is opened with no
+  access rights at all, which a property query is enough for.
+
+  **Support is per drive, not per bus.** Of two NVMe drives in the development machine, one
+  answers and the other returns `ERROR_IO_DEVICE`. A drive that does not answer reports
+  `-1`, is never asked again, and its handle is released.
+
+- **Disks with no mounted volume are enumerated now.** A PDH `PhysicalDisk` instance is
+  `"1 C:"` — volume `C:` on `PhysicalDrive1` — or bare `"0"` for a disk carrying no letter.
+  Only the lettered ones were listed before, which mattered once temperature arrived:
+  **the one drive reporting a temperature on the development machine has no letter.**
+
+  Lettered volumes keep their order and therefore their existing `Device=` indices;
+  letterless disks are appended after them, so no existing skin changes meaning. They
+  report speeds, queue and temperature; space and label stay `-1`, there being no volume.
+
+  `Device=` still means what it always did. Temperature belongs to the physical disk the
+  volume sits on, which is why the disk number is parsed out of the PDH instance name.
 
 ### Changed
 

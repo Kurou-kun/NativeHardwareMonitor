@@ -13,6 +13,7 @@ class GpuModule : public IModule
 public:
     bool     Initialize() override;
     void     GatherAll() override;
+    void     GatherDevices(const std::vector<uint32_t>& devices) override;
     double   GetValue(uint32_t metricId, uint32_t deviceIndex) override;
     bool     GetString(uint32_t metricId, uint32_t deviceIndex, std::wstring& out) override;
     uint32_t GetDeviceCount() const override;

@@ -100,6 +100,8 @@ uint32_t HardwareCore::RegisterMeasure(
 
     m_measures.emplace(handle, MeasureEntry{ category, metricId, deviceIndex, updateOverrideMs });
 
+    RebuildWantedDevices(category);
+
     if (ModuleState* state = GetModuleState(category))
         EnsurePoller(*state);   // nothing may gather on Rainmeter's thread
 
@@ -134,7 +136,9 @@ void HardwareCore::UnregisterMeasure(uint32_t handle)
         }
     }
 
+    Category erased = entry.category;
     m_measures.erase(it);
+    RebuildWantedDevices(erased);
 
     // No measures left: stop polling hardware until one comes back. Rainmeter
     // unloads the plugin at this point (see the pin in the constructor), and a
@@ -150,6 +154,26 @@ void HardwareCore::UnregisterMeasure(uint32_t handle)
             state->overrides.clear();
         }
     }
+}
+
+// Which devices anyone is reading, per category. Rebuilt on registration rather than per
+// tick: measures come and go when a skin loads, not between gathers.
+void HardwareCore::RebuildWantedDevices(Category category)
+{
+    ModuleState* state = GetModuleState(category);
+    if (!state)
+        return;
+
+    std::vector<uint32_t> wanted;
+    for (const auto& [handle, entry] : m_measures)
+    {
+        if (entry.category != category)
+            continue;
+        if (std::find(wanted.begin(), wanted.end(), entry.deviceIndex) == wanted.end())
+            wanted.push_back(entry.deviceIndex);
+    }
+
+    state->wantedDevices = std::move(wanted);
 }
 
 double HardwareCore::GetValue(uint32_t handle)
@@ -236,6 +260,12 @@ void HardwareCore::DumpDevice(Category category, uint32_t deviceIndex, const std
         if (!state->initialized)
             return;   // the poller initialises; nothing to dump yet
         state->lastGatherTime = GetTimeMs();
+
+        // A dump exists to show devices no measure reads - that is how the AMD iGPU
+        // enumeration bug was found - so from the first dump this category goes back to
+        // gathering everything. Deliberately not gathered here: doing that on
+        // Rainmeter's thread under the module mutex is what wedged the app before 2.1.3.
+        state->dumpAll = true;
 
         SYSTEMTIME st;
         GetLocalTime(&st);
@@ -352,20 +382,25 @@ void HardwareCore::StartPoller(ModuleState& state, uint32_t intervalMs)
     if (!state.poller)
         state.poller = std::make_unique<PollerThread>();
 
-    IModule*         module      = state.module.get();
-    std::timed_mutex* mtx        = &state.mutex;
-    bool*            initialized = &state.initialized;
+    IModule*          module      = state.module.get();
+    std::timed_mutex* mtx         = &state.mutex;
+    bool*             initialized = &state.initialized;
+    ModuleState*      st          = &state;
 
     std::atomic<uint32_t>* count = &state.deviceCount;
 
-    state.poller->Start(intervalMs, [module, mtx, initialized, count]()
+    state.poller->Start(intervalMs, [module, mtx, initialized, count, st]()
     {
         std::lock_guard<std::timed_mutex> lock(*mtx);
         if (!*initialized)
             *initialized = module->Initialize();
         if (*initialized)
         {
-            module->GatherAll();
+            if (st->dumpAll)
+                module->GatherAll();
+            else
+                module->GatherDevices(st->wantedDevices);
+
             count->store(module->GetDeviceCount(), std::memory_order_relaxed);
         }
     });

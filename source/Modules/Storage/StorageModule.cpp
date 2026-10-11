@@ -17,6 +17,25 @@ bool StorageModule::Initialize()
     return true;
 }
 
+void StorageModule::GatherDevices(const std::vector<uint32_t>& devices)
+{
+    if (!m_initialized)
+        return;
+
+    if (devices.empty())
+    {
+        GatherAll();
+        return;
+    }
+
+    uint32_t count = m_resolver->GetDeviceCount();
+    for (uint32_t i : devices)
+    {
+        if (i < count)
+            m_resolver->GatherSnapshot(i, m_snapshots[i]);
+    }
+}
+
 void StorageModule::GatherAll()
 {
     if (!m_initialized)

@@ -28,6 +28,14 @@ private:
         double   queueLength = 0, busyPercent = 0;
         double   readsPerSec = 0, writesPerSec = 0;
 
+        // Physical disk this instance lives on, parsed from the PDH instance name
+        // ("1 C:" is volume C: on PhysicalDrive1). Temperature belongs to the drive,
+        // not the volume, so it is the only way to ask for it.
+        int    physicalDrive = -1;
+        HANDLE tempHandle    = nullptr;
+        int    tempSupported = 0;    // 0 unknown, 1 yes, -1 no - asked once, then remembered
+        double temperature   = -1.0;
+
         // Read once (rarely changes at runtime), not refreshed every tick.
         bool         identityRead = false;
         std::wstring volumeLabel;
@@ -48,6 +56,7 @@ private:
     double              m_elapsed  = 1.0;
 
     void UpdateSpace(Device& dev);
+    void UpdateTemperature(Device& dev);
     void UpdateIdentity(Device& dev);
     void EnsureDevicesDiscovered(DWORD itemCount, PDH_FMT_COUNTERVALUE_ITEM* items);
     static bool FindCounterValue(PDH_FMT_COUNTERVALUE_ITEM* items, DWORD count,

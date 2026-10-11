@@ -13,6 +13,7 @@ enum class StorageMetric : uint32_t
     BusyPercent,
     ReadsPerSec,
     WritesPerSec,
+    Temperature,
     VolumeLabel,
     FileSystem,
     DriveType,

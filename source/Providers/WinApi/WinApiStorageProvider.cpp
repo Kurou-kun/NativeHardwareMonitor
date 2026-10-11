@@ -56,22 +56,46 @@ void WinApiStorageProvider::EnsureDevicesDiscovered(DWORD itemCount, PDH_FMT_COU
 {
     if (!m_devices.empty()) return;
 
-    struct Entry { wchar_t drive; std::wstring name; };
-    std::vector<Entry> entries;
+    // A PDH PhysicalDisk instance is "<disk number> <letter>:" - "1 C:" is volume C: on
+    // PhysicalDrive1 - or just "<disk number>" for a disk carrying no mounted volume.
+    struct Entry { wchar_t drive; int disk; std::wstring name; };
+    std::vector<Entry> lettered, letterless;
 
     for (DWORD i = 0; i < itemCount; ++i)
     {
         std::wstring name = items[i].szName;
         if (name == L"_Total") continue;
+
+        int disk = -1;
+        if (!name.empty() && iswdigit(name[0]))
+            disk = _wtoi(name.c_str());
+
         size_t pos = name.find(L':');
-        if (pos == std::wstring::npos || pos == 0) continue;
-        entries.push_back({ name[pos - 1], name });
+        if (pos == std::wstring::npos || pos == 0)
+            letterless.push_back({ 0, disk, name });   // no volume: speeds and temperature only
+        else
+            lettered.push_back({ name[pos - 1], disk, name });
     }
 
-    std::sort(entries.begin(), entries.end(), [](const Entry& a, const Entry& b) { return a.drive < b.drive; });
+    std::sort(lettered.begin(), lettered.end(),
+              [](const Entry& a, const Entry& b) { return a.drive < b.drive; });
+    std::sort(letterless.begin(), letterless.end(),
+              [](const Entry& a, const Entry& b) { return a.disk < b.disk; });
 
-    for (auto& e : entries)
-        m_devices.push_back({ e.name });
+    // Lettered volumes keep their existing order and therefore their existing Device=
+    // indices; disks with no mounted volume are appended, so adding them breaks no skin.
+    // They matter because a drive's temperature does not depend on it having a letter -
+    // the only disk reporting one on the dev machine has none.
+    for (auto& e : lettered)
+    {
+        Device d; d.instance = e.name; d.physicalDrive = e.disk;
+        m_devices.push_back(d);
+    }
+    for (auto& e : letterless)
+    {
+        Device d; d.instance = e.name; d.physicalDrive = e.disk;
+        m_devices.push_back(d);
+    }
 }
 
 bool WinApiStorageProvider::FindCounterValue(PDH_FMT_COUNTERVALUE_ITEM* items, DWORD count,
@@ -140,6 +164,10 @@ void WinApiStorageProvider::GatherSnapshot(uint32_t deviceIndex, Snapshot& snap)
         UpdateIdentity(dev);
     }
 
+    // Not inside the write-counter branch above: a disk carrying no mounted volume can
+    // fail that lookup, and it is exactly the kind of disk whose temperature we want.
+    UpdateTemperature(dev);
+
     if (ReadCounterArray(m_queueCounter, buf, items, count))
         FindCounterValue(items, count, dev.instance, dev.queueLength);
 
@@ -165,7 +193,41 @@ void WinApiStorageProvider::GatherSnapshot(uint32_t deviceIndex, Snapshot& snap)
     snap.Set(static_cast<uint32_t>(StorageMetric::BusyPercent),  dev.busyPercent);
     snap.Set(static_cast<uint32_t>(StorageMetric::ReadsPerSec),  dev.readsPerSec);
     snap.Set(static_cast<uint32_t>(StorageMetric::WritesPerSec), dev.writesPerSec);
+
+    // Only published once a drive has actually answered - a drive whose firmware does
+    // not implement it must read -1 (unsupported), not 0.
+    if (dev.tempSupported > 0)
+        snap.Set(static_cast<uint32_t>(StorageMetric::Temperature), dev.temperature);
 }
+
+// Drive temperature, the one temperature this plugin can read without a kernel driver.
+// Declared here rather than taken from ntddstor.h so the build does not depend on the SDK
+// being new enough; the layout is fixed and documented.
+#ifndef StorageDeviceTemperatureProperty
+#define StorageDeviceTemperatureProperty 52
+#endif
+
+struct NhmStorageTemperatureInfo
+{
+    USHORT Index;
+    SHORT  Temperature;
+    SHORT  OverThreshold;
+    SHORT  UnderThreshold;
+    UCHAR  OverThresholdChanged;
+    UCHAR  UnderThresholdChanged;
+};
+
+struct NhmStorageTemperatureDescriptor
+{
+    ULONG  Version;
+    ULONG  Size;
+    SHORT  CriticalTemperature;
+    SHORT  WarningTemperature;
+    USHORT InfoCount;
+    UCHAR  Reserved0[2];
+    ULONG  Reserved1[2];
+    NhmStorageTemperatureInfo TemperatureInfo[8];
+};
 
 static std::wstring DrivePath(const std::wstring& instance)
 {
@@ -199,6 +261,75 @@ static const wchar_t* DriveTypeToString(UINT type)
     case DRIVE_RAMDISK:   return L"RAM Disk";
     default:              return L"Unknown";
     }
+}
+
+void WinApiStorageProvider::UpdateTemperature(Device& dev)
+{
+    if (dev.tempSupported < 0 || dev.physicalDrive < 0)
+        return;   // asked once and told no, or no disk number to ask about
+
+    if (!dev.tempHandle)
+    {
+        wchar_t path[64];
+        swprintf_s(path, L"\\.\\PhysicalDrive%d", dev.physicalDrive);
+
+        // No access rights at all: enough for a property query, and it is what keeps this
+        // working without administrator. Measured on an NVMe that answers.
+        dev.tempHandle = CreateFileW(path, 0, FILE_SHARE_READ | FILE_SHARE_WRITE,
+                                     nullptr, OPEN_EXISTING, 0, nullptr);
+        if (dev.tempHandle == INVALID_HANDLE_VALUE)
+        {
+            dev.tempHandle   = nullptr;
+            dev.tempSupported = -1;
+            return;
+        }
+    }
+
+    STORAGE_PROPERTY_QUERY query{};
+    query.PropertyId = static_cast<STORAGE_PROPERTY_ID>(StorageDeviceTemperatureProperty);
+    query.QueryType  = PropertyStandardQuery;
+
+    NhmStorageTemperatureDescriptor desc{};
+    DWORD returned = 0;
+
+    if (!DeviceIoControl(dev.tempHandle, IOCTL_STORAGE_QUERY_PROPERTY,
+                         &query, sizeof(query), &desc, sizeof(desc), &returned, nullptr))
+    {
+        // Firmware that does not implement it answers ERROR_IO_DEVICE. Support is per
+        // drive, not per bus - of two NVMe drives in the dev machine, one answers.
+        dev.tempSupported = -1;
+        CloseHandle(dev.tempHandle);
+        dev.tempHandle = nullptr;
+        return;
+    }
+
+    // InfoCount is not to be trusted: a drive reporting 3 gave one real sensor plus
+    // 0 C with no thresholds and SHRT_MIN under an index of 65262. Take the lowest
+    // index that carries a plausible reading.
+    const SHORT NoReading = -32768;
+    int  best     = -1;
+    bool haveBest = false;
+
+    for (USHORT i = 0; i < desc.InfoCount && i < 8; ++i)
+    {
+        const NhmStorageTemperatureInfo& info = desc.TemperatureInfo[i];
+        if (info.Temperature == NoReading || info.Temperature <= 0 || info.Temperature > 150)
+            continue;
+        if (!haveBest)
+        {
+            best     = info.Temperature;
+            haveBest = true;
+        }
+    }
+
+    if (!haveBest)
+    {
+        dev.tempSupported = -1;
+        return;
+    }
+
+    dev.tempSupported = 1;
+    dev.temperature   = static_cast<double>(best);
 }
 
 void WinApiStorageProvider::UpdateIdentity(Device& dev)

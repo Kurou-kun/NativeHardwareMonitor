@@ -17,6 +17,25 @@ bool GpuModule::Initialize()
     return true;
 }
 
+void GpuModule::GatherDevices(const std::vector<uint32_t>& devices)
+{
+    if (!m_initialized)
+        return;
+
+    if (devices.empty())
+    {
+        GatherAll();
+        return;
+    }
+
+    uint32_t count = m_resolver->GetDeviceCount();
+    for (uint32_t i : devices)
+    {
+        if (i < count)
+            m_resolver->GatherSnapshot(i, m_snapshots[i]);
+    }
+}
+
 void GpuModule::GatherAll()
 {
     if (!m_initialized)
