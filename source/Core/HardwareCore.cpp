@@ -167,16 +167,19 @@ double HardwareCore::GetValue(uint32_t handle)
     // (see EnsurePoller), and a gather in flight holds the lock, so a reader that
     // cannot take it immediately returns the value it last reported rather than
     // blocking. A stalled NVML/ADL call used to freeze Rainmeter outright here.
+    // Device count needs no snapshot and must never come back negative - a skin
+    // clamps a device index against it, so -1 here turns Clamp(x, 0, count-1) into
+    // Clamp(x, 0, -2) and the skin starts reading a device that cannot exist. The
+    // poller publishes it; 0 means "not known yet", which clamps harmlessly.
+    if (entry.metricId == METRIC_DEVICE_COUNT)
+        return static_cast<double>(state->deviceCount.load(std::memory_order_relaxed));
+
     std::unique_lock<std::timed_mutex> lock(state->mutex, std::defer_lock);
     if (!lock.try_lock_for(std::chrono::milliseconds(2)))
         return entry.lastValue;
 
     if (!state->initialized)
         return entry.lastValue;   // poller has not finished the first gather yet
-
-    // Device count needs no snapshot, so it is answered before any gather work.
-    if (entry.metricId == METRIC_DEVICE_COUNT)
-        return static_cast<double>(state->module->GetDeviceCount());
 
     entry.lastValue = state->module->GetValue(entry.metricId, entry.deviceIndex);
     return entry.lastValue;
@@ -212,11 +215,7 @@ uint32_t HardwareCore::DeviceCount(Category category)
     if (!state || !state->module)
         return 0;
 
-    std::unique_lock<std::timed_mutex> lock(state->mutex, std::defer_lock);
-    if (!lock.try_lock_for(std::chrono::milliseconds(50)))
-        return 0;
-
-    return state->initialized ? state->module->GetDeviceCount() : 0;
+    return state->deviceCount.load(std::memory_order_relaxed);
 }
 
 void HardwareCore::DumpDevice(Category category, uint32_t deviceIndex, const std::wstring& path)
@@ -347,13 +346,18 @@ void HardwareCore::StartPoller(ModuleState& state, uint32_t intervalMs)
     std::timed_mutex* mtx        = &state.mutex;
     bool*            initialized = &state.initialized;
 
-    state.poller->Start(intervalMs, [module, mtx, initialized]()
+    std::atomic<uint32_t>* count = &state.deviceCount;
+
+    state.poller->Start(intervalMs, [module, mtx, initialized, count]()
     {
         std::lock_guard<std::timed_mutex> lock(*mtx);
         if (!*initialized)
             *initialized = module->Initialize();
         if (*initialized)
+        {
             module->GatherAll();
+            count->store(module->GetDeviceCount(), std::memory_order_relaxed);
+        }
     });
 }
 

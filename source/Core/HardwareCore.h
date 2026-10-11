@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <cstdint>
 #include <memory>
 #include <mutex>
@@ -57,6 +58,13 @@ private:
         std::unique_ptr<IModule>      module;
         std::timed_mutex              mutex;   // must outlive poller (destroyed after it)
         std::unique_ptr<PollerThread> poller;  // reset signals the thread; it is never joined
+
+        // Device count, published by the poller once the module is up. Read without
+        // the mutex and never negative: skins clamp a device index against it
+        // (Clamp(x, 0, count-1)), so a transient -1 here makes the clamp yield -2 and
+        // the skin then reads a device that cannot exist. Reported by Yincognito
+        // scrolling sectionvariables.ini quickly.
+        std::atomic<uint32_t> deviceCount{ 0 };
 
         uint64_t lastGatherTime    = 0;
         uint32_t minIntervalMs     = 100;

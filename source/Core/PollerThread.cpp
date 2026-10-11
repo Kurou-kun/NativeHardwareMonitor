@@ -52,11 +52,16 @@ DWORD WINAPI PollerThread::ThreadProc(LPVOID param)
     std::shared_ptr<Context> ctx = *owned;
     delete owned;
 
-    while (WaitForSingleObject(ctx->stopEvent, ctx->intervalMs) == WAIT_TIMEOUT)
+    // Gather first, then wait. Waiting first left every metric unreadable for a full
+    // interval after the poller started - the module is not even initialised until the
+    // first callback runs - which is where "-1 on the first read" came from, and why a
+    // device count could still be unknown a second after a skin loaded.
+    do
     {
         if (ctx->callback)
             ctx->callback();
     }
+    while (WaitForSingleObject(ctx->stopEvent, ctx->intervalMs) == WAIT_TIMEOUT);
 
     return 0;
 }

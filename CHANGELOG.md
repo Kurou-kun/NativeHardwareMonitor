@@ -4,6 +4,48 @@ All notable changes to NativeHardwareMonitor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/);
 this project uses a four-part `MAJOR.MINOR.PATCH.BUILD` version in the DLL resource.
 
+## [2.1.8] — unreleased
+
+### Fixed
+
+- **Scrolling `sectionvariables.ini` quickly drove the device index to -2 and every
+  reading to -1.** Reported by Yincognito. The skin clamps the device against the device
+  count — `Clamp(#device# + 1, 0, [NHM:GPU(count)] - 1)` — and `count` could transiently
+  come back **-1**, which turns that into `Clamp(x, 0, -2)`. The index then pointed at a
+  device that cannot exist and everything read -1.
+
+  `GetValue` returns a measure's last reported value when it cannot take the module mutex
+  within 2 ms, and a *freshly registered* handle's last value is -1. Rapid scrolling
+  registers a new handle per device touched while the poller is gathering, so that window
+  is easy to hit. A device count needs no snapshot at all: the poller now publishes it to
+  an atomic and `GetValue` answers it **before taking any lock**, so it is never negative
+  — 0 until the first gather lands, then the real count. `DeviceCount()` reads the same
+  atomic instead of waiting up to 50 ms for the mutex.
+
+- **Every metric was unreadable for a full interval after a poller started.** The poll
+  loop waited before its first callback, and the module is not even initialised until
+  that callback runs — so a freshly loaded skin read -1 for up to a second, and a device
+  count could still be unknown well after the skin appeared. It gathers first and waits
+  afterwards.
+
+### Changed
+
+- **`sectionvariables.ini` floors its clamp bound**: `Max(0, [NHM:GPU(count)] - 1)`. The
+  plugin no longer reports a negative count, but a skin should not turn a count of 0 into
+  an index of -1 either, and this is the file people copy from.
+
+### Checked, not changed
+
+- **GPU clocks.** Reported as wrong against MSI Afterburner on an idle Optimus GTX 1650
+  (9 MHz / 25 MHz here, 300 MHz / 405 MHz there). Both of our conversions are correct and
+  that is now verified rather than assumed: `tools/nvapi_clock_check.py` calls
+  `NvAPI_GPU_GetAllClockFrequencies` exactly as `NvapiProvider` does and agrees with
+  nvidia-smi to the digit (720 MHz / 5001 MHz), and NVML's path tracks nvidia-smi across
+  repeated samples. No scaling error exists in either path. What could not be reproduced
+  here is the hardware state — a power-gated laptop dGPU on a 2021 driver — where NVML
+  and NVAPI evidently disagree. If NVML is the one reporting the near-zero clock, the
+  question is which source should win for clocks, not what the arithmetic is.
+
 ## [2.1.7] — unreleased
 
 ### Fixed
