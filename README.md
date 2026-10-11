@@ -27,19 +27,26 @@ No third-party monitoring tool, no kernel driver, no service — a single DLL.
 
 ## Upgrading from an earlier version
 
-**2.1.4 fixes a freeze that affects every build before it.** Rainmeter could stop
-responding for good whenever it unloaded the plugin — a skin refresh that removed the last
-NativeHardwareMonitor measure, `!Quit`, or a Skin Installer package replacing the DLL. The
-skins stayed on screen, the CPU sat idle and nothing more reached the log, because the
+**Run 2.1.8 or later.** Anything older carries one of two faults at plugin unload, and
+2.1.4 and 2.1.5 each fixed the one the other introduced.
+
+**Before 2.1.4: Rainmeter froze and never came back.** Any unload — a skin refresh that
+removed the last NativeHardwareMonitor measure, `!Quit`, or an installer replacing the DLL
+— could leave Rainmeter unresponsive with the CPU idle and nothing more in the log. The
 unload ran AMD's `ADLXTerminate()` from `DllMain` while Windows held the loader lock, and
 it waits there on a driver thread that cannot finish until that lock is released. The same
-teardown could instead fault inside `nvml.dll`. 2.1.4 performs no vendor-API teardown at
-unload at all, and no longer calls a driver from Rainmeter's own thread.
+teardown could instead fault inside `nvml.dll`.
+
+**2.1.4 only: Rainmeter crashed instead.** Fixing the freeze meant never joining the
+polling threads at unload, but nothing else stopped them either, so `FreeLibrary` unmapped
+the code they were still running — `c0000005` in `NativeHardwareMonitor.dll_unloaded`.
+**2.1.5 pins the module** so the unload is a no-op, and stops every poller when the last
+measure goes.
 
 **Close Rainmeter before replacing the DLL.** Nothing can overwrite a plugin that a loaded
 skin still has mapped: an installer writes the skins and the `@Vault` copy, leaves the old
-DLL alone, and the plugin still running is the previous one — which, on a build before
-2.1.4, is also the one that freezes on the way out. See the [changelog](CHANGELOG.md).
+DLL alone, and the plugin still running is the previous one — which, on an affected build,
+is also the one that breaks on the way out. See the [changelog](CHANGELOG.md).
 
 ## Quick example
 
