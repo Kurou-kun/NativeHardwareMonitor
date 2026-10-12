@@ -4,6 +4,25 @@ All notable changes to NativeHardwareMonitor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/);
 this project uses a four-part `MAJOR.MINOR.PATCH.BUILD` version in the DLL resource.
 
+## [2.2.6] — unreleased
+
+### Changed
+
+- **One `Module` class now serves all ten categories, where there were twenty classes.**
+  Each category carried a `Module` and a `Resolver` of its own, and nine of the ten pairs
+  diffed to **zero lines** against each other once the type names were normalised — they
+  differed only in which provider they named and what noun their startup log counted in.
+  `GpuResolver` is the one with real work to do (five providers, a per-metric merge, Windows
+  counters behind all of them); it is an `IProvider` itself now, so it drops into the shared
+  `Module` like any single-source provider. **38 files and ~1180 lines deleted**, no
+  behaviour change intended.
+
+  Two visible consequences, both small. A startup log line reads
+  `Storage: WinApiStorageProvider initialized (3 drive(s))` where it used to say
+  `StorageResolver:` — the resolver it named no longer exists. And the single-device
+  categories (Memory, Battery, System, Motherboard) now honour device filtering like the
+  rest instead of inheriting "gather everything", which for one device is the same work.
+
 ## [2.2.5] — 2026-10-12
 
 ### Changed

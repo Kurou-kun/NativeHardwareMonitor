@@ -11,13 +11,17 @@
 
 enum class GpuVendor { Nvidia, AMD, Intel, Unknown };
 
-class GpuResolver
+// An IProvider that resolves between providers: NVML/NVAPI for NVIDIA, ADLX/ADL2 for AMD,
+// IGCL for Intel, Windows' own counters behind all of them, and a DXGI/registry last resort
+// for names. Being an IProvider is what lets the shared Module hold it exactly as it holds a
+// single-source provider - GPU is the only category that needs this layer.
+class GpuResolver : public IProvider
 {
 public:
-    bool     Initialize();
-    uint32_t GetDeviceCount() const;
-    void     GatherSnapshot(uint32_t deviceIndex, Snapshot& snap);
-    bool     GetString(uint32_t metricId, uint32_t deviceIndex, std::wstring& out);
+    bool     Initialize() override;
+    uint32_t GetDeviceCount() const override;
+    void     GatherSnapshot(uint32_t deviceIndex, Snapshot& snap) override;
+    bool     GetString(uint32_t metricId, uint32_t deviceIndex, std::wstring& out) override;
 
 private:
     struct DeviceEntry

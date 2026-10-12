@@ -1,17 +1,28 @@
+// <windows.h> drags in the original winsock.h unless this is defined, and this file now
+// constructs WinApiPingProvider, whose header needs <winsock2.h> - the two redefine each
+// other's structs. The per-category Resolver classes used to hide the problem by including
+// their provider from the .cpp instead of the header. Nothing here needs the parts that
+// WIN32_LEAN_AND_MEAN omits, and Core/HardwareCore.h -> PollerThread.h is the first include
+// to reach <windows.h>, so the define has to sit above it.
+#define WIN32_LEAN_AND_MEAN
+
 #include "Core/HardwareCore.h"
 #include "Types/MetricParser.h"
 #include "Utils/Debug.h"
 
-#include "Modules/GPU/GpuModule.h"
-#include "Modules/CPU/CpuModule.h"
-#include "Modules/Memory/MemoryModule.h"
-#include "Modules/Network/NetworkModule.h"
-#include "Modules/Storage/StorageModule.h"
-#include "Modules/Ping/PingModule.h"
-#include "Modules/Battery/BatteryModule.h"
-#include "Modules/System/SystemModule.h"
-#include "Modules/Motherboard/MotherboardModule.h"
-#include "Modules/Display/DisplayModule.h"
+#include "Core/Module.h"
+
+#include "Providers/WinApi/WinApiPingProvider.h"
+
+#include "Modules/GPU/GpuResolver.h"
+#include "Providers/WinApi/WinApiCpuProvider.h"
+#include "Providers/WinApi/WinApiMemoryProvider.h"
+#include "Providers/WinApi/WinApiNetworkProvider.h"
+#include "Providers/WinApi/WinApiStorageProvider.h"
+#include "Providers/WinApi/WinApiBatteryProvider.h"
+#include "Providers/WinApi/WinApiSystemProvider.h"
+#include "Providers/WinApi/WinApiMotherboardProvider.h"
+#include "Providers/WinApi/WinApiDisplayProvider.h"
 
 #include <algorithm>
 #include <chrono>
@@ -53,22 +64,27 @@ HardwareCore::HardwareCore()
         reinterpret_cast<LPCWSTR>(&HardwareCore::Instance),
         &self);
 
-    auto make = [](auto mod) {
-        auto s = std::make_unique<ModuleState>();
-        s->module = std::move(mod);
-        return s;
+    // One Module class serves every category; what differs is the provider behind it and
+    // the noun its startup log counts in. The per-category Module and Resolver classes this
+    // replaced were identical boilerplate - see Core/Module.h.
+    auto add = [this](Category category, std::unique_ptr<IProvider> provider,
+                      const wchar_t* name, const wchar_t* noun = nullptr)
+    {
+        auto state = std::make_unique<ModuleState>();
+        state->module = std::make_unique<Module>(category, std::move(provider), name, noun);
+        m_modules[category] = std::move(state);
     };
 
-    m_modules[Category::GPU]     = make(std::make_unique<GpuModule>());
-    m_modules[Category::CPU]     = make(std::make_unique<CpuModule>());
-    m_modules[Category::Memory]  = make(std::make_unique<MemoryModule>());
-    m_modules[Category::Network] = make(std::make_unique<NetworkModule>());
-    m_modules[Category::Storage] = make(std::make_unique<StorageModule>());
-    m_modules[Category::Ping]    = make(std::make_unique<PingModule>());
-    m_modules[Category::Battery] = make(std::make_unique<BatteryModule>());
-    m_modules[Category::System]  = make(std::make_unique<SystemModule>());
-    m_modules[Category::Motherboard] = make(std::make_unique<MotherboardModule>());
-    m_modules[Category::Display]  = make(std::make_unique<DisplayModule>());
+    add(Category::GPU,     std::make_unique<GpuResolver>(),               L"GpuResolver", L"device(s)");
+    add(Category::CPU,     std::make_unique<WinApiCpuProvider>(),         L"WinApiCpuProvider", L"device(s), incl. total");
+    add(Category::Memory,  std::make_unique<WinApiMemoryProvider>(),      L"WinApiMemoryProvider");
+    add(Category::Network, std::make_unique<WinApiNetworkProvider>(),     L"WinApiNetworkProvider", L"adapter(s)");
+    add(Category::Storage, std::make_unique<WinApiStorageProvider>(),     L"WinApiStorageProvider", L"drive(s)");
+    add(Category::Ping,    std::make_unique<WinApiPingProvider>(),        L"WinApiPingProvider");
+    add(Category::Battery, std::make_unique<WinApiBatteryProvider>(),     L"WinApiBatteryProvider");
+    add(Category::System,  std::make_unique<WinApiSystemProvider>(),      L"WinApiSystemProvider");
+    add(Category::Motherboard, std::make_unique<WinApiMotherboardProvider>(), L"WinApiMotherboardProvider");
+    add(Category::Display, std::make_unique<WinApiDisplayProvider>(),     L"WinApiDisplayProvider", L"display(s)");
 }
 
 uint32_t HardwareCore::RegisterMeasure(
