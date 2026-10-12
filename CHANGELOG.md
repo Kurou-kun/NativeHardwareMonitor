@@ -4,6 +4,16 @@ All notable changes to NativeHardwareMonitor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/);
 this project uses a four-part `MAJOR.MINOR.PATCH.BUILD` version in the DLL resource.
 
+## [2.2.4] — unreleased
+
+### Changed
+
+- **A `Debug=2` Storage dump names its metrics** instead of printing `Metric[11] = 43`. The
+  category that most needs it: a drive answering `Temperature` can be a letterless disk whose
+  every string metric reads `-1`, leaving a numeric index as the only clue what the reading
+  belongs to. GPU and Storage are spelled out now; the other categories still fall back to
+  `Metric[<id>]`.
+
 ## [2.2.3] — unreleased
 
 ### Fixed

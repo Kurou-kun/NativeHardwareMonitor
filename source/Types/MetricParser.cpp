@@ -87,9 +87,14 @@ uint32_t MetricCount(Category category)
     }
 }
 
-// Canonical names for the Debug=2 dump. GPU is spelled out (the feature's purpose —
-// Intel verification); other categories fall back to Metric[<id>], readable enough
-// for a diagnostic file. ponytail: extend per-category only if dumps need it.
+// Canonical names for the Debug=2 dump. GPU (the feature's purpose — Intel verification) and
+// Storage (fifteen metrics where a drive that answers temperature may be a letterless disk with
+// nothing else to identify it) are spelled out; the rest fall back to Metric[<id>], readable
+// enough for a diagnostic file.
+//
+// ponytail: two hand-written switches duplicating ParseMetric's strings. If a third category
+// needs names, replace both with one {name, id} table per category and drive lookup and parsing
+// off it instead of adding a third copy.
 std::wstring MetricName(Category category, uint32_t id)
 {
     if (category == Category::GPU)
@@ -126,6 +131,30 @@ std::wstring MetricName(Category category, uint32_t id)
         default: break;
         }
     }
+
+    if (category == Category::Storage)
+    {
+        switch (static_cast<StorageMetric>(id))
+        {
+        case StorageMetric::ReadBytes:      return L"ReadBytes";
+        case StorageMetric::WriteBytes:     return L"WriteBytes";
+        case StorageMetric::ReadSpeed:      return L"ReadSpeed";
+        case StorageMetric::WriteSpeed:     return L"WriteSpeed";
+        case StorageMetric::UsedSpace:      return L"UsedSpace";
+        case StorageMetric::FreeSpace:      return L"FreeSpace";
+        case StorageMetric::TotalSpace:     return L"TotalSpace";
+        case StorageMetric::QueueLength:    return L"QueueLength";
+        case StorageMetric::BusyPercent:    return L"BusyPercent";
+        case StorageMetric::ReadsPerSec:    return L"ReadsPerSec";
+        case StorageMetric::WritesPerSec:   return L"WritesPerSec";
+        case StorageMetric::Temperature:    return L"Temperature";
+        case StorageMetric::VolumeLabel:    return L"VolumeLabel";
+        case StorageMetric::FileSystem:     return L"FileSystem";
+        case StorageMetric::DriveType:      return L"DriveType";
+        default: break;
+        }
+    }
+
     return L"Metric[" + std::to_wstring(id) + L"]";
 }
 
