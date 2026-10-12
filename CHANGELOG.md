@@ -4,7 +4,7 @@ All notable changes to NativeHardwareMonitor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/);
 this project uses a four-part `MAJOR.MINOR.PATCH.BUILD` version in the DLL resource.
 
-## [2.2.5] — unreleased
+## [2.2.5] — 2026-10-12
 
 ### Changed
 
@@ -24,7 +24,7 @@ this project uses a four-part `MAJOR.MINOR.PATCH.BUILD` version in the DLL resou
   drifted, one of them missing a `count` reset. `PollerThread`'s callback now captures the
   module state alone instead of four pointers that all hang off it.
 
-## [2.2.4] — unreleased
+## [2.2.4] — 2026-10-12 (shipped in 2.2.5)
 
 ### Changed
 
@@ -34,7 +34,7 @@ this project uses a four-part `MAJOR.MINOR.PATCH.BUILD` version in the DLL resou
   belongs to. GPU and Storage are spelled out now; the other categories still fall back to
   `Metric[<id>]`.
 
-## [2.2.3] — unreleased
+## [2.2.3] — 2026-10-12 (shipped in 2.2.5)
 
 ### Fixed
 
@@ -57,7 +57,7 @@ this project uses a four-part `MAJOR.MINOR.PATCH.BUILD` version in the DLL resou
   averaged figure, which is a real measurement and occasionally the more interesting one.
   NVIDIA only — it reads `-1` elsewhere.
 
-## [2.2.2] — unreleased
+## [2.2.2] — 2026-10-12 (shipped in 2.2.5)
 
 ### Fixed
 
@@ -67,7 +67,7 @@ this project uses a four-part `MAJOR.MINOR.PATCH.BUILD` version in the DLL resou
   its first tick. `tools/storage_temp_probe.py` had the spelling right all along, which is
   why the probe found working sensors while the plugin found none.
 
-## [2.2.1] — unreleased
+## [2.2.1] — 2026-10-11 (shipped in 2.2.5)
 
 ### Changed
 
@@ -86,7 +86,7 @@ this project uses a four-part `MAJOR.MINOR.PATCH.BUILD` version in the DLL resou
   itself: doing that on Rainmeter's thread under the module mutex is what wedged the app
   before 2.1.3.
 
-## [2.2.0] — unreleased
+## [2.2.0] — 2026-10-11 (shipped in 2.2.5)
 
 ### Added
 
