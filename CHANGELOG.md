@@ -13,7 +13,7 @@ this project uses a four-part `MAJOR.MINOR.PATCH.BUILD` version in the DLL resou
   twice; both are now one table per category, one row per metric, with the canonical name
   derived from the enum member itself so the two cannot drift apart. `Metric=` and section
   variables are unchanged — every name and alias still resolves to the same id, pinned by
-  **408 assertions** in the new `tools/metric_parse_check.cpp`.
+  **399 assertions** in the new `tools/metric_parse_check.cpp`.
 
 ### Removed
 
