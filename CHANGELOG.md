@@ -4,7 +4,7 @@ All notable changes to NativeHardwareMonitor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/);
 this project uses a four-part `MAJOR.MINOR.PATCH.BUILD` version in the DLL resource.
 
-## [2.2.7] — unreleased
+## [2.2.7] — 2026-10-12
 
 ### Added
 
@@ -30,7 +30,7 @@ this project uses a four-part `MAJOR.MINOR.PATCH.BUILD` version in the DLL resou
   metrics they could not read. `0` therefore means "not up yet", which is a state that
   genuinely exists and the one a skin meets at load.
 
-## [2.2.6] — unreleased
+## [2.2.6] — 2026-10-12 (shipped in 2.2.7)
 
 ### Changed
 
