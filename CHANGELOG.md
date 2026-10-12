@@ -4,6 +4,29 @@ All notable changes to NativeHardwareMonitor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/);
 this project uses a four-part `MAJOR.MINOR.PATCH.BUILD` version in the DLL resource.
 
+## [2.2.3] — unreleased
+
+### Fixed
+
+- **A power-gated NVIDIA dGPU reported its effective clock, not its real one.** NVML on an
+  Optimus GTX 1650 answered **9 MHz core / 25 MHz memory** where MSI Afterburner, GPU-Z and
+  HWiNFO all showed **300 / 405** at the same moment — and `nvidia-smi` agreed with NVML, so
+  the conversion was never wrong: NVML was handing back something within a few MHz of
+  HWiNFO's *GPU Effective Clock*. Reported and then confirmed by Yincognito
+  ([p=246138](https://forum.rainmeter.net/viewtopic.php?p=246138)).
+
+  An NVML clock below 100 MHz no longer sets `CoreClock`, so NVAPI's reading fills it
+  through the existing backup merge — the same number every other tool shows. Where NVAPI
+  is unavailable such a clock reads `-1` rather than a figure no other tool agrees with.
+
+### Added
+
+- **`Metric=EffectiveClock`** — nothing is discarded by the fix above: NVML's graphics-clock
+  reading is published under its own name, the sensor HWiNFO calls *GPU Effective Clock*. On
+  a card that is awake it equals `CoreClock`; on a power-gated one it is the far lower
+  averaged figure, which is a real measurement and occasionally the more interesting one.
+  NVIDIA only — it reads `-1` elsewhere.
+
 ## [2.2.2] — unreleased
 
 ### Fixed

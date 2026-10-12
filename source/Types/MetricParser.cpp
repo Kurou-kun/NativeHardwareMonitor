@@ -117,6 +117,7 @@ std::wstring MetricName(Category category, uint32_t id)
         case GpuMetric::EncoderUsage:       return L"EncoderUsage";
         case GpuMetric::DecoderUsage:       return L"DecoderUsage";
         case GpuMetric::PerfState:          return L"PerfState";
+        case GpuMetric::EffectiveClock:     return L"EffectiveClock";
         case GpuMetric::Name:               return L"Name";
         case GpuMetric::DriverVersion:      return L"DriverVersion";
         case GpuMetric::VbiosVersion:       return L"VbiosVersion";
@@ -148,6 +149,7 @@ uint32_t ParseMetric(Category category, const std::wstring& input)
     case Category::GPU:
         if (str == L"usage")                                   return static_cast<uint32_t>(GpuMetric::Usage);
         if (str == L"coreclock" || str == L"clock")            return static_cast<uint32_t>(GpuMetric::CoreClock);
+        if (str == L"effectiveclock" || str == L"effclock")    return static_cast<uint32_t>(GpuMetric::EffectiveClock);
         if (str == L"memoryclock" || str == L"memclock")       return static_cast<uint32_t>(GpuMetric::MemoryClock);
         if (str == L"temperature" || str == L"temp")           return static_cast<uint32_t>(GpuMetric::Temperature);
         if (str == L"hotspottemperature" || str == L"hotspot") return static_cast<uint32_t>(GpuMetric::HotspotTemperature);
