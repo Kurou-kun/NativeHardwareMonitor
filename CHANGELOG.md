@@ -4,6 +4,32 @@ All notable changes to NativeHardwareMonitor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/);
 this project uses a four-part `MAJOR.MINOR.PATCH.BUILD` version in the DLL resource.
 
+## [2.2.7] — unreleased
+
+### Added
+
+- **`Metric=ProviderStatus`** (alias `provider`) — works in every category and answers the
+  question `-1` on an ordinary metric cannot: whether this category has a working provider
+  at all. `1` initialised and gathering, `0` not up yet (nothing has triggered
+  initialisation, or the first gather is still in flight), `-1` no provider on this machine
+  — the vendor SDK is absent or initialisation failed.
+
+  So a skin can grey a panel out and say *"no Intel driver"* instead of displaying a
+  convincing `-1`, and a bug report can start with a fact. Read without the module lock,
+  from state the poller publishes, for the same reason the device count is: a metric whose
+  job is to disambiguate `-1` must never itself return a stale `-1`.
+
+  **Not named `Status`** — Battery and Ping already have a string metric by that name and
+  hijacking it would break every skin reading them. `tools/metric_parse_check.cpp` asserts
+  both: `ProviderStatus` reserved in all ten categories, `status` still resolving to
+  `BatteryMetric::Status` and `PingMetric::Status`.
+
+  Narrower than [#9](https://github.com/Kurou-kun/NativeHardwareMonitor/issues/9) asked for
+  in one respect: it has no "initialised but the last gather failed" state, because a
+  gather cannot report failure — providers do not signal it, they publish `-1` for the
+  metrics they could not read. `0` therefore means "not up yet", which is a state that
+  genuinely exists and the one a skin meets at load.
+
 ## [2.2.6] — unreleased
 
 ### Changed

@@ -250,7 +250,8 @@ static uint32_t SectionHandleFor(MeasureContext* ctx, Category category, int arg
 
     // An unrecognised name lands on the category's Unknown sentinel, which would
     // otherwise read -1 forever without saying why. Say it once, then remember.
-    if (metric != METRIC_DEVICE_COUNT && metric >= MetricCount(category))
+    if (metric != METRIC_DEVICE_COUNT && metric != METRIC_PROVIDER_STATUS &&
+        metric >= MetricCount(category))
     {
         LOG_ERROR(L"[%s] Unknown metric '%s' in section variable",
             CategoryName(category).c_str(), name.c_str());

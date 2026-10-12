@@ -219,6 +219,9 @@ double HardwareCore::GetValue(uint32_t handle)
     if (entry.metricId == METRIC_DEVICE_COUNT)
         return static_cast<double>(state->deviceCount.load(std::memory_order_relaxed));
 
+    if (entry.metricId == METRIC_PROVIDER_STATUS)
+        return static_cast<double>(state->status.load(std::memory_order_relaxed));
+
     std::unique_lock<std::timed_mutex> lock(state->mutex, std::defer_lock);
     if (!lock.try_lock_for(std::chrono::milliseconds(2)))
         return entry.lastValue;
@@ -248,8 +251,8 @@ bool HardwareCore::GetString(uint32_t handle, std::wstring& out)
     if (!state->initialized)
         return false;
 
-    if (entry.metricId == METRIC_DEVICE_COUNT)
-        return false; // numeric only — a module must never see the reserved id
+    if (entry.metricId == METRIC_DEVICE_COUNT || entry.metricId == METRIC_PROVIDER_STATUS)
+        return false; // numeric only — a module must never see a reserved id
 
     return state->module->GetString(entry.metricId, entry.deviceIndex, out);
 }
@@ -410,7 +413,14 @@ void HardwareCore::StartPoller(ModuleState& state, uint32_t intervalMs)
 
         std::lock_guard<std::timed_mutex> lock(st->mutex);
         if (!st->initialized)
+        {
             st->initialized = module->Initialize();
+
+            // A provider that cannot initialise will not succeed on a later tick either -
+            // a missing SDK stays missing - so this is the one place that can say so.
+            if (!st->initialized)
+                st->status.store(-1, std::memory_order_relaxed);
+        }
         if (st->initialized)
         {
             if (st->dumpAll)
@@ -419,6 +429,7 @@ void HardwareCore::StartPoller(ModuleState& state, uint32_t intervalMs)
                 module->GatherDevices(st->wantedDevices);
 
             st->deviceCount.store(module->GetDeviceCount(), std::memory_order_relaxed);
+            st->status.store(1, std::memory_order_relaxed);
         }
     });
 }

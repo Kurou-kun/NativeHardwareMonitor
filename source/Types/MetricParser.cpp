@@ -355,6 +355,11 @@ uint32_t ParseMetric(Category category, const std::wstring& input)
     if (str == L"count" || str == L"devicecount")
         return METRIC_DEVICE_COUNT;
 
+    // Same for every category, and answered from the module's own state rather than from a
+    // snapshot. "provider" is the short form; plain "status" stays with Battery and Ping.
+    if (str == L"providerstatus" || str == L"provider")
+        return METRIC_PROVIDER_STATUS;
+
     for (size_t i = 0; i < table.count; ++i)
     {
         const MetricDef& def = table.defs[i];

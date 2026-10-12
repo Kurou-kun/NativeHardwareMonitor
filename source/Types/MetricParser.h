@@ -10,6 +10,18 @@
 // range of any category's metric enum.
 static constexpr uint32_t METRIC_DEVICE_COUNT = 0xFFFFFFFEu;
 
+// ParseMetric returns this for "ProviderStatus" in any category: whether the category has a
+// working provider at all, which is the question `-1` on an ordinary metric cannot answer.
+//
+//    1  provider initialised and gathering
+//    0  not up yet - no measure has triggered initialisation, or the first gather is still
+//       in flight (a moment at skin load)
+//   -1  no provider on this machine: the vendor SDK is absent, or initialisation failed
+//
+// Deliberately NOT named "Status": Battery and Ping already have a string metric by that
+// name, and hijacking it would break every skin reading them.
+static constexpr uint32_t METRIC_PROVIDER_STATUS = 0xFFFFFFFDu;
+
 Category ParseCategory(const std::wstring& input);
 uint32_t ParseMetric(Category category, const std::wstring& input);
 

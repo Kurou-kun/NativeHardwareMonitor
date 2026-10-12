@@ -1053,6 +1053,19 @@ int main()
 
 
 
+    // ProviderStatus is reserved in every category, like Count - and must not have taken
+    // "status" with it, which Battery and Ping already use for a string metric of their own
+    // (asserted per category above).
+    for (Category c : { Category::GPU, Category::CPU, Category::Memory, Category::Network,
+                        Category::Storage, Category::Ping, Category::Battery, Category::System,
+                        Category::Motherboard, Category::Display })
+    {
+        CHECK(ParseMetric(c, L"ProviderStatus") == METRIC_PROVIDER_STATUS);
+        CHECK(ParseMetric(c, L"providerstatus") == METRIC_PROVIDER_STATUS);
+        CHECK(ParseMetric(c, L"provider")       == METRIC_PROVIDER_STATUS);
+        CHECK(MetricName(c, METRIC_PROVIDER_STATUS) == L"Metric[4294967293]");  // not a table row
+    }
+
     CHECK(ParseMetric(Category::Unknown, L"usage") == static_cast<uint32_t>(-1));
 
 

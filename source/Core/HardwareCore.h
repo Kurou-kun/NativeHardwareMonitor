@@ -67,6 +67,12 @@ private:
         // scrolling sectionvariables.ini quickly.
         std::atomic<uint32_t> deviceCount{ 0 };
 
+        // Provider liveness, published by the poller and read without the mutex for the
+        // same reason the device count is: it answers what -1 on a metric cannot, so it
+        // must not itself be able to come back as a stale -1 from the try_lock path.
+        // 0 until the poller has run, then 1 (gathering) or -1 (no provider here).
+        std::atomic<int32_t> status{ 0 };
+
         uint32_t currentOverrideMs = 0;
         bool     initialized       = false;
 
