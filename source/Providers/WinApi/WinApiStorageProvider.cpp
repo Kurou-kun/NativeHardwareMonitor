@@ -271,7 +271,7 @@ void WinApiStorageProvider::UpdateTemperature(Device& dev)
     if (!dev.tempHandle)
     {
         wchar_t path[64];
-        swprintf_s(path, L"\\.\\PhysicalDrive%d", dev.physicalDrive);
+        swprintf_s(path, L"\\\\.\\PhysicalDrive%d", dev.physicalDrive);
 
         // No access rights at all: enough for a property query, and it is what keeps this
         // working without administrator. Measured on an NVMe that answers.

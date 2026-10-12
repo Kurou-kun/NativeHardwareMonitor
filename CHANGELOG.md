@@ -4,6 +4,16 @@ All notable changes to NativeHardwareMonitor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/);
 this project uses a four-part `MAJOR.MINOR.PATCH.BUILD` version in the DLL resource.
 
+## [2.2.2] — unreleased
+
+### Fixed
+
+- **Drive temperature read `-1` (unsupported) on every disk.** The device path was built
+  with one backslash too few — `\.\PhysicalDrive0` is not a device path, so
+  `CreateFileW` failed for every drive and each one was permanently marked unsupported on
+  its first tick. `tools/storage_temp_probe.py` had the spelling right all along, which is
+  why the probe found working sensors while the plugin found none.
+
 ## [2.2.1] — unreleased
 
 ### Changed
