@@ -10,6 +10,13 @@ hardware metrics — **GPU, CPU, Memory, Network, Storage, and Ping** — direct
 from vendor APIs (NVML, NVAPI, ADLX, ADL2) and Windows APIs (WMI, PDH, Win32).
 No third-party monitoring tool, no kernel driver, no service — a single DLL.
 
+<img src="docs/overview.png" width="355" alt="The Overview skin: CPU usage and clock, RAM, GPU name, load, temperature and VRAM, network throughput and drive space, all read through the plugin">
+
+**`NHM\overview.ini` above ships in the package and opens on install** — every value in it
+comes from this plugin, and it is one self-contained file to read or copy from. The ten
+per-category skins beside it carry *every* metric the plugin exposes, with `Debug=2` set, as
+a reference.
+
 ## Requirements
 
 - Windows 10/11, **x64** (Rainmeter and this plugin are both 64-bit)
