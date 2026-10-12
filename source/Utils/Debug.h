@@ -7,7 +7,6 @@
 #include <vector>
 
 extern void* g_Rainmeter;
-extern int   g_DebugLevel;
 
 // Always visible — module/provider startup events and errors. No debug level gate.
 void LogAlways(int level, const wchar_t* fmt, ...);

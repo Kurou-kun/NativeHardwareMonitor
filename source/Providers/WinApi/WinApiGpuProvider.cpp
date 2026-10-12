@@ -1,6 +1,7 @@
 #include "Providers/WinApi/WinApiGpuProvider.h"
 #include "Types/GpuMetric.h"
 #include "Utils/Debug.h"
+#include "Utils/PdhUtil.h"
 
 #include <dxgi1_4.h>
 
@@ -113,23 +114,6 @@ int WinApiGpuProvider::FindAdapter(uint32_t pciVendorId, uint32_t ordinal) const
     return -1;
 }
 
-// PdhGetFormattedCounterArray wants its buffer sized by a first call that fails with
-// PDH_MORE_DATA; same shape as WinApiStorageProvider::ReadCounterArray.
-static bool ReadCounterArray(PDH_HCOUNTER counter, std::vector<BYTE>& buf,
-                             PDH_FMT_COUNTERVALUE_ITEM_W*& items, DWORD& count)
-{
-    DWORD bufSize = 0;
-    count = 0;
-    PdhGetFormattedCounterArrayW(counter, PDH_FMT_DOUBLE | PDH_FMT_NOCAP100, &bufSize, &count, nullptr);
-    if (bufSize == 0)
-        return false;
-
-    buf.resize(bufSize);
-    items = reinterpret_cast<PDH_FMT_COUNTERVALUE_ITEM_W*>(buf.data());
-    return PdhGetFormattedCounterArrayW(counter, PDH_FMT_DOUBLE | PDH_FMT_NOCAP100,
-                                        &bufSize, &count, items) == ERROR_SUCCESS;
-}
-
 void WinApiGpuProvider::GatherSnapshot(uint32_t deviceIndex, Snapshot& snap)
 {
     if (deviceIndex >= m_adapters.size())
@@ -154,7 +138,7 @@ void WinApiGpuProvider::GatherSnapshot(uint32_t deviceIndex, Snapshot& snap)
     // ("pid_7664_luid_..._phys_0_eng_1_engtype_3D"), so sum each engine type across
     // processes and report the busiest type. Task Manager shows the same thing: adding
     // every engine together would read far over 100% with video playing.
-    if (m_engine && ReadCounterArray(m_engine, buf, items, count))
+    if (m_engine && PdhReadCounterArray(m_engine, buf, items, count, PDH_FMT_DOUBLE | PDH_FMT_NOCAP100))
     {
         std::map<std::wstring, double> byEngineType;
         for (DWORD i = 0; i < count; ++i)
@@ -182,7 +166,7 @@ void WinApiGpuProvider::GatherSnapshot(uint32_t deviceIndex, Snapshot& snap)
     // QueryVideoMemoryInfo, which only reports the calling process, this is the whole
     // machine's usage — which is what a desktop monitor is being asked for.
     PDH_HCOUNTER memCounter = integrated ? m_shared : m_dedicated;
-    if (memCounter && ReadCounterArray(memCounter, buf, items, count))
+    if (memCounter && PdhReadCounterArray(memCounter, buf, items, count, PDH_FMT_DOUBLE | PDH_FMT_NOCAP100))
     {
         double used  = 0.0;
         bool   found = false;

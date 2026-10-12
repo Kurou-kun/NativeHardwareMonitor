@@ -292,6 +292,7 @@
     <ClInclude Include="source\Types\DisplayMetric.h" />
     <ClInclude Include="source\Types\MetricParser.h" />
     <ClInclude Include="source\Utils\Debug.h" />
+    <ClInclude Include="source\Utils\PdhUtil.h" />
     <ClInclude Include="source\Utils\WmiUtil.h" />
   </ItemGroup>
 

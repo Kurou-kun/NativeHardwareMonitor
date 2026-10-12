@@ -87,72 +87,250 @@ uint32_t MetricCount(Category category)
     }
 }
 
-// Canonical names for the Debug=2 dump. GPU (the feature's purpose — Intel verification) and
-// Storage (fifteen metrics where a drive that answers temperature may be a letterless disk with
-// nothing else to identify it) are spelled out; the rest fall back to Metric[<id>], readable
-// enough for a diagnostic file.
-//
-// ponytail: two hand-written switches duplicating ParseMetric's strings. If a third category
-// needs names, replace both with one {name, id} table per category and drive lookup and parsing
-// off it instead of adding a third copy.
-std::wstring MetricName(Category category, uint32_t id)
+// One row per metric: the id, the canonical name a Debug=2 dump prints, and the optional
+// short alias a skin may write instead of it. The parse spelling is the canonical name
+// lowercased - which is how every category already worked - so the name cannot drift
+// from the enum member it belongs to: the macro derives it from the member itself.
+//
+// This table replaced ten if-chains in ParseMetric plus two switches in MetricName that
+// spelled the same strings a second time. tools/metric_parse_check.cpp pins every name
+// and alias in it to the id the if-chains returned.
+struct MetricDef
+{
+    uint32_t       id;
+    const wchar_t* name;
+    const wchar_t* alias;   // nullptr when the metric has no short form
+};
+
+#define NHM_WIDEN2(s) L##s
+#define NHM_WIDEN(s)  NHM_WIDEN2(s)
+#define DEF(T, member, alias) { static_cast<uint32_t>(T::member), NHM_WIDEN(#member), alias }
+
+static const MetricDef GPUDefs[] = {
+    DEF(GpuMetric, Usage,              nullptr),
+    DEF(GpuMetric, CoreClock,          L"clock"),
+    DEF(GpuMetric, EffectiveClock,     L"effclock"),
+    DEF(GpuMetric, MemoryClock,        L"memclock"),
+    DEF(GpuMetric, Temperature,        L"temp"),
+    DEF(GpuMetric, HotspotTemperature, L"hotspot"),
+    DEF(GpuMetric, MemoryTemperature,  L"memtemp"),
+    DEF(GpuMetric, VramUsed,           L"vram"),
+    DEF(GpuMetric, VramTotal,          nullptr),
+    DEF(GpuMetric, FanSpeed,           L"fan"),
+    DEF(GpuMetric, FanSpeedRPM,        L"fanrpm"),
+    DEF(GpuMetric, Power,              nullptr),
+    DEF(GpuMetric, PowerLimit,         nullptr),
+    DEF(GpuMetric, Voltage,            nullptr),
+    DEF(GpuMetric, IntakeTemperature,  L"intaketemp"),
+    DEF(GpuMetric, TotalBoardPower,    L"tbp"),
+    DEF(GpuMetric, Name,               nullptr),
+    DEF(GpuMetric, DriverVersion,      L"driver"),
+    DEF(GpuMetric, VbiosVersion,       L"vbios"),
+    DEF(GpuMetric, PciDeviceId,        L"pciid"),
+    DEF(GpuMetric, MaxCoreClock,       L"maxclock"),
+    DEF(GpuMetric, PcieLinkGen,        L"pciegen"),
+    DEF(GpuMetric, PcieLinkWidth,      L"pciewidth"),
+    DEF(GpuMetric, EncoderUsage,       L"encoder"),
+    DEF(GpuMetric, DecoderUsage,       L"decoder"),
+    DEF(GpuMetric, PerfState,          L"pstate"),
+    DEF(GpuMetric, ThrottleReasons,    L"throttle"),
+};
+
+static const MetricDef CPUDefs[] = {
+    DEF(CpuMetric, Usage,            nullptr),
+    DEF(CpuMetric, Clock,            nullptr),
+    DEF(CpuMetric, MaxClock,         nullptr),
+    DEF(CpuMetric, Voltage,          nullptr),
+    DEF(CpuMetric, Name,             nullptr),
+    DEF(CpuMetric, Vendor,           nullptr),
+    DEF(CpuMetric, Identifier,       L"id"),
+    DEF(CpuMetric, MicrocodeVersion, L"microcode"),
+    DEF(CpuMetric, CoreCount,        L"cores"),
+    DEF(CpuMetric, ThreadCount,      L"threads"),
+    DEF(CpuMetric, CacheL1,          nullptr),
+    DEF(CpuMetric, CacheL2,          nullptr),
+    DEF(CpuMetric, CacheL3,          nullptr),
+    DEF(CpuMetric, Architecture,     L"arch"),
+};
+
+static const MetricDef MemoryDefs[] = {
+    DEF(MemoryMetric, Used,         nullptr),
+    DEF(MemoryMetric, Free,         nullptr),
+    DEF(MemoryMetric, Total,        nullptr),
+    DEF(MemoryMetric, UsedPercent,  L"usedpct"),
+    DEF(MemoryMetric, Cached,       nullptr),
+    DEF(MemoryMetric, Speed,        nullptr),
+    DEF(MemoryMetric, MemoryType,   L"type"),
+    DEF(MemoryMetric, Manufacturer, L"mfr"),
+    DEF(MemoryMetric, PartNumber,   L"part"),
+    DEF(MemoryMetric, ModuleCount,  L"modules"),
+};
+
+static const MetricDef NetworkDefs[] = {
+    DEF(NetworkMetric, Download,         nullptr),
+    DEF(NetworkMetric, Upload,           nullptr),
+    DEF(NetworkMetric, DownloadTotal,    L"dltotal"),
+    DEF(NetworkMetric, UploadTotal,      L"ultotal"),
+    DEF(NetworkMetric, Speed,            nullptr),
+    DEF(NetworkMetric, ReceiveLinkSpeed, L"linkspeed"),
+    DEF(NetworkMetric, PacketsReceived,  L"rxpackets"),
+    DEF(NetworkMetric, PacketsSent,      L"txpackets"),
+    DEF(NetworkMetric, ErrorsReceived,   L"rxerrors"),
+    DEF(NetworkMetric, ErrorsSent,       L"txerrors"),
+    DEF(NetworkMetric, DiscardsReceived, L"rxdiscards"),
+    DEF(NetworkMetric, DiscardsSent,     L"txdiscards"),
+    DEF(NetworkMetric, Mtu,              nullptr),
+    DEF(NetworkMetric, Alias,            nullptr),
+    DEF(NetworkMetric, Description,      L"desc"),
+    DEF(NetworkMetric, PhysicalAddress,  L"mac"),
+    DEF(NetworkMetric, ConnectionStatus, L"status"),
+    DEF(NetworkMetric, WifiSignal,       L"signal"),
+    DEF(NetworkMetric, WifiRxRate,       L"rxrate"),
+    DEF(NetworkMetric, WifiTxRate,       L"txrate"),
+    DEF(NetworkMetric, Ssid,             nullptr),
+    DEF(NetworkMetric, WifiRadioType,    L"radiotype"),
+};
+
+static const MetricDef PingDefs[] = {
+    DEF(PingMetric, Rtt,             nullptr),
+    DEF(PingMetric, PacketLoss,      L"loss"),
+    DEF(PingMetric, MinRtt,          nullptr),
+    DEF(PingMetric, MaxRtt,          nullptr),
+    DEF(PingMetric, AvgRtt,          nullptr),
+    DEF(PingMetric, Jitter,          nullptr),
+    DEF(PingMetric, Ttl,             nullptr),
+    DEF(PingMetric, PacketsSent,     L"sent"),
+    DEF(PingMetric, PacketsReceived, L"received"),
+    DEF(PingMetric, ResolvedIp,      L"ip"),
+    DEF(PingMetric, Status,          nullptr),
+};
+
+static const MetricDef StorageDefs[] = {
+    DEF(StorageMetric, ReadBytes,    nullptr),
+    DEF(StorageMetric, WriteBytes,   nullptr),
+    DEF(StorageMetric, ReadSpeed,    nullptr),
+    DEF(StorageMetric, WriteSpeed,   nullptr),
+    DEF(StorageMetric, UsedSpace,    L"used"),
+    DEF(StorageMetric, FreeSpace,    L"free"),
+    DEF(StorageMetric, TotalSpace,   L"total"),
+    DEF(StorageMetric, QueueLength,  L"queue"),
+    DEF(StorageMetric, BusyPercent,  L"busy"),
+    DEF(StorageMetric, ReadsPerSec,  L"readiops"),
+    DEF(StorageMetric, WritesPerSec, L"writeiops"),
+    DEF(StorageMetric, Temperature,  L"temp"),
+    DEF(StorageMetric, VolumeLabel,  L"label"),
+    DEF(StorageMetric, FileSystem,   L"fs"),
+    DEF(StorageMetric, DriveType,    L"type"),
+};
+
+static const MetricDef BatteryDefs[] = {
+    DEF(BatteryMetric, ChargeLevel,        L"charge"),
+    DEF(BatteryMetric, Charging,           nullptr),
+    DEF(BatteryMetric, AcOnline,           nullptr),
+    DEF(BatteryMetric, TimeToEmpty,        L"timeleft"),
+    DEF(BatteryMetric, Rate,               nullptr),
+    DEF(BatteryMetric, Voltage,            nullptr),
+    DEF(BatteryMetric, RemainingCapacity,  L"remaining"),
+    DEF(BatteryMetric, FullChargeCapacity, L"fullcapacity"),
+    DEF(BatteryMetric, DesignCapacity,     L"design"),
+    DEF(BatteryMetric, WearLevel,          L"wear"),
+    DEF(BatteryMetric, CycleCount,         L"cycles"),
+    DEF(BatteryMetric, Status,             nullptr),
+    DEF(BatteryMetric, Chemistry,          nullptr),
+    DEF(BatteryMetric, Manufacturer,       L"mfr"),
+    DEF(BatteryMetric, SerialNumber,       L"serial"),
+    DEF(BatteryMetric, DeviceName,         L"name"),
+};
+
+static const MetricDef SystemDefs[] = {
+    DEF(SystemMetric, Uptime,       nullptr),
+    DEF(SystemMetric, ProcessCount, L"processes"),
+    DEF(SystemMetric, ThreadCount,  L"threads"),
+    DEF(SystemMetric, HandleCount,  L"handles"),
+    DEF(SystemMetric, OsName,       nullptr),
+    DEF(SystemMetric, OsVersion,    nullptr),
+    DEF(SystemMetric, OsBuild,      nullptr),
+    DEF(SystemMetric, Hostname,     nullptr),
+    DEF(SystemMetric, UserName,     L"user"),
+    DEF(SystemMetric, BootTime,     nullptr),
+};
+
+static const MetricDef MotherboardDefs[] = {
+    DEF(MotherboardMetric, Manufacturer,       L"mfr"),
+    DEF(MotherboardMetric, Product,            L"model"),
+    DEF(MotherboardMetric, SerialNumber,       L"serial"),
+    DEF(MotherboardMetric, BiosVersion,        L"bios"),
+    DEF(MotherboardMetric, BiosDate,           nullptr),
+    DEF(MotherboardMetric, SystemManufacturer, L"sysmfr"),
+    DEF(MotherboardMetric, SystemProduct,      L"sysmodel"),
+};
+
+static const MetricDef DisplayDefs[] = {
+    DEF(DisplayMetric, Width,        nullptr),
+    DEF(DisplayMetric, Height,       nullptr),
+    DEF(DisplayMetric, RefreshRate,  L"refresh"),
+    DEF(DisplayMetric, BitsPerPixel, L"bpp"),
+    DEF(DisplayMetric, Primary,      nullptr),
+    DEF(DisplayMetric, Count,        nullptr),
+    DEF(DisplayMetric, Name,         nullptr),
+    DEF(DisplayMetric, DeviceName,   L"device"),
+    DEF(DisplayMetric, Resolution,   L"res"),
+};
+
+#undef DEF
+#undef NHM_WIDEN
+#undef NHM_WIDEN2
+
+struct MetricTable
+{
+    const MetricDef* defs  = nullptr;
+    size_t           count = 0;
+};
+
+template <size_t N>
+static MetricTable Table(const MetricDef (&defs)[N]) { return { defs, N }; }
+
+static MetricTable TableFor(Category category)
+{
+    switch (category)
+    {
+    case Category::GPU:          return Table(GPUDefs);
+    case Category::CPU:          return Table(CPUDefs);
+    case Category::Memory:       return Table(MemoryDefs);
+    case Category::Network:      return Table(NetworkDefs);
+    case Category::Ping:         return Table(PingDefs);
+    case Category::Storage:      return Table(StorageDefs);
+    case Category::Battery:      return Table(BatteryDefs);
+    case Category::System:       return Table(SystemDefs);
+    case Category::Motherboard:  return Table(MotherboardDefs);
+    case Category::Display:      return Table(DisplayDefs);
+    default:          return {};
+    }
+}
+
+// str arrives trimmed and lowercased from Normalize; the table carries the CamelCase
+// name, so the comparison lowers the table side as it walks rather than building a
+// second string to throw away.
+static bool EqualsLowered(const std::wstring& lowered, const wchar_t* name)
 {
-    if (category == Category::GPU)
+    size_t i = 0;
+    for (; name[i]; ++i)
     {
-        switch (static_cast<GpuMetric>(id))
-        {
-        case GpuMetric::Usage:              return L"Usage";
-        case GpuMetric::CoreClock:          return L"CoreClock";
-        case GpuMetric::MemoryClock:        return L"MemoryClock";
-        case GpuMetric::Temperature:        return L"Temperature";
-        case GpuMetric::HotspotTemperature: return L"HotspotTemperature";
-        case GpuMetric::MemoryTemperature:  return L"MemoryTemperature";
-        case GpuMetric::VramUsed:           return L"VramUsed";
-        case GpuMetric::VramTotal:          return L"VramTotal";
-        case GpuMetric::FanSpeed:           return L"FanSpeed";
-        case GpuMetric::FanSpeedRPM:        return L"FanSpeedRPM";
-        case GpuMetric::Power:              return L"Power";
-        case GpuMetric::PowerLimit:         return L"PowerLimit";
-        case GpuMetric::Voltage:            return L"Voltage";
-        case GpuMetric::IntakeTemperature:  return L"IntakeTemperature";
-        case GpuMetric::TotalBoardPower:    return L"TotalBoardPower";
-        case GpuMetric::MaxCoreClock:       return L"MaxCoreClock";
-        case GpuMetric::PcieLinkGen:        return L"PcieLinkGen";
-        case GpuMetric::PcieLinkWidth:      return L"PcieLinkWidth";
-        case GpuMetric::EncoderUsage:       return L"EncoderUsage";
-        case GpuMetric::DecoderUsage:       return L"DecoderUsage";
-        case GpuMetric::PerfState:          return L"PerfState";
-        case GpuMetric::EffectiveClock:     return L"EffectiveClock";
-        case GpuMetric::Name:               return L"Name";
-        case GpuMetric::DriverVersion:      return L"DriverVersion";
-        case GpuMetric::VbiosVersion:       return L"VbiosVersion";
-        case GpuMetric::PciDeviceId:        return L"PciDeviceId";
-        case GpuMetric::ThrottleReasons:    return L"ThrottleReasons";
-        default: break;
-        }
+        if (i >= lowered.size() || lowered[i] != static_cast<wchar_t>(std::towlower(name[i])))
+            return false;
     }
 
-    if (category == Category::Storage)
+    return i == lowered.size();
+}
+
+std::wstring MetricName(Category category, uint32_t id)
+{
+    MetricTable table = TableFor(category);
+
+    for (size_t i = 0; i < table.count; ++i)
     {
-        switch (static_cast<StorageMetric>(id))
-        {
-        case StorageMetric::ReadBytes:      return L"ReadBytes";
-        case StorageMetric::WriteBytes:     return L"WriteBytes";
-        case StorageMetric::ReadSpeed:      return L"ReadSpeed";
-        case StorageMetric::WriteSpeed:     return L"WriteSpeed";
-        case StorageMetric::UsedSpace:      return L"UsedSpace";
-        case StorageMetric::FreeSpace:      return L"FreeSpace";
-        case StorageMetric::TotalSpace:     return L"TotalSpace";
-        case StorageMetric::QueueLength:    return L"QueueLength";
-        case StorageMetric::BusyPercent:    return L"BusyPercent";
-        case StorageMetric::ReadsPerSec:    return L"ReadsPerSec";
-        case StorageMetric::WritesPerSec:   return L"WritesPerSec";
-        case StorageMetric::Temperature:    return L"Temperature";
-        case StorageMetric::VolumeLabel:    return L"VolumeLabel";
-        case StorageMetric::FileSystem:     return L"FileSystem";
-        case StorageMetric::DriveType:      return L"DriveType";
-        default: break;
-        }
+        if (table.defs[i].id == id)
+            return table.defs[i].name;
     }
 
     return L"Metric[" + std::to_wstring(id) + L"]";
@@ -160,10 +338,14 @@ std::wstring MetricName(Category category, uint32_t id)
 
 uint32_t ParseMetric(Category category, const std::wstring& input)
 {
-    std::wstring str = Normalize(input);
-
     if (category == Category::Unknown)
         return static_cast<uint32_t>(-1);
+
+    MetricTable table = TableFor(category);
+    if (!table.defs)
+        return static_cast<uint32_t>(-1);
+
+    std::wstring str = Normalize(input);
 
     // Device count is the same question in every category, so it is answered
     // centrally in HardwareCore rather than metric-by-metric in every module.
@@ -173,180 +355,15 @@ uint32_t ParseMetric(Category category, const std::wstring& input)
     if (str == L"count" || str == L"devicecount")
         return METRIC_DEVICE_COUNT;
 
-    switch (category)
+    for (size_t i = 0; i < table.count; ++i)
     {
-    case Category::GPU:
-        if (str == L"usage")                                   return static_cast<uint32_t>(GpuMetric::Usage);
-        if (str == L"coreclock" || str == L"clock")            return static_cast<uint32_t>(GpuMetric::CoreClock);
-        if (str == L"effectiveclock" || str == L"effclock")    return static_cast<uint32_t>(GpuMetric::EffectiveClock);
-        if (str == L"memoryclock" || str == L"memclock")       return static_cast<uint32_t>(GpuMetric::MemoryClock);
-        if (str == L"temperature" || str == L"temp")           return static_cast<uint32_t>(GpuMetric::Temperature);
-        if (str == L"hotspottemperature" || str == L"hotspot") return static_cast<uint32_t>(GpuMetric::HotspotTemperature);
-        if (str == L"memorytemperature" || str == L"memtemp")  return static_cast<uint32_t>(GpuMetric::MemoryTemperature);
-        if (str == L"vramused" || str == L"vram")              return static_cast<uint32_t>(GpuMetric::VramUsed);
-        if (str == L"vramtotal")                               return static_cast<uint32_t>(GpuMetric::VramTotal);
-        if (str == L"fanspeed" || str == L"fan")               return static_cast<uint32_t>(GpuMetric::FanSpeed);
-        if (str == L"fanspeedrpm" || str == L"fanrpm")         return static_cast<uint32_t>(GpuMetric::FanSpeedRPM);
-        if (str == L"power")                                   return static_cast<uint32_t>(GpuMetric::Power);
-        if (str == L"powerlimit")                              return static_cast<uint32_t>(GpuMetric::PowerLimit);
-        if (str == L"voltage")                                 return static_cast<uint32_t>(GpuMetric::Voltage);
-        if (str == L"intaketemperature" || str == L"intaketemp") return static_cast<uint32_t>(GpuMetric::IntakeTemperature);
-        if (str == L"totalboardpower" || str == L"tbp")        return static_cast<uint32_t>(GpuMetric::TotalBoardPower);
-        if (str == L"name")                                    return static_cast<uint32_t>(GpuMetric::Name);
-        if (str == L"driverversion" || str == L"driver")       return static_cast<uint32_t>(GpuMetric::DriverVersion);
-        if (str == L"vbiosversion" || str == L"vbios")         return static_cast<uint32_t>(GpuMetric::VbiosVersion);
-        if (str == L"pcideviceid" || str == L"pciid")          return static_cast<uint32_t>(GpuMetric::PciDeviceId);
-        if (str == L"maxcoreclock" || str == L"maxclock")      return static_cast<uint32_t>(GpuMetric::MaxCoreClock);
-        if (str == L"pcielinkgen" || str == L"pciegen")        return static_cast<uint32_t>(GpuMetric::PcieLinkGen);
-        if (str == L"pcielinkwidth" || str == L"pciewidth")    return static_cast<uint32_t>(GpuMetric::PcieLinkWidth);
-        if (str == L"encoderusage" || str == L"encoder")       return static_cast<uint32_t>(GpuMetric::EncoderUsage);
-        if (str == L"decoderusage" || str == L"decoder")       return static_cast<uint32_t>(GpuMetric::DecoderUsage);
-        if (str == L"perfstate" || str == L"pstate")           return static_cast<uint32_t>(GpuMetric::PerfState);
-        if (str == L"throttlereasons" || str == L"throttle")   return static_cast<uint32_t>(GpuMetric::ThrottleReasons);
-        return static_cast<uint32_t>(GpuMetric::Unknown);
+        const MetricDef& def = table.defs[i];
 
-    case Category::CPU:
-        if (str == L"usage")    return static_cast<uint32_t>(CpuMetric::Usage);
-        if (str == L"clock")    return static_cast<uint32_t>(CpuMetric::Clock);
-        if (str == L"maxclock") return static_cast<uint32_t>(CpuMetric::MaxClock);
-        if (str == L"voltage")  return static_cast<uint32_t>(CpuMetric::Voltage);
-        if (str == L"name")                                    return static_cast<uint32_t>(CpuMetric::Name);
-        if (str == L"vendor")                                  return static_cast<uint32_t>(CpuMetric::Vendor);
-        if (str == L"identifier" || str == L"id")              return static_cast<uint32_t>(CpuMetric::Identifier);
-        if (str == L"microcodeversion" || str == L"microcode") return static_cast<uint32_t>(CpuMetric::MicrocodeVersion);
-        if (str == L"corecount" || str == L"cores")            return static_cast<uint32_t>(CpuMetric::CoreCount);
-        if (str == L"threadcount" || str == L"threads")        return static_cast<uint32_t>(CpuMetric::ThreadCount);
-        if (str == L"cachel1")                                 return static_cast<uint32_t>(CpuMetric::CacheL1);
-        if (str == L"cachel2")                                 return static_cast<uint32_t>(CpuMetric::CacheL2);
-        if (str == L"cachel3")                                 return static_cast<uint32_t>(CpuMetric::CacheL3);
-        if (str == L"architecture" || str == L"arch")          return static_cast<uint32_t>(CpuMetric::Architecture);
-        return static_cast<uint32_t>(CpuMetric::Unknown);
-
-    case Category::Memory:
-        if (str == L"used")                             return static_cast<uint32_t>(MemoryMetric::Used);
-        if (str == L"free")                             return static_cast<uint32_t>(MemoryMetric::Free);
-        if (str == L"total")                            return static_cast<uint32_t>(MemoryMetric::Total);
-        if (str == L"usedpercent" || str == L"usedpct") return static_cast<uint32_t>(MemoryMetric::UsedPercent);
-        if (str == L"cached")                           return static_cast<uint32_t>(MemoryMetric::Cached);
-        if (str == L"speed")                            return static_cast<uint32_t>(MemoryMetric::Speed);
-        if (str == L"memorytype" || str == L"type")     return static_cast<uint32_t>(MemoryMetric::MemoryType);
-        if (str == L"manufacturer" || str == L"mfr")    return static_cast<uint32_t>(MemoryMetric::Manufacturer);
-        if (str == L"partnumber" || str == L"part")     return static_cast<uint32_t>(MemoryMetric::PartNumber);
-        if (str == L"modulecount" || str == L"modules") return static_cast<uint32_t>(MemoryMetric::ModuleCount);
-        return static_cast<uint32_t>(MemoryMetric::Unknown);
-
-    case Category::Network:
-        if (str == L"download")                                return static_cast<uint32_t>(NetworkMetric::Download);
-        if (str == L"upload")                                  return static_cast<uint32_t>(NetworkMetric::Upload);
-        if (str == L"downloadtotal" || str == L"dltotal")      return static_cast<uint32_t>(NetworkMetric::DownloadTotal);
-        if (str == L"uploadtotal" || str == L"ultotal")        return static_cast<uint32_t>(NetworkMetric::UploadTotal);
-        if (str == L"speed")                                   return static_cast<uint32_t>(NetworkMetric::Speed);
-        if (str == L"receivelinkspeed" || str == L"linkspeed") return static_cast<uint32_t>(NetworkMetric::ReceiveLinkSpeed);
-        if (str == L"packetsreceived" || str == L"rxpackets")  return static_cast<uint32_t>(NetworkMetric::PacketsReceived);
-        if (str == L"packetssent" || str == L"txpackets")      return static_cast<uint32_t>(NetworkMetric::PacketsSent);
-        if (str == L"errorsreceived" || str == L"rxerrors")    return static_cast<uint32_t>(NetworkMetric::ErrorsReceived);
-        if (str == L"errorssent" || str == L"txerrors")        return static_cast<uint32_t>(NetworkMetric::ErrorsSent);
-        if (str == L"discardsreceived" || str == L"rxdiscards") return static_cast<uint32_t>(NetworkMetric::DiscardsReceived);
-        if (str == L"discardssent" || str == L"txdiscards")    return static_cast<uint32_t>(NetworkMetric::DiscardsSent);
-        if (str == L"mtu")                                     return static_cast<uint32_t>(NetworkMetric::Mtu);
-        if (str == L"alias")                                   return static_cast<uint32_t>(NetworkMetric::Alias);
-        if (str == L"description" || str == L"desc")           return static_cast<uint32_t>(NetworkMetric::Description);
-        if (str == L"physicaladdress" || str == L"mac")        return static_cast<uint32_t>(NetworkMetric::PhysicalAddress);
-        if (str == L"connectionstatus" || str == L"status")    return static_cast<uint32_t>(NetworkMetric::ConnectionStatus);
-        if (str == L"wifisignal" || str == L"signal")          return static_cast<uint32_t>(NetworkMetric::WifiSignal);
-        if (str == L"wifirxrate" || str == L"rxrate")          return static_cast<uint32_t>(NetworkMetric::WifiRxRate);
-        if (str == L"wifitxrate" || str == L"txrate")          return static_cast<uint32_t>(NetworkMetric::WifiTxRate);
-        if (str == L"ssid")                                    return static_cast<uint32_t>(NetworkMetric::Ssid);
-        if (str == L"wifiradiotype" || str == L"radiotype")    return static_cast<uint32_t>(NetworkMetric::WifiRadioType);
-        return static_cast<uint32_t>(NetworkMetric::Unknown);
-
-    case Category::Ping:
-        if (str == L"rtt")                                     return static_cast<uint32_t>(PingMetric::Rtt);
-        if (str == L"packetloss" || str == L"loss")            return static_cast<uint32_t>(PingMetric::PacketLoss);
-        if (str == L"minrtt")                                  return static_cast<uint32_t>(PingMetric::MinRtt);
-        if (str == L"maxrtt")                                  return static_cast<uint32_t>(PingMetric::MaxRtt);
-        if (str == L"avgrtt")                                  return static_cast<uint32_t>(PingMetric::AvgRtt);
-        if (str == L"jitter")                                  return static_cast<uint32_t>(PingMetric::Jitter);
-        if (str == L"ttl")                                     return static_cast<uint32_t>(PingMetric::Ttl);
-        if (str == L"packetssent" || str == L"sent")           return static_cast<uint32_t>(PingMetric::PacketsSent);
-        if (str == L"packetsreceived" || str == L"received")   return static_cast<uint32_t>(PingMetric::PacketsReceived);
-        if (str == L"resolvedip" || str == L"ip")              return static_cast<uint32_t>(PingMetric::ResolvedIp);
-        if (str == L"status")                                  return static_cast<uint32_t>(PingMetric::Status);
-        return static_cast<uint32_t>(PingMetric::Unknown);
-
-    case Category::Storage:
-        if (str == L"readbytes")                          return static_cast<uint32_t>(StorageMetric::ReadBytes);
-        if (str == L"writebytes")                         return static_cast<uint32_t>(StorageMetric::WriteBytes);
-        if (str == L"readspeed")                          return static_cast<uint32_t>(StorageMetric::ReadSpeed);
-        if (str == L"writespeed")                         return static_cast<uint32_t>(StorageMetric::WriteSpeed);
-        if (str == L"usedspace" || str == L"used")        return static_cast<uint32_t>(StorageMetric::UsedSpace);
-        if (str == L"freespace" || str == L"free")        return static_cast<uint32_t>(StorageMetric::FreeSpace);
-        if (str == L"totalspace" || str == L"total")      return static_cast<uint32_t>(StorageMetric::TotalSpace);
-        if (str == L"queuelength" || str == L"queue")     return static_cast<uint32_t>(StorageMetric::QueueLength);
-        if (str == L"busypercent" || str == L"busy")      return static_cast<uint32_t>(StorageMetric::BusyPercent);
-        if (str == L"readspersec" || str == L"readiops")  return static_cast<uint32_t>(StorageMetric::ReadsPerSec);
-        if (str == L"writespersec" || str == L"writeiops") return static_cast<uint32_t>(StorageMetric::WritesPerSec);
-        if (str == L"temperature" || str == L"temp")      return static_cast<uint32_t>(StorageMetric::Temperature);
-        if (str == L"volumelabel" || str == L"label")     return static_cast<uint32_t>(StorageMetric::VolumeLabel);
-        if (str == L"filesystem" || str == L"fs")         return static_cast<uint32_t>(StorageMetric::FileSystem);
-        if (str == L"drivetype" || str == L"type")        return static_cast<uint32_t>(StorageMetric::DriveType);
-        return static_cast<uint32_t>(StorageMetric::Unknown);
-
-    case Category::Battery:
-        if (str == L"chargelevel" || str == L"charge")              return static_cast<uint32_t>(BatteryMetric::ChargeLevel);
-        if (str == L"charging")                                     return static_cast<uint32_t>(BatteryMetric::Charging);
-        if (str == L"aconline")                                     return static_cast<uint32_t>(BatteryMetric::AcOnline);
-        if (str == L"timetoempty" || str == L"timeleft")            return static_cast<uint32_t>(BatteryMetric::TimeToEmpty);
-        if (str == L"rate")                                         return static_cast<uint32_t>(BatteryMetric::Rate);
-        if (str == L"voltage")                                      return static_cast<uint32_t>(BatteryMetric::Voltage);
-        if (str == L"remainingcapacity" || str == L"remaining")     return static_cast<uint32_t>(BatteryMetric::RemainingCapacity);
-        if (str == L"fullchargecapacity" || str == L"fullcapacity") return static_cast<uint32_t>(BatteryMetric::FullChargeCapacity);
-        if (str == L"designcapacity" || str == L"design")           return static_cast<uint32_t>(BatteryMetric::DesignCapacity);
-        if (str == L"wearlevel" || str == L"wear")                  return static_cast<uint32_t>(BatteryMetric::WearLevel);
-        if (str == L"cyclecount" || str == L"cycles")               return static_cast<uint32_t>(BatteryMetric::CycleCount);
-        if (str == L"status")                                       return static_cast<uint32_t>(BatteryMetric::Status);
-        if (str == L"chemistry")                                    return static_cast<uint32_t>(BatteryMetric::Chemistry);
-        if (str == L"manufacturer" || str == L"mfr")                return static_cast<uint32_t>(BatteryMetric::Manufacturer);
-        if (str == L"serialnumber" || str == L"serial")             return static_cast<uint32_t>(BatteryMetric::SerialNumber);
-        if (str == L"devicename" || str == L"name")                 return static_cast<uint32_t>(BatteryMetric::DeviceName);
-        return static_cast<uint32_t>(BatteryMetric::Unknown);
-
-    case Category::System:
-        if (str == L"uptime")                              return static_cast<uint32_t>(SystemMetric::Uptime);
-        if (str == L"processcount" || str == L"processes") return static_cast<uint32_t>(SystemMetric::ProcessCount);
-        if (str == L"threadcount" || str == L"threads")    return static_cast<uint32_t>(SystemMetric::ThreadCount);
-        if (str == L"handlecount" || str == L"handles")    return static_cast<uint32_t>(SystemMetric::HandleCount);
-        if (str == L"osname")                              return static_cast<uint32_t>(SystemMetric::OsName);
-        if (str == L"osversion")                           return static_cast<uint32_t>(SystemMetric::OsVersion);
-        if (str == L"osbuild")                             return static_cast<uint32_t>(SystemMetric::OsBuild);
-        if (str == L"hostname")                            return static_cast<uint32_t>(SystemMetric::Hostname);
-        if (str == L"username" || str == L"user")          return static_cast<uint32_t>(SystemMetric::UserName);
-        if (str == L"boottime")                            return static_cast<uint32_t>(SystemMetric::BootTime);
-        return static_cast<uint32_t>(SystemMetric::Unknown);
-
-    case Category::Motherboard:
-        if (str == L"manufacturer" || str == L"mfr")            return static_cast<uint32_t>(MotherboardMetric::Manufacturer);
-        if (str == L"product" || str == L"model")               return static_cast<uint32_t>(MotherboardMetric::Product);
-        if (str == L"serialnumber" || str == L"serial")         return static_cast<uint32_t>(MotherboardMetric::SerialNumber);
-        if (str == L"biosversion" || str == L"bios")            return static_cast<uint32_t>(MotherboardMetric::BiosVersion);
-        if (str == L"biosdate")                                 return static_cast<uint32_t>(MotherboardMetric::BiosDate);
-        if (str == L"systemmanufacturer" || str == L"sysmfr")   return static_cast<uint32_t>(MotherboardMetric::SystemManufacturer);
-        if (str == L"systemproduct" || str == L"sysmodel")      return static_cast<uint32_t>(MotherboardMetric::SystemProduct);
-        return static_cast<uint32_t>(MotherboardMetric::Unknown);
-
-    case Category::Display:
-        if (str == L"width")                            return static_cast<uint32_t>(DisplayMetric::Width);
-        if (str == L"height")                           return static_cast<uint32_t>(DisplayMetric::Height);
-        if (str == L"refreshrate" || str == L"refresh") return static_cast<uint32_t>(DisplayMetric::RefreshRate);
-        if (str == L"bitsperpixel" || str == L"bpp")    return static_cast<uint32_t>(DisplayMetric::BitsPerPixel);
-        if (str == L"primary")                          return static_cast<uint32_t>(DisplayMetric::Primary);
-        if (str == L"count")                            return static_cast<uint32_t>(DisplayMetric::Count);
-        if (str == L"name")                             return static_cast<uint32_t>(DisplayMetric::Name);
-        if (str == L"devicename" || str == L"device")   return static_cast<uint32_t>(DisplayMetric::DeviceName);
-        if (str == L"resolution" || str == L"res")      return static_cast<uint32_t>(DisplayMetric::Resolution);
-        return static_cast<uint32_t>(DisplayMetric::Unknown);
-
-    default:
-        return static_cast<uint32_t>(-1);
+        if (EqualsLowered(str, def.name) || (def.alias && str == def.alias))
+            return def.id;
     }
+
+    // Unrecognised: the category's Unknown sentinel, which is exactly what
+    // MetricCount() reports. A section variable logs it once (see Plugin.cpp).
+    return MetricCount(category);
 }

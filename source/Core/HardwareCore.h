@@ -67,8 +67,6 @@ private:
         // scrolling sectionvariables.ini quickly.
         std::atomic<uint32_t> deviceCount{ 0 };
 
-        uint64_t lastGatherTime    = 0;
-        uint32_t minIntervalMs     = 100;
         uint32_t currentOverrideMs = 0;
         bool     initialized       = false;
 
@@ -91,5 +89,4 @@ private:
     void         RebuildWantedDevices(Category category);
     void         EnsurePoller(ModuleState& state);
     void         StartPoller(ModuleState& state, uint32_t intervalMs);
-    uint64_t     GetTimeMs() const;
 };

@@ -4,8 +4,7 @@
 #include <cstdio>
 #include <mutex>
 
-void* g_Rainmeter  = nullptr;
-int   g_DebugLevel = 0;
+void* g_Rainmeter = nullptr;
 
 static void DoLog(void* rm, int level, const wchar_t* fmt, va_list args)
 {

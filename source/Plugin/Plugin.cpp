@@ -108,9 +108,6 @@ PLUGIN_EXPORT void Initialize(void** data, void* rm)
 
     ReadContext(ctx, rm);
 
-    if (ctx->debugLevel > g_DebugLevel)
-        g_DebugLevel = ctx->debugLevel;
-
     if (ctx->metricId == static_cast<uint32_t>(-1))
     {
         // No Category= at all is deliberate: the measure exists only to host
@@ -165,9 +162,6 @@ PLUGIN_EXPORT void Reload(void* data, void* rm, double* maxValue)
     ReleaseSectionHandles(ctx);
 
     ReadContext(ctx, rm);
-
-    if (ctx->debugLevel > g_DebugLevel)
-        g_DebugLevel = ctx->debugLevel;
 
     if (ctx->metricId == static_cast<uint32_t>(-1))
     {

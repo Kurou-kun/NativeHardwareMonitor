@@ -19,6 +19,10 @@
 #include <string>
 #include <windows.h>
 
+// Default poll cadence, matching a typical skin's Update=1000. UpdateOverride= only
+// tightens it (see UpdatePoller).
+static constexpr uint32_t DefaultIntervalMs = 1000;
+
 HardwareCore& HardwareCore::Instance()
 {
     // Leaked on purpose, for the same reason as g_ADLX in AdlxProvider.cpp: a
@@ -259,7 +263,6 @@ void HardwareCore::DumpDevice(Category category, uint32_t deviceIndex, const std
 
         if (!state->initialized)
             return;   // the poller initialises; nothing to dump yet
-        state->lastGatherTime = GetTimeMs();
 
         // A dump exists to show devices no measure reads - that is how the AMD iGPU
         // enumeration bug was found - so from the first dump this category goes back to
@@ -341,8 +344,7 @@ void HardwareCore::UpdatePoller(ModuleState& state)
         if (state.currentOverrideMs != 0)
         {
             state.currentOverrideMs = 0;
-            uint32_t interval = state.minIntervalMs > 1000 ? state.minIntervalMs : 1000;
-            StartPoller(state, interval);
+            StartPoller(state, DefaultIntervalMs);
         }
         return;
     }
@@ -372,9 +374,8 @@ void HardwareCore::EnsurePoller(ModuleState& state)
     if (state.poller)
         return;
 
-    uint32_t interval = state.minIntervalMs > 1000 ? state.minIntervalMs : 1000;
     state.currentOverrideMs = 0;
-    StartPoller(state, interval);
+    StartPoller(state, DefaultIntervalMs);
 }
 
 void HardwareCore::StartPoller(ModuleState& state, uint32_t intervalMs)
@@ -382,31 +383,27 @@ void HardwareCore::StartPoller(ModuleState& state, uint32_t intervalMs)
     if (!state.poller)
         state.poller = std::make_unique<PollerThread>();
 
-    IModule*          module      = state.module.get();
-    std::timed_mutex* mtx         = &state.mutex;
-    bool*             initialized = &state.initialized;
-    ModuleState*      st          = &state;
+    // The ModuleState outlives its poller (the mutex is declared before it and so is
+    // destroyed after), so capturing it alone is enough - module, mutex, flag and count
+    // all hang off it.
+    ModuleState* st = &state;
 
-    std::atomic<uint32_t>* count = &state.deviceCount;
-
-    state.poller->Start(intervalMs, [module, mtx, initialized, count, st]()
+    state.poller->Start(intervalMs, [st]()
     {
-        std::lock_guard<std::timed_mutex> lock(*mtx);
-        if (!*initialized)
-            *initialized = module->Initialize();
-        if (*initialized)
+        IModule* module = st->module.get();
+
+        std::lock_guard<std::timed_mutex> lock(st->mutex);
+        if (!st->initialized)
+            st->initialized = module->Initialize();
+        if (st->initialized)
         {
             if (st->dumpAll)
                 module->GatherAll();
             else
                 module->GatherDevices(st->wantedDevices);
 
-            count->store(module->GetDeviceCount(), std::memory_order_relaxed);
+            st->deviceCount.store(module->GetDeviceCount(), std::memory_order_relaxed);
         }
     });
 }
 
-uint64_t HardwareCore::GetTimeMs() const
-{
-    return static_cast<uint64_t>(GetTickCount64());
-}

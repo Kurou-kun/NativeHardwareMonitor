@@ -4,6 +4,26 @@ All notable changes to NativeHardwareMonitor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/);
 this project uses a four-part `MAJOR.MINOR.PATCH.BUILD` version in the DLL resource.
 
+## [2.2.5] — unreleased
+
+### Changed
+
+- **Every category names its metrics in a `Debug=2` dump**, not just GPU and Storage. The ten
+  if-chains in `ParseMetric` and the two switches in `MetricName` spelled the same strings
+  twice; both are now one table per category, one row per metric, with the canonical name
+  derived from the enum member itself so the two cannot drift apart. `Metric=` and section
+  variables are unchanged — every name and alias still resolves to the same id, pinned by
+  **408 assertions** in the new `tools/metric_parse_check.cpp`.
+
+### Removed
+
+- Dead weight found in a pass over the whole tree, no behaviour change: `g_DebugLevel` (a
+  global two sites raised and nothing ever read), `ModuleState::minIntervalMs` (fixed at 100,
+  so the cadence it fed was always 1000), `lastGatherTime` and `GetTimeMs()` (written once,
+  never read), and the second copy of the PDH counter-array reader — the copies had already
+  drifted, one of them missing a `count` reset. `PollerThread`'s callback now captures the
+  module state alone instead of four pointers that all hang off it.
+
 ## [2.2.4] — unreleased
 
 ### Changed

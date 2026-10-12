@@ -1,6 +1,7 @@
 #include "Providers/WinApi/WinApiStorageProvider.h"
 #include "Types/StorageMetric.h"
 #include "Utils/Debug.h"
+#include "Utils/PdhUtil.h"
 
 #include <pdhmsg.h>
 #include <algorithm>
@@ -112,19 +113,6 @@ bool WinApiStorageProvider::FindCounterValue(PDH_FMT_COUNTERVALUE_ITEM* items, D
     return false;
 }
 
-static bool ReadCounterArray(PDH_HCOUNTER counter, std::vector<BYTE>& buf,
-                              PDH_FMT_COUNTERVALUE_ITEM*& items, DWORD& count)
-{
-    DWORD bufSize = 0;
-    PdhGetFormattedCounterArray(counter, PDH_FMT_DOUBLE, &bufSize, &count, nullptr);
-    if (bufSize == 0) return false;
-
-    buf.resize(bufSize);
-    items = reinterpret_cast<PDH_FMT_COUNTERVALUE_ITEM*>(buf.data());
-
-    return PdhGetFormattedCounterArray(counter, PDH_FMT_DOUBLE, &bufSize, &count, items) == ERROR_SUCCESS;
-}
-
 void WinApiStorageProvider::GatherSnapshot(uint32_t deviceIndex, Snapshot& snap)
 {
     if (!m_query) return;
@@ -146,7 +134,7 @@ void WinApiStorageProvider::GatherSnapshot(uint32_t deviceIndex, Snapshot& snap)
     PDH_FMT_COUNTERVALUE_ITEM* items = nullptr;
     DWORD count = 0;
 
-    if (!ReadCounterArray(m_readCounter, buf, items, count)) return;
+    if (!PdhReadCounterArray(m_readCounter, buf, items, count)) return;
     EnsureDevicesDiscovered(count, items);
 
     if (deviceIndex >= m_devices.size()) return;
@@ -156,7 +144,7 @@ void WinApiStorageProvider::GatherSnapshot(uint32_t deviceIndex, Snapshot& snap)
     if (FindCounterValue(items, count, dev.instance, dev.readSpeed))
         dev.readBytes += static_cast<uint64_t>(dev.readSpeed * m_elapsed);
 
-    if (ReadCounterArray(m_writeCounter, buf, items, count) &&
+    if (PdhReadCounterArray(m_writeCounter, buf, items, count) &&
         FindCounterValue(items, count, dev.instance, dev.writeSpeed))
     {
         dev.writeBytes += static_cast<uint64_t>(dev.writeSpeed * m_elapsed);
@@ -168,18 +156,18 @@ void WinApiStorageProvider::GatherSnapshot(uint32_t deviceIndex, Snapshot& snap)
     // fail that lookup, and it is exactly the kind of disk whose temperature we want.
     UpdateTemperature(dev);
 
-    if (ReadCounterArray(m_queueCounter, buf, items, count))
+    if (PdhReadCounterArray(m_queueCounter, buf, items, count))
         FindCounterValue(items, count, dev.instance, dev.queueLength);
 
     double idlePercent = 0;
-    if (ReadCounterArray(m_idleCounter, buf, items, count) &&
+    if (PdhReadCounterArray(m_idleCounter, buf, items, count) &&
         FindCounterValue(items, count, dev.instance, idlePercent))
         dev.busyPercent = 100.0 - idlePercent;
 
-    if (ReadCounterArray(m_readsPerSecCounter, buf, items, count))
+    if (PdhReadCounterArray(m_readsPerSecCounter, buf, items, count))
         FindCounterValue(items, count, dev.instance, dev.readsPerSec);
 
-    if (ReadCounterArray(m_writesPerSecCounter, buf, items, count))
+    if (PdhReadCounterArray(m_writesPerSecCounter, buf, items, count))
         FindCounterValue(items, count, dev.instance, dev.writesPerSec);
 
     snap.Set(static_cast<uint32_t>(StorageMetric::ReadSpeed),    dev.readSpeed);
