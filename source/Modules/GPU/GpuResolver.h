@@ -34,6 +34,10 @@ private:
         IProvider* backupProvider   = nullptr;
         uint32_t   backupLocalIndex = 0;
 
+        // Names for the dump: which API answered, per metric. Literals, never freed.
+        const wchar_t* providerName = nullptr;
+        const wchar_t* backupName   = nullptr;
+
         // Windows' own counters, queried after both of the above and only for what they
         // still left unset — usage and VRAM on hardware whose SDK answers neither.
         IProvider* winProvider      = nullptr;

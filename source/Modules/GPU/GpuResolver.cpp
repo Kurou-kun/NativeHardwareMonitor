@@ -31,10 +31,12 @@ bool GpuResolver::Initialize()
             for (uint32_t i = 0; i < count; ++i)
             {
                 DeviceEntry entry{ nvml.get(), i, GpuVendor::Nvidia };
+                entry.providerName = L"NVML";
                 if (nvapiOk && i < nvapi->GetDeviceCount())
                 {
                     entry.backupProvider   = nvapi.get();
                     entry.backupLocalIndex = i;
+                    entry.backupName       = L"NVAPI";
                 }
                 m_devices.push_back(entry);
             }
@@ -50,7 +52,11 @@ bool GpuResolver::Initialize()
         {
             uint32_t count = nvapi->GetDeviceCount();
             for (uint32_t i = 0; i < count; ++i)
-                m_devices.push_back({ nvapi.get(), i, GpuVendor::Nvidia });
+            {
+                DeviceEntry entry{ nvapi.get(), i, GpuVendor::Nvidia };
+                entry.providerName = L"NVAPI";
+                m_devices.push_back(entry);
+            }
 
             LOG_STARTUP(L"GpuResolver: NVAPI fallback initialized (%u device(s))", count);
             m_providers.push_back(std::move(nvapi));
@@ -71,10 +77,12 @@ bool GpuResolver::Initialize()
             for (uint32_t i = 0; i < count; ++i)
             {
                 DeviceEntry entry{ adlx.get(), i, GpuVendor::AMD };
+                entry.providerName = L"ADLX";
                 if (adl2Ok && i < adl2->GetDeviceCount())
                 {
                     entry.backupProvider   = adl2.get();
                     entry.backupLocalIndex = i;
+                    entry.backupName       = L"ADL2";
                 }
                 m_devices.push_back(entry);
             }
@@ -90,7 +98,11 @@ bool GpuResolver::Initialize()
         {
             uint32_t count = adl2->GetDeviceCount();
             for (uint32_t i = 0; i < count; ++i)
-                m_devices.push_back({ adl2.get(), i, GpuVendor::AMD });
+            {
+                DeviceEntry entry{ adl2.get(), i, GpuVendor::AMD };
+                entry.providerName = L"ADL2";
+                m_devices.push_back(entry);
+            }
 
             LOG_STARTUP(L"GpuResolver: ADL2 fallback initialized (%u device(s))", count);
             m_providers.push_back(std::move(adl2));
@@ -104,7 +116,11 @@ bool GpuResolver::Initialize()
         {
             uint32_t count = igcl->GetDeviceCount();
             for (uint32_t i = 0; i < count; ++i)
-                m_devices.push_back({ igcl.get(), i, GpuVendor::Intel });
+            {
+                DeviceEntry entry{ igcl.get(), i, GpuVendor::Intel };
+                entry.providerName = L"IGCL";
+                m_devices.push_back(entry);
+            }
 
             LOG_STARTUP(L"GpuResolver: IGCL initialized (%u device(s))", count);
             m_providers.push_back(std::move(igcl));
@@ -173,18 +189,44 @@ void GpuResolver::GatherSnapshot(uint32_t deviceIndex, Snapshot& snap)
         return;
 
     auto& dev = m_devices[deviceIndex];
+
+    snap.currentSource = dev.providerName;
     dev.provider->GatherSnapshot(dev.localIndex, snap);
 
     if (dev.backupProvider)
     {
         Snapshot backup;
+        backup.currentSource = dev.backupName;
         dev.backupProvider->GatherSnapshot(dev.backupLocalIndex, backup);
+
+        // NVAPI is not a fallback for the NVIDIA clocks - it is the authority, so it
+        // overrides NVML rather than filling in behind it.
+        //
+        // Both APIs answer, and on a power-gated Optimus dGPU they answer differently:
+        // NVML returns a value averaged over the interval (what HWiNFO calls the
+        // effective clock, 9 MHz on an idle GTX 1650), NVAPI returns the clock the card
+        // is set to (300 MHz) - and NVAPI is what MSI Afterburner, GPU-Z and HWiNFO all
+        // read, so taking NVML there made this plugin the only tool disagreeing.
+        //
+        // This replaces a floor that ignored NVML below 100 MHz, which was wrong twice
+        // over: it chose on the VALUE rather than on where the value came from, so it
+        // could not tell a real 150 MHz from an averaged one (it passed the averaged one
+        // through on the reporter's machine - forum p=246235), and a magnitude says
+        // nothing about validity. NVML's reading is not discarded: it is published as
+        // EffectiveClock, which is the metric it actually is.
+        if (dev.vendor == GpuVendor::Nvidia)
+        {
+            snap.Override(static_cast<uint32_t>(GpuMetric::CoreClock),   backup);
+            snap.Override(static_cast<uint32_t>(GpuMetric::MemoryClock), backup);
+        }
+
         snap.MergeMissing(backup);
     }
 
     if (dev.winProvider)
     {
         Snapshot win;
+        win.currentSource = L"Windows";
         dev.winProvider->GatherSnapshot(dev.winLocalIndex, win);
         snap.MergeMissing(win);
     }

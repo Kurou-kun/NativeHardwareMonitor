@@ -20,6 +20,10 @@ public:
     virtual void     GatherDevices(const std::vector<uint32_t>& devices) { GatherAll(); }
     virtual double   GetValue(uint32_t metricId, uint32_t deviceIndex) = 0;
     virtual bool     GetString(uint32_t metricId, uint32_t deviceIndex, std::wstring& out) = 0;
+
+    // Which provider produced the last reading of this metric, for a Debug=2 dump.
+    // nullptr when the metric is unsupported or nothing has gathered yet.
+    virtual const wchar_t* GetSource(uint32_t metricId, uint32_t deviceIndex) { return nullptr; }
     virtual uint32_t GetDeviceCount() const = 0;
 
     // Only meaningful for Category::Ping — resolves a target host string to a

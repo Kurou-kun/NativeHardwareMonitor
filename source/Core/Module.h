@@ -71,7 +71,10 @@ public:
         EnsureSnapshots(count);
 
         for (uint32_t i = 0; i < count; ++i)
+        {
+            m_snapshots[i].currentSource = m_providerName;
             m_provider->GatherSnapshot(i, m_snapshots[i]);
+        }
     }
 
     void GatherDevices(const std::vector<uint32_t>& devices) override
@@ -91,7 +94,10 @@ public:
         for (uint32_t i : devices)
         {
             if (i < count)
+            {
+                m_snapshots[i].currentSource = m_providerName;
                 m_provider->GatherSnapshot(i, m_snapshots[i]);
+            }
         }
     }
 
@@ -106,6 +112,16 @@ public:
     bool GetString(uint32_t metricId, uint32_t deviceIndex, std::wstring& out) override
     {
         return m_provider ? m_provider->GetString(metricId, deviceIndex, out) : false;
+    }
+
+    // GPU overwrites this per sub-provider inside GpuResolver; every other category keeps
+    // the name stamped above, which is the only provider it has.
+    const wchar_t* GetSource(uint32_t metricId, uint32_t deviceIndex) override
+    {
+        if (deviceIndex >= m_snapshots.size())
+            return nullptr;
+
+        return m_snapshots[deviceIndex].SourceOf(metricId);
     }
 
     uint32_t GetDeviceCount() const override

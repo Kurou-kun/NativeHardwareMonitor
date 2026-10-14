@@ -138,33 +138,28 @@ void NvmlProvider::GatherSnapshot(uint32_t deviceIndex, Snapshot& snap)
 
     // Clocks (MHz → Hz)
     //
-    // A reading below PlausibleClockMhz is left unset so NVAPI's value fills it through
-    // Snapshot::MergeMissing. On a power-gated laptop dGPU, NVML answers with something
-    // close to HWiNFO's "GPU Effective Clock" - 9 MHz core and 25 MHz memory on a GTX 1650
-    // whose real P-state is 300 / 405 (Yincognito, forum p=246138, confirmed against
-    // nvidia-smi: NVML is the source, not our conversion). No NVIDIA part clocks that low
-    // while powered, and MSI Afterburner, GPU-Z and HWiNFO all read NVAPI, so showing the
-    // effective clock makes the plugin the only tool disagreeing.
+    // All three are published as NVML reads them, with no plausibility test anywhere.
+    // GpuResolver then lets NVAPI override CoreClock and MemoryClock when NVAPI is there,
+    // because that is the API every other tool on the machine reads - the choice is made
+    // on the SOURCE, not on the number, so there is nothing here that can mistake a real
+    // low clock for a bogus one.
     //
-    // Nothing is thrown away: the reading is always published as EffectiveClock, which is
-    // the metric HWiNFO calls "GPU Effective Clock", and only CoreClock is withheld.
+    // NVML's graphics clock is also published as EffectiveClock, which is what it is on a
+    // power-gated laptop dGPU: a value averaged over the interval, HWiNFO's "GPU Effective
+    // Clock" to within a few MHz. On a card that is awake it equals CoreClock.
     //
-    // ponytail: a flat floor, not a P-state lookup. If a card ever idles legitimately below
-    // it, NVAPI reports the same P-state clock and fills it with the right number anyway.
+    // Where NVAPI is absent, these stand as the only reading available, which is honest -
+    // and the Debug=2 dump names NVML as the source, so it is visible rather than implied.
     if (m_GetClock)
     {
-        const unsigned int PlausibleClockMhz = 100;
-
         unsigned int clock = 0;
         if (m_GetClock(dev, NVML_CLOCK_GRAPHICS, &clock) == NVML_SUCCESS)
         {
             snap.Set(static_cast<uint32_t>(GpuMetric::EffectiveClock), clock * 1000000.0);
-
-            if (clock >= PlausibleClockMhz)
-                snap.Set(static_cast<uint32_t>(GpuMetric::CoreClock), clock * 1000000.0);
+            snap.Set(static_cast<uint32_t>(GpuMetric::CoreClock),      clock * 1000000.0);
         }
 
-        if (m_GetClock(dev, NVML_CLOCK_MEM, &clock) == NVML_SUCCESS && clock >= PlausibleClockMhz)
+        if (m_GetClock(dev, NVML_CLOCK_MEM, &clock) == NVML_SUCCESS)
             snap.Set(static_cast<uint32_t>(GpuMetric::MemoryClock), clock * 1000000.0);
     }
 

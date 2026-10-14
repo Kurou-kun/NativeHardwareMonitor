@@ -326,7 +326,15 @@ void HardwareCore::DumpDevice(Category category, uint32_t deviceIndex, const std
                 if (v == -1.0)      swprintf_s(val, L"%g  (unsupported)", v);
                 else if (v == -2.0) swprintf_s(val, L"%g  (error)", v);
                 else                swprintf_s(val, L"%g", v);
-                body += name + L"= " + val + L"\r\n";
+                body += name + L"= " + val;
+
+                // Which API produced it. GPU is why this exists: NVML and NVAPI can both
+                // answer for a clock and disagree, and a dump that does not say which one
+                // spoke turns a bug report into guesswork.
+                if (const wchar_t* src = state->module->GetSource(id, deviceIndex))
+                    body += std::wstring(L"  [") + src + L"]";
+
+                body += L"\r\n";
             }
         }
     }

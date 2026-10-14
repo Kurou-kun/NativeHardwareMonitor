@@ -4,6 +4,46 @@ All notable changes to NativeHardwareMonitor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/);
 this project uses a four-part `MAJOR.MINOR.PATCH.BUILD` version in the DLL resource.
 
+## [2.2.9] — 2026-10-14
+
+### Changed
+
+- **NVIDIA clocks now come from NVAPI because of where they come from, not because of how
+  big they are.** The 100 MHz floor added in 2.2.3 is gone. It decided between two readings
+  by looking at the *value*, and a value cannot tell you whether it is valid — which is
+  exactly what it got wrong on the reporter's GTX 1650: NVML's averaged reading of
+  **150 MHz** was above the floor, so it was accepted as `CoreClock` while every other tool
+  on that machine showed **375 MHz** (forum p=246235). A threshold cannot distinguish a real
+  low clock from an averaged one, because both are just numbers.
+
+  The rule is now about provenance: where NVAPI answers, NVAPI *owns* `CoreClock` and
+  `MemoryClock` — it is the API MSI Afterburner, GPU-Z and HWiNFO all read, so agreeing with
+  it is agreeing with the machine's other tools. NVML's graphics clock keeps being published
+  as **`EffectiveClock`**, which is what it is. Where NVAPI is absent, NVML stands as the
+  only reading there is, and the dump says so rather than implying it.
+
+  Credit where it is due: Yincognito argued the floor was unsound in principle before his
+  own data showed it failing in practice.
+
+### Added
+
+- **A `Debug=2` dump now names the provider behind every value**, not just the chain in its
+  header:
+
+      CoreClock           = 3e+08  [NVAPI]
+      EffectiveClock      = 9e+06  [NVML]
+      VramUsed            = 2.76e+08  [Windows]
+
+  Two APIs can answer for one metric and disagree — that is the whole of the clock story
+  above — and until now a dump could not say which one spoke, so reading one meant inferring
+  the provider from the number, which is the same mistake the floor made. Each reading now
+  carries the name of the provider that produced it, merged values included.
+
+- **`device=` in the `gpu.ini`, `cpu.ini` and `network.ini` reference skins** (and `adapter=`
+  for the latter), so looking at a second GPU, a different core or another adapter is one
+  edit and a refresh instead of hand-editing every measure in the file. Requested by
+  Yincognito, who noticed `gpu.ini` was the one skin that made you do it 26 times.
+
 ## [2.2.8] — 2026-10-14
 
 ### Changed
