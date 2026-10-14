@@ -4,6 +4,7 @@
 #include "Core/HardwareCore.h"
 #include "Types/MetricParser.h"
 #include "Utils/Debug.h"
+#include "Utils/ValueFormat.h"
 
 #include "RainmeterAPI.h"
 
@@ -226,8 +227,10 @@ PLUGIN_EXPORT LPCWSTR GetString(void* data)
 //
 // Rainmeter resolves these against one measure, so a single hub measure can
 // serve a whole skin instead of one measure per metric. Each category gets one
-// exported function taking (metric, [device]); the metric name goes through the
-// same ParseMetric as Metric=, so every alias works here too.
+// exported function taking (metric, [device], [decimals], [scale]); the metric
+// name goes through the same ParseMetric as Metric=, so every alias works here
+// too, and the two formatting arguments exist because Rainmeter's own cannot
+// reach a plugin section variable at all - see Utils/ValueFormat.h.
 //
 // Reading many metrics this way costs one handle each but still only one poller
 // per category — which is the point: one measure, no per-metric measures.
@@ -276,32 +279,6 @@ static uint32_t SectionHandleFor(MeasureContext* ctx, Category category, int arg
     return handle;
 }
 
-// Section variables are substituted into text as-is: Text= has no formula to
-// round with, and NumOfDecimals only ever applies to a measure's value. So the
-// printing happens here. Three decimals with trailing zeros trimmed is past any
-// sensor's real precision and leaves whole numbers (and byte counts) whole; an
-// explicit third argument overrides it - [NHM:CPU(usage,,0)].
-static void FormatValue(double value, int decimals, std::wstring& out)
-{
-    wchar_t buf[64];
-
-    if (decimals >= 0)
-    {
-        swprintf_s(buf, L"%.*f", decimals, value);
-        out = buf;
-        return;
-    }
-
-    swprintf_s(buf, L"%.3f", value);
-    out = buf;
-
-    size_t last = out.find_last_not_of(L'0');
-    if (last != std::wstring::npos && out[last] == L'.')
-        --last; // nothing left after the point - drop it too
-
-    out.erase(last + 1);
-}
-
 static LPCWSTR SectionValue(void* data, Category category, int argc, const WCHAR* argv[])
 {
     auto* ctx = static_cast<MeasureContext*>(data);
@@ -315,15 +292,10 @@ static LPCWSTR SectionValue(void* data, Category category, int argc, const WCHAR
         return ctx->svBuffer.c_str();
     }
 
-    // Optional third argument: decimals. An omitted middle argument is an empty
-    // string, so [NHM:CPU(usage,,0)] still means device 0.
-    int decimals = -1;
-    if (argc > 2 && argv[2][0] != L'\0')
-    {
-        decimals = _wtoi(argv[2]);
-        if (decimals < 0)  decimals = 0;
-        if (decimals > 15) decimals = 15;
-    }
+    // Optional third and fourth arguments: decimals and scale - [NHM:CPU(usage,,0)],
+    // [NHM:Storage(freespace,,1,auto)]. ValueFormat.h has the why and the full syntax.
+    const WCHAR* decimalsArg = argc > 2 ? argv[2] : nullptr;
+    const WCHAR* scaleArg    = argc > 3 ? argv[3] : nullptr;
 
     // Same order Rainmeter uses on a measure: the value first (it initializes the
     // module on the first read), then the string form if the metric has one.
@@ -333,7 +305,7 @@ static LPCWSTR SectionValue(void* data, Category category, int argc, const WCHAR
     if (GetCore().GetString(handle, text))
         ctx->svBuffer = text; // string metric: Name, DriverVersion, ThrottleReasons, ...
     else
-        FormatValue(value, decimals, ctx->svBuffer);
+        FormatSectionValue(value, decimalsArg, scaleArg, ctx->svBuffer);
 
     return ctx->svBuffer.c_str();
 }

@@ -4,6 +4,41 @@ All notable changes to NativeHardwareMonitor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/);
 this project uses a four-part `MAJOR.MINOR.PATCH.BUILD` version in the DLL resource.
 
+## [2.2.8] — 2026-10-14
+
+### Added
+
+- **A scale argument on every section variable** - `[NHM:Storage(freespace,,1,auto)]` reads
+  `80.1 G`, where it used to read `86021914624`. The fourth argument takes either
+  Rainmeter's `auto` (and `auto1000`, and an optional leading slash on a plain divisor, so
+  `,/1000000` turns a clock in hertz into megahertz) or any divisor you like.
+
+  `auto` is a deliberate digit-for-digit copy of `AutoScale=1` on a measure, lifted from
+  Rainmeter's own `GetScaledValue` - same 1024 table, same `" k"`/`" M"`/`" G"`/`" T"`
+  suffixes, and the same lone trailing space when the number was too small to scale, which
+  is what makes `Text=[NHM:Storage(freespace,,1,auto)]B` read `80.1 GB` and `512 B`.
+  `AutoScale=1k`/`2k` are not offered; a skin wanting kilo always can divide by 1024.
+
+  **A negative value is never scaled.** `-1` is the "no reading here" sentinel, and a skin
+  testing for it has to keep working whatever formatting arguments it passes.
+
+  `tools/section_format_check.cpp` pins all of it - 35 assertions, no framework, and the
+  `auto` expectations are Rainmeter's output rather than ours.
+
+### Fixed
+
+- Nothing about **[#10](https://github.com/Kurou-kun/NativeHardwareMonitor/issues/10)** was
+  a bug in this plugin, and the research it asked for has a flat answer worth writing down:
+  **Rainmeter's formatting cannot reach a plugin section variable, and never will.** In
+  `ConfigParser::GetSectionVariable`, text after the colon that names a plugin function goes
+  straight to `MeasurePlugin::CommandWithReturn` and the returned string *is* the
+  substitution; `:%`, `:/1024`, `:MaxValue` and `,decimals` are parsed only on the branch
+  that reads a measure's value. So `[NHM:GPU(vramused):/1048576]` is not a thing, and
+  `AutoScale`/`NumOfDecimals` on the meter act on a measure, not on text that was
+  substituted before the meter saw it. Formatting a section variable is the plugin's job by
+  construction - which is why the arguments above exist instead of a workaround in the
+  skin.
+
 ## [2.2.7] — 2026-10-12
 
 ### Added
