@@ -227,10 +227,10 @@ PLUGIN_EXPORT LPCWSTR GetString(void* data)
 //
 // Rainmeter resolves these against one measure, so a single hub measure can
 // serve a whole skin instead of one measure per metric. Each category gets one
-// exported function taking (metric, [device], [decimals], [scale]); the metric
-// name goes through the same ParseMetric as Metric=, so every alias works here
-// too, and the two formatting arguments exist because Rainmeter's own cannot
-// reach a plugin section variable at all - see Utils/ValueFormat.h.
+// exported function taking (metric, [device], [decimals]); the metric name goes
+// through the same ParseMetric as Metric=, so every alias works here too. The
+// value prints as a bare number in its raw base unit - Utils/ValueFormat.h has
+// the why, and why Rainmeter's own formatting can never reach it.
 //
 // Reading many metrics this way costs one handle each but still only one poller
 // per category — which is the point: one measure, no per-metric measures.
@@ -292,10 +292,9 @@ static LPCWSTR SectionValue(void* data, Category category, int argc, const WCHAR
         return ctx->svBuffer.c_str();
     }
 
-    // Optional third and fourth arguments: decimals and scale - [NHM:CPU(usage,,0)],
-    // [NHM:Storage(freespace,,1,auto)]. ValueFormat.h has the why and the full syntax.
+    // Optional third argument: decimals - [NHM:CPU(usage,,0)]. There is no scale
+    // argument, and ValueFormat.h says why a bare number is the whole contract.
     const WCHAR* decimalsArg = argc > 2 ? argv[2] : nullptr;
-    const WCHAR* scaleArg    = argc > 3 ? argv[3] : nullptr;
 
     // Same order Rainmeter uses on a measure: the value first (it initializes the
     // module on the first read), then the string form if the metric has one.
@@ -305,7 +304,7 @@ static LPCWSTR SectionValue(void* data, Category category, int argc, const WCHAR
     if (GetCore().GetString(handle, text))
         ctx->svBuffer = text; // string metric: Name, DriverVersion, ThrottleReasons, ...
     else
-        FormatSectionValue(value, decimalsArg, scaleArg, ctx->svBuffer);
+        FormatSectionValue(value, decimalsArg, ctx->svBuffer);
 
     return ctx->svBuffer.c_str();
 }
