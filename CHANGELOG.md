@@ -76,7 +76,7 @@ this project uses a four-part `MAJOR.MINOR.PATCH.BUILD` version in the DLL resou
   The way back into Rainmeter's own formatting is a one-line `Calc` that re-parses the
   number, after which `AutoScale`, `Percentual` and bar ranges all work again — verified on
   live readings and documented in the
-  [wiki](https://github.com/Kurou-kun/NativeHardwareMonitor/wiki/Section-Variables#rounding).
+  [wiki](https://github.com/Kurou-kun/NativeHardwareMonitor/wiki/Section-Variables#rounding-and-scaling).
 
 ## [2.2.7] — 2026-10-12
 
