@@ -66,11 +66,31 @@ foreach ($f in Get-ChildItem (Join-Path $pkg 'Skins') -Recurse -File) {
 $entries[$dll32] = 'Plugins/32bit/NativeHardwareMonitor.dll'
 $entries[$dll64] = 'Plugins/64bit/NativeHardwareMonitor.dll'
 
+# RMSKIN.ini is written into the archive NORMALISED rather than copied byte for
+# byte: UTF-8 with NO BOM, CRLF line endings. Rainmeter 4.5's Skin Installer
+# cannot parse the [rmskin] section if a BOM sits in front of it, and reports the
+# whole package as "Invalid package - The Skin Packager tool must be used..." -
+# which blames the user's download rather than the file. Rainmeter 5 tolerates it,
+# so this went unnoticed here for eight releases (2.1.2 through 2.2.9) after an
+# editor re-saved the file with a BOM. Normalising at package time means no editor
+# can reintroduce it.
 $zip = [System.IO.Compression.ZipFile]::Open($tmpZip, 'Create')
 try {
     foreach ($src in $entries.Keys) {
+        $name = $entries[$src]
+        if ($name -eq 'RMSKIN.ini') {
+            $text = [System.IO.File]::ReadAllText($src)         # drops a BOM if present
+            $text = ($text -replace "`r`n", "`n") -replace "`n", "`r`n"
+            $entry  = $zip.CreateEntry($name, [System.IO.Compression.CompressionLevel]::Optimal)
+            $stream = $entry.Open()
+            $bytes  = (New-Object System.Text.UTF8Encoding $false).GetBytes($text)
+            $stream.Write($bytes, 0, $bytes.Length)
+            $stream.Dispose()
+            continue
+        }
+
         [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile(
-            $zip, $src, $entries[$src], [System.IO.Compression.CompressionLevel]::Optimal) | Out-Null
+            $zip, $src, $name, [System.IO.Compression.CompressionLevel]::Optimal) | Out-Null
     }
 }
 finally { $zip.Dispose() }
