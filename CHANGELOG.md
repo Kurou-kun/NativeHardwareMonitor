@@ -4,6 +4,56 @@ All notable changes to NativeHardwareMonitor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/);
 this project uses a four-part `MAJOR.MINOR.PATCH.BUILD` version in the DLL resource.
 
+## [2.3.1] — 2026-10-17
+
+### Changed
+
+- **Each bundled skin is now its own config, so any number of them can run at once.** They
+  were variants of a single `NHM` config, and Rainmeter only runs one variant per config —
+  opening `cpu.ini` closed `gpu.ini`, which is useless for skins whose whole job is being
+  read side by side while something is diagnosed. Every category moves into its own folder:
+
+  ```
+  Skins\NHM\
+      @Resources\Styles.inc
+      @Resources\lua_test.lua
+      overview\overview.ini
+      gpu\gpu.ini
+      cpu\cpu.ini
+      ...
+  ```
+
+  Upgrading leaves the old flat `.ini` files behind in `Skins\NHM\` — the installer never
+  deletes — so remove them by hand if you want the folder tidy.
+
+- **One palette and style set, shared from `@Resources`.** 2.3.0 gave every skin the same
+  look by giving every skin its own copy of it: the same ten variables and six style blocks,
+  pasted twelve times. Change a colour and eleven files silently disagree with the twelfth.
+  They now pull `@Resources\Styles.inc` in with a single `@Include_Styles="#@#Styles.inc"`,
+  which is the convention Rainmeter already has for this. `lua_test.lua` moves into
+  `@Resources` too, where a script belongs.
+
+### Fixed
+
+- **ADL2 could return an empty `PciDeviceId`.** It searched the driver's PNP string for
+  `VEN_` and `DEV_` case-sensitively, so a driver spelling it in lower case produced nothing
+  at all — silently, because empty is how that metric reports "nothing here". The extracted
+  digits are normalised too: NVML, NVAPI and IGCL all format this metric with `%04X`
+  precisely so a skin can compare across vendors without special cases.
+
+- **Three Intel clock metrics were published in MHz where every other provider publishes
+  Hz** — `CoreClock`, `MemoryClock` and `MaxCoreClock` would have read 2100 rather than
+  2.1e9. IGCL is the only vendor API that declares the units of each reading, and the code
+  read that field for voltage and fan speed while ignoring it for frequency. Frequencies now
+  convert by what the item declares, and an item whose units are not understood publishes
+  nothing and logs what it saw, rather than emitting a plausible wrong number. The energy
+  and timestamp units behind the power calculation are checked the same way.
+
+- **The two AMD APIs were paired by index.** ADLX and ADL2 enumerate independently with no
+  shared ordering, so on a machine with two AMD GPUs — an APU plus a discrete Radeon —
+  device 0's ADLX readings could be backed by device 1's ADL2 for every metric ADLX did not
+  supply, and nothing would look wrong. They are matched on `PciDeviceId` now.
+
 ## [2.3.0] — 2026-10-17
 
 ### Fixed
