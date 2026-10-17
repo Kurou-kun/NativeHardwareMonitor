@@ -15,6 +15,7 @@ public:
     virtual void     GatherSnapshot(uint32_t deviceIndex, Snapshot& snap) = 0;
     virtual bool     GetString(uint32_t metricId, uint32_t deviceIndex, std::wstring& out) = 0;
 
-    // See IModule::ResolveTarget — same default-no-op shape one layer down.
+    // Ping only: resolves a host string to a stable device slot. Every other provider
+    // inherits this no-op, which is cheaper than fifteen empty overrides.
     virtual uint32_t ResolveTarget(const std::wstring& host, uint32_t intervalMs) { return 0; }
 };

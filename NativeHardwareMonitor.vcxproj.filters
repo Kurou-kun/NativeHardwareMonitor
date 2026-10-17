@@ -158,9 +158,6 @@
       <Filter>Header Files\Plugin</Filter>
     </ClInclude>
     <!-- Core -->
-    <ClInclude Include="source\Core\IModule.h">
-      <Filter>Header Files\Core</Filter>
-    </ClInclude>
     <ClInclude Include="source\Core\IProvider.h">
       <Filter>Header Files\Core</Filter>
     </ClInclude>

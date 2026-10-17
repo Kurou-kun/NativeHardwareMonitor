@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Core/IModule.h"
 #include "Core/IProvider.h"
 #include "Types/Category.h"
 #include "Types/MetricParser.h"
@@ -22,7 +21,7 @@
 // Windows counters behind all of them). `GpuResolver` is an IProvider itself, so it drops
 // in here like any other source and keeps its logic - which is why this class needs no
 // template and no hook: composition, not inheritance per category.
-class Module final : public IModule
+class Module final
 {
 public:
     // countNoun: the unit a startup log should count in ("drive(s)", "adapter(s)").
@@ -36,7 +35,7 @@ public:
     {
     }
 
-    bool Initialize() override
+    bool Initialize() 
     {
         if (m_initialized)
             return true;
@@ -62,7 +61,7 @@ public:
         return true;
     }
 
-    void GatherAll() override
+    void GatherAll() 
     {
         if (!m_initialized)
             return;
@@ -77,7 +76,12 @@ public:
         }
     }
 
-    void GatherDevices(const std::vector<uint32_t>& devices) override
+    // Gather only these device indices. An empty list means every device - which is
+    // what a Debug=2 dump needs, and what a single-device category does regardless.
+    // Gathering everything is always correct, just not always cheap: a machine here
+    // enumerates 37 network adapters and 13 CPU devices, all read every tick for the
+    // sake of a skin showing one.
+    void GatherDevices(const std::vector<uint32_t>& devices) 
     {
         if (!m_initialized)
             return;
@@ -101,7 +105,7 @@ public:
         }
     }
 
-    double GetValue(uint32_t metricId, uint32_t deviceIndex) override
+    double GetValue(uint32_t metricId, uint32_t deviceIndex) 
     {
         if (deviceIndex >= m_snapshots.size())
             return -2.0;
@@ -109,14 +113,14 @@ public:
         return m_snapshots[deviceIndex].Get(metricId);
     }
 
-    bool GetString(uint32_t metricId, uint32_t deviceIndex, std::wstring& out) override
+    bool GetString(uint32_t metricId, uint32_t deviceIndex, std::wstring& out) 
     {
         return m_provider ? m_provider->GetString(metricId, deviceIndex, out) : false;
     }
 
     // GPU overwrites this per sub-provider inside GpuResolver; every other category keeps
     // the name stamped above, which is the only provider it has.
-    const wchar_t* GetSource(uint32_t metricId, uint32_t deviceIndex) override
+    const wchar_t* GetSource(uint32_t metricId, uint32_t deviceIndex) 
     {
         if (deviceIndex >= m_snapshots.size())
             return nullptr;
@@ -124,7 +128,7 @@ public:
         return m_snapshots[deviceIndex].SourceOf(metricId);
     }
 
-    uint32_t GetDeviceCount() const override
+    uint32_t GetDeviceCount() const 
     {
         return m_provider ? m_provider->GetDeviceCount() : 0;
     }
@@ -132,7 +136,8 @@ public:
     // Ping only: a host string becomes a device slot, created on first sight. The
     // snapshot vector has to cover it before the next gather writes there, and this runs
     // on Rainmeter's thread under the module mutex (see HardwareCore::RegisterMeasure).
-    uint32_t ResolveTarget(const std::wstring& host, uint32_t intervalMs) override
+    // Ping only - every other category never calls this.
+    uint32_t ResolveTarget(const std::wstring& host, uint32_t intervalMs) 
     {
         if (!m_provider)
             return 0;

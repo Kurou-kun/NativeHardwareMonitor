@@ -5,7 +5,7 @@
 
 // ParseMetric returns this for "Count"/"DeviceCount" in any category. The device
 // count is the same question everywhere, so HardwareCore answers it from
-// IModule::GetDeviceCount() instead of every module carrying a metric of its own
+// Module::GetDeviceCount() instead of every module carrying a metric of its own
 // for it. Deliberately distinct from -1 (unknown category) and far outside the
 // range of any category's metric enum.
 static constexpr uint32_t METRIC_DEVICE_COUNT = 0xFFFFFFFEu;

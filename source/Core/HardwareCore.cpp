@@ -417,7 +417,7 @@ void HardwareCore::StartPoller(ModuleState& state, uint32_t intervalMs)
 
     state.poller->Start(intervalMs, [st]()
     {
-        IModule* module = st->module.get();
+        Module* module = st->module.get();
 
         std::lock_guard<std::timed_mutex> lock(st->mutex);
         if (!st->initialized)

@@ -9,7 +9,7 @@
 #include <vector>
 
 #include "Types/Category.h"
-#include "Core/IModule.h"
+#include "Core/Module.h"
 #include "Core/PollerThread.h"
 
 class HardwareCore
@@ -56,7 +56,7 @@ private:
 
     struct ModuleState
     {
-        std::unique_ptr<IModule>      module;
+        std::unique_ptr<Module>       module;
         std::timed_mutex              mutex;   // must outlive poller (destroyed after it)
         std::unique_ptr<PollerThread> poller;  // reset signals the thread; it is never joined
 

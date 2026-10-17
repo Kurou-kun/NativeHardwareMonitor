@@ -166,10 +166,7 @@ static std::wstring ReadTrimmedSz(HKEY key, const wchar_t* valueName)
     if (RegQueryValueExW(key, valueName, nullptr, nullptr, (LPBYTE)buf, &size) != ERROR_SUCCESS)
         return L"";
 
-    std::wstring value = buf;
-    size_t start = value.find_first_not_of(L' ');
-    size_t end   = value.find_last_not_of(L' ');
-    return start == std::wstring::npos ? L"" : value.substr(start, end - start + 1);
+    return Wmi::Trim(buf);
 }
 
 void WinApiCpuProvider::ReadIdentity()

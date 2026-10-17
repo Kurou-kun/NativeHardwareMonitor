@@ -220,7 +220,6 @@
   <ItemGroup>
     <ClInclude Include="source\Plugin\Plugin.h" />
     <ClInclude Include="source\Core\Module.h" />
-    <ClInclude Include="source\Core\IModule.h" />
     <ClInclude Include="source\Core\IProvider.h" />
     <ClInclude Include="source\Core\HardwareCore.h" />
     <ClInclude Include="source\Core\PollerThread.h" />
