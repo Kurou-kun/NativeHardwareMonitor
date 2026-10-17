@@ -127,7 +127,7 @@ bool IgclProvider::Initialize()
                 if (fh && m_GetFreqProps(fh, &fp) == CTL_RESULT_SUCCESS &&
                     fp.type == CTL_FREQ_DOMAIN_GPU)
                 {
-                    dev.maxCoreClock = fp.max;
+                    dev.maxCoreClock = fp.max;   // MHz; converted to Hz where it is published
                     break;
                 }
             }
@@ -292,9 +292,12 @@ void IgclProvider::GatherSnapshot(uint32_t deviceIndex, Snapshot& snap)
         dev.seeded          = true;
     }
 
-    // Static max GPU clock (cached at init).
+    // Static max GPU clock, cached at init. ctl_freq_properties_t::max is documented
+    // "in units of MHz" (igcl_api.h:5508), and every provider publishes clocks in Hz -
+    // this one was passing the MHz figure straight out, the same way the live clocks
+    // were before the units were honoured above.
     if (dev.maxCoreClock > 0.0)
-        set(GpuMetric::MaxCoreClock, dev.maxCoreClock);
+        set(GpuMetric::MaxCoreClock, dev.maxCoreClock * 1000000.0);
 
     // Sustained power limit (mW → W).
     if (dev.pwrHandle)
