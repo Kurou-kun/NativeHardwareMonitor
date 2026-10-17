@@ -22,33 +22,6 @@
     <Filter Include="Source Files\Modules\GPU">
       <UniqueIdentifier>{a1b2c3d4-0001-0001-0001-000000000004}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Modules\CPU">
-      <UniqueIdentifier>{a1b2c3d4-0001-0001-0001-000000000005}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Modules\Memory">
-      <UniqueIdentifier>{a1b2c3d4-0001-0001-0001-000000000006}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Modules\Network">
-      <UniqueIdentifier>{a1b2c3d4-0001-0001-0001-000000000007}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Modules\Storage">
-      <UniqueIdentifier>{a1b2c3d4-0001-0001-0001-000000000008}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Modules\Ping">
-      <UniqueIdentifier>{a1b2c3d4-0001-0001-0001-000000000019}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Modules\Battery">
-      <UniqueIdentifier>{a1b2c3d4-0001-0001-0001-000000000020}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Modules\System">
-      <UniqueIdentifier>{a1b2c3d4-0001-0001-0001-000000000021}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Modules\Motherboard">
-      <UniqueIdentifier>{a1b2c3d4-0001-0001-0001-000000000022}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Modules\Display">
-      <UniqueIdentifier>{a1b2c3d4-0001-0001-0001-000000000023}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\Providers">
       <UniqueIdentifier>{a1b2c3d4-0001-0001-0001-000000000009}</UniqueIdentifier>
     </Filter>
@@ -97,75 +70,18 @@
       <Filter>Source Files\Core</Filter>
     </ClCompile>
     <!-- Modules\GPU -->
-    <ClCompile Include="source\Modules\GPU\GpuModule.cpp">
-      <Filter>Source Files\Modules\GPU</Filter>
-    </ClCompile>
     <ClCompile Include="source\Modules\GPU\GpuResolver.cpp">
       <Filter>Source Files\Modules\GPU</Filter>
     </ClCompile>
     <!-- Modules\CPU -->
-    <ClCompile Include="source\Modules\CPU\CpuModule.cpp">
-      <Filter>Source Files\Modules\CPU</Filter>
-    </ClCompile>
-    <ClCompile Include="source\Modules\CPU\CpuResolver.cpp">
-      <Filter>Source Files\Modules\CPU</Filter>
-    </ClCompile>
     <!-- Modules\Memory -->
-    <ClCompile Include="source\Modules\Memory\MemoryModule.cpp">
-      <Filter>Source Files\Modules\Memory</Filter>
-    </ClCompile>
-    <ClCompile Include="source\Modules\Memory\MemoryResolver.cpp">
-      <Filter>Source Files\Modules\Memory</Filter>
-    </ClCompile>
     <!-- Modules\Network -->
-    <ClCompile Include="source\Modules\Network\NetworkModule.cpp">
-      <Filter>Source Files\Modules\Network</Filter>
-    </ClCompile>
-    <ClCompile Include="source\Modules\Network\NetworkResolver.cpp">
-      <Filter>Source Files\Modules\Network</Filter>
-    </ClCompile>
     <!-- Modules\Storage -->
-    <ClCompile Include="source\Modules\Storage\StorageModule.cpp">
-      <Filter>Source Files\Modules\Storage</Filter>
-    </ClCompile>
-    <ClCompile Include="source\Modules\Storage\StorageResolver.cpp">
-      <Filter>Source Files\Modules\Storage</Filter>
-    </ClCompile>
     <!-- Modules\Ping -->
-    <ClCompile Include="source\Modules\Ping\PingModule.cpp">
-      <Filter>Source Files\Modules\Ping</Filter>
-    </ClCompile>
-    <ClCompile Include="source\Modules\Ping\PingResolver.cpp">
-      <Filter>Source Files\Modules\Ping</Filter>
-    </ClCompile>
     <!-- Modules\Battery -->
-    <ClCompile Include="source\Modules\Battery\BatteryModule.cpp">
-      <Filter>Source Files\Modules\Battery</Filter>
-    </ClCompile>
-    <ClCompile Include="source\Modules\Battery\BatteryResolver.cpp">
-      <Filter>Source Files\Modules\Battery</Filter>
-    </ClCompile>
     <!-- Modules\System -->
-    <ClCompile Include="source\Modules\System\SystemModule.cpp">
-      <Filter>Source Files\Modules\System</Filter>
-    </ClCompile>
-    <ClCompile Include="source\Modules\System\SystemResolver.cpp">
-      <Filter>Source Files\Modules\System</Filter>
-    </ClCompile>
     <!-- Modules\Motherboard -->
-    <ClCompile Include="source\Modules\Motherboard\MotherboardModule.cpp">
-      <Filter>Source Files\Modules\Motherboard</Filter>
-    </ClCompile>
-    <ClCompile Include="source\Modules\Motherboard\MotherboardResolver.cpp">
-      <Filter>Source Files\Modules\Motherboard</Filter>
-    </ClCompile>
     <!-- Modules\Display -->
-    <ClCompile Include="source\Modules\Display\DisplayModule.cpp">
-      <Filter>Source Files\Modules\Display</Filter>
-    </ClCompile>
-    <ClCompile Include="source\Modules\Display\DisplayResolver.cpp">
-      <Filter>Source Files\Modules\Display</Filter>
-    </ClCompile>
     <!-- Providers\Nvml -->
     <ClCompile Include="source\Providers\Nvml\NvmlProvider.cpp">
       <Filter>Source Files\Providers\Nvml</Filter>
@@ -255,75 +171,18 @@
       <Filter>Header Files\Core</Filter>
     </ClInclude>
     <!-- Modules\GPU -->
-    <ClInclude Include="source\Modules\GPU\GpuModule.h">
-      <Filter>Header Files\Modules\GPU</Filter>
-    </ClInclude>
     <ClInclude Include="source\Modules\GPU\GpuResolver.h">
       <Filter>Header Files\Modules\GPU</Filter>
     </ClInclude>
     <!-- Modules\CPU -->
-    <ClInclude Include="source\Modules\CPU\CpuModule.h">
-      <Filter>Header Files\Modules\CPU</Filter>
-    </ClInclude>
-    <ClInclude Include="source\Modules\CPU\CpuResolver.h">
-      <Filter>Header Files\Modules\CPU</Filter>
-    </ClInclude>
     <!-- Modules\Memory -->
-    <ClInclude Include="source\Modules\Memory\MemoryModule.h">
-      <Filter>Header Files\Modules\Memory</Filter>
-    </ClInclude>
-    <ClInclude Include="source\Modules\Memory\MemoryResolver.h">
-      <Filter>Header Files\Modules\Memory</Filter>
-    </ClInclude>
     <!-- Modules\Network -->
-    <ClInclude Include="source\Modules\Network\NetworkModule.h">
-      <Filter>Header Files\Modules\Network</Filter>
-    </ClInclude>
-    <ClInclude Include="source\Modules\Network\NetworkResolver.h">
-      <Filter>Header Files\Modules\Network</Filter>
-    </ClInclude>
     <!-- Modules\Storage -->
-    <ClInclude Include="source\Modules\Storage\StorageModule.h">
-      <Filter>Header Files\Modules\Storage</Filter>
-    </ClInclude>
-    <ClInclude Include="source\Modules\Storage\StorageResolver.h">
-      <Filter>Header Files\Modules\Storage</Filter>
-    </ClInclude>
     <!-- Modules\Ping -->
-    <ClInclude Include="source\Modules\Ping\PingModule.h">
-      <Filter>Header Files\Modules\Ping</Filter>
-    </ClInclude>
-    <ClInclude Include="source\Modules\Ping\PingResolver.h">
-      <Filter>Header Files\Modules\Ping</Filter>
-    </ClInclude>
     <!-- Modules\Battery -->
-    <ClInclude Include="source\Modules\Battery\BatteryModule.h">
-      <Filter>Header Files\Modules\Battery</Filter>
-    </ClInclude>
-    <ClInclude Include="source\Modules\Battery\BatteryResolver.h">
-      <Filter>Header Files\Modules\Battery</Filter>
-    </ClInclude>
     <!-- Modules\System -->
-    <ClInclude Include="source\Modules\System\SystemModule.h">
-      <Filter>Header Files\Modules\System</Filter>
-    </ClInclude>
-    <ClInclude Include="source\Modules\System\SystemResolver.h">
-      <Filter>Header Files\Modules\System</Filter>
-    </ClInclude>
     <!-- Modules\Motherboard -->
-    <ClInclude Include="source\Modules\Motherboard\MotherboardModule.h">
-      <Filter>Header Files\Modules\Motherboard</Filter>
-    </ClInclude>
-    <ClInclude Include="source\Modules\Motherboard\MotherboardResolver.h">
-      <Filter>Header Files\Modules\Motherboard</Filter>
-    </ClInclude>
     <!-- Modules\Display -->
-    <ClInclude Include="source\Modules\Display\DisplayModule.h">
-      <Filter>Header Files\Modules\Display</Filter>
-    </ClInclude>
-    <ClInclude Include="source\Modules\Display\DisplayResolver.h">
-      <Filter>Header Files\Modules\Display</Filter>
-    </ClInclude>
     <!-- Providers\Nvml -->
     <ClInclude Include="source\Providers\Nvml\NvmlProvider.h">
       <Filter>Header Files\Providers\Nvml</Filter>
@@ -340,7 +199,13 @@
     <ClInclude Include="source\Providers\Adl2\Adl2Provider.h">
       <Filter>Header Files\Providers\Adl2</Filter>
     </ClInclude>
+    <ClInclude Include="source\Providers\Adl2\Adl2Parse.h">
+      <Filter>Header Files\Providers\Adl2</Filter>
+    </ClInclude>
     <ClInclude Include="source\Providers\Igcl\IgclProvider.h">
+      <Filter>Header Files\Providers\Igcl</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Providers\Igcl\IgclUnits.h">
       <Filter>Header Files\Providers\Igcl</Filter>
     </ClInclude>
     <!-- Providers\WinApi -->
@@ -442,33 +307,6 @@
     </Filter>
     <Filter Include="Header Files\Modules\GPU">
       <UniqueIdentifier>{b1b2c3d4-0001-0001-0001-000000000004}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Modules\CPU">
-      <UniqueIdentifier>{b1b2c3d4-0001-0001-0001-000000000005}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Modules\Memory">
-      <UniqueIdentifier>{b1b2c3d4-0001-0001-0001-000000000006}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Modules\Network">
-      <UniqueIdentifier>{b1b2c3d4-0001-0001-0001-000000000007}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Modules\Storage">
-      <UniqueIdentifier>{b1b2c3d4-0001-0001-0001-000000000008}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Modules\Ping">
-      <UniqueIdentifier>{b1b2c3d4-0001-0001-0001-000000000018}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Modules\Battery">
-      <UniqueIdentifier>{b1b2c3d4-0001-0001-0001-000000000020}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Modules\System">
-      <UniqueIdentifier>{b1b2c3d4-0001-0001-0001-000000000021}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Modules\Motherboard">
-      <UniqueIdentifier>{b1b2c3d4-0001-0001-0001-000000000022}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Modules\Display">
-      <UniqueIdentifier>{b1b2c3d4-0001-0001-0001-000000000023}</UniqueIdentifier>
     </Filter>
     <Filter Include="Header Files\Providers">
       <UniqueIdentifier>{b1b2c3d4-0001-0001-0001-000000000009}</UniqueIdentifier>

@@ -229,7 +229,9 @@
     <ClInclude Include="source\Providers\Nvapi\NvapiProvider.h" />
     <ClInclude Include="source\Providers\Adlx\AdlxProvider.h" />
     <ClInclude Include="source\Providers\Adl2\Adl2Provider.h" />
+    <ClInclude Include="source\Providers\Adl2\Adl2Parse.h" />
     <ClInclude Include="source\Providers\Igcl\IgclProvider.h" />
+    <ClInclude Include="source\Providers\Igcl\IgclUnits.h" />
     <ClInclude Include="source\Providers\WinApi\WinApiCpuProvider.h" />
     <ClInclude Include="source\Providers\WinApi\WinApiGpuInfo.h" />
     <ClInclude Include="source\Providers\WinApi\WinApiGpuProvider.h" />
