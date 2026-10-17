@@ -4,6 +4,63 @@ All notable changes to NativeHardwareMonitor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/);
 this project uses a four-part `MAJOR.MINOR.PATCH.BUILD` version in the DLL resource.
 
+## [2.3.0] — 2026-10-17
+
+### Fixed
+
+- **The `.rmskin` package would not install on Rainmeter 4.5 at all.** The Skin Installer
+  rejected it with *"Invalid package — The Skin Packager tool must be used to create valid
+  .rmskin packages"*, which blames the download; re-downloading could never help, because the
+  published file was intact. `RMSKIN.ini` inside the package carried a UTF-8 **byte order
+  mark**, so Rainmeter 4.5 read the first line as `<EF BB BF>[rmskin]`, never found the
+  section, and threw out the whole package. Rainmeter 5 tolerates a BOM, and the development
+  machine runs 5.x — so **2.1.2, 2.1.3, 2.1.4, 2.1.6, 2.1.8, 2.2.5, 2.2.7 and 2.2.9 all
+  shipped uninstallable for anyone on 4.5**, with 2.0.0 the only release that worked.
+
+  `tools/build-package.ps1` now writes `RMSKIN.ini` into the archive **normalised** — UTF-8
+  with no BOM, CRLF endings — rather than copying the file's bytes, so no editor can
+  reintroduce it. Reproduced and verified against a real Rainmeter 4.5.28 installer.
+
+- **The Windows GPU counters silently supplied nothing on any adapter whose LUID contains a
+  hex letter.** The adapter was matched to its PDH instance by LUID, which PDH spells in
+  **uppercase** hex (`luid_0x00000000_0x0000EFE0_phys_0`) while `swprintf`'s `%x` produces
+  lowercase — and the comparison was case-sensitive. So the fallback that exists precisely
+  for hardware without a vendor SDK — an AMD GPU with no ADLX, an Intel GPU with no
+  `ControlLib.dll` — contributed nothing at all, on every metric, while the dump cheerfully
+  reported *"Windows GPU counters attached to N of N device(s)"*. It stayed hidden because
+  both development GPUs have a working vendor SDK, so the broken path was never the one that
+  answered. A dump now also lists each DXGI adapter with the LUID key it will match on, so
+  the pairing can be checked instead of assumed.
+
+### Added
+
+- **`Metric=VramShared`** (GPU) — the system memory an adapter has in use, read from the same
+  `GPU Adapter Memory` counter Task Manager's GPU tab uses. **No vendor SDK reports it**:
+  NVML, ADLX and IGCL each answer for the card's own memory only. It matters on an integrated
+  GPU, whose dedicated carve-out is a fixed few hundred megabytes regardless of what the
+  device actually does — on a Raphael iGPU the shared pool runs several times larger than
+  `VramUsed`. Published for every adapter; on a device with no dedicated memory `VramUsed` and
+  `VramShared` are deliberately the same number, because there is one pool and both names
+  point at it.
+
+### Changed
+
+- **The bundled skins render clocks in MHz instead of scaling them.** `AutoScale` defaults to
+  one decimal, so above 1 GHz it could only draw 100 MHz steps: 1750 MHz and 1800 MHz both
+  printed as `1.8 GHz`, which looked like the plugin disagreeing with MSI Afterburner when the
+  two held the identical number (forum p=246347). Worse, `AutoScale` mangles the unsupported
+  sentinel — `-1` rendered as `-0.0 kHz`, and `Substitute="-1":"n/a"` could not match it,
+  because the substitution runs after the scaling. The skins now convert with a `Calc` that
+  keeps the sentinel intact.
+
+  To be clear, since the first telling of this was wrong: `AutoScale` **can** show exact
+  clocks — `AutoScale=2k` with `NumOfDecimals=3` resolves to the megahertz. It is the
+  sentinel, not the rounding, that the reference skins cannot live with.
+
+- **Every bundled skin now shares `overview.ini`'s visual system** — one palette, one set of
+  named styles, a header bar, group headings and a label/value grid, instead of eleven files
+  that had each drifted. `VramShared` has a row in `gpu.ini`.
+
 ## [2.2.9] — 2026-10-14
 
 ### Changed
