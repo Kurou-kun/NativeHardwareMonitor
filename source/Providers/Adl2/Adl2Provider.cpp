@@ -1,4 +1,5 @@
 #include "Providers/Adl2/Adl2Provider.h"
+#include "Providers/Adl2/Adl2Parse.h"
 #include "Types/GpuMetric.h"
 #include "Utils/Debug.h"
 
@@ -159,20 +160,9 @@ void Adl2Provider::CacheAdapterStrings(int adapterIndex, const char* pnpString)
 
     // strPNPString looks like "PCI\VEN_1002&DEV_164E&SUBSYS_...". Report it the way the
     // NVIDIA path does, "1002:164E", so a skin can compare the two without special cases.
-    std::wstring pciId;
-    if (pnpString)
-    {
-        std::string pnp(pnpString, strnlen_s(pnpString, ADL_MAX_PATH));
-        size_t ven = pnp.find("VEN_");
-        size_t dev = pnp.find("DEV_");
-        if (ven != std::string::npos && dev != std::string::npos &&
-            ven + 8 <= pnp.size() && dev + 8 <= pnp.size())
-        {
-            std::string id = pnp.substr(ven + 4, 4) + ":" + pnp.substr(dev + 4, 4);
-            pciId.assign(id.begin(), id.end());
-        }
-    }
-    m_pciIds.push_back(pciId);
+    // Case is normalised in ParsePciIdFromPnp - the string comes from the driver, not
+    // from us, and matching it case-sensitively is how #12 happened.
+    m_pciIds.push_back(ParsePciIdFromPnp(pnpString, ADL_MAX_PATH));
 }
 
 void Adl2Provider::Shutdown()

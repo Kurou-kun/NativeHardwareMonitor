@@ -1,4 +1,5 @@
 #include "Providers/Igcl/IgclProvider.h"
+#include "Providers/Igcl/IgclUnits.h"
 #include "Types/GpuMetric.h"
 #include "Utils/Debug.h"
 
@@ -208,9 +209,29 @@ void IgclProvider::GatherSnapshot(uint32_t deviceIndex, Snapshot& snap)
 
     auto set = [&](GpuMetric m, double v) { snap.Set(static_cast<uint32_t>(m), v); };
 
-    // Instantaneous readings
-    if (t.gpuCurrentClockFrequency.bSupported) set(GpuMetric::CoreClock,        ItemVal(t.gpuCurrentClockFrequency));
-    if (t.vramCurrentClockFrequency.bSupported)set(GpuMetric::MemoryClock,      ItemVal(t.vramCurrentClockFrequency));
+    // Instantaneous readings.
+    //
+    // Clocks go through IgclFrequencyHz rather than straight out of ItemVal: this API
+    // declares the units of every item, and these ones are MHz while every other
+    // provider publishes Hz. Passing the raw number through made an Intel core clock
+    // read 2100 instead of 2.1e9. An item whose units are not a frequency publishes
+    // nothing at all - a -1 means "no reading" and is documented, while a number in
+    // unknown units just looks correct.
+    auto setFrequency = [&](GpuMetric m, const ctl_oc_telemetry_item_t& it)
+    {
+        if (!it.bSupported)
+            return;
+
+        double hz = 0.0;
+        if (IgclFrequencyHz(it.units, ItemVal(it), hz))
+            set(m, hz);
+        else
+            LOG_ERROR(L"IgclProvider: frequency item declares units %d, not a frequency -"
+                      L" metric %u left unsupported", (int)it.units, (uint32_t)m);
+    };
+
+    setFrequency(GpuMetric::CoreClock,   t.gpuCurrentClockFrequency);
+    setFrequency(GpuMetric::MemoryClock, t.vramCurrentClockFrequency);
     if (t.gpuCurrentTemperature.bSupported)    set(GpuMetric::Temperature,      ItemVal(t.gpuCurrentTemperature));
     if (t.vramCurrentTemperature.bSupported)   set(GpuMetric::MemoryTemperature,ItemVal(t.vramCurrentTemperature));
 
@@ -231,21 +252,28 @@ void IgclProvider::GatherSnapshot(uint32_t deviceIndex, Snapshot& snap)
         break;
     }
 
-    // Counter-derived metrics: energy→power (ΔJoules/Δs = W), activity→util (Δbusy/Δs = %).
+    // Counter-derived metrics: energy -> power, activity -> utilisation. The energy
+    // counter and the timestamp both DECLARE their units, so check rather than assert:
+    // a millijoule counter or a microsecond clock would make power wrong by three or
+    // six orders of magnitude and look entirely plausible doing it.
     // ponytail: monotonic counters — first tick only seeds; real values from the 2nd tick.
-    if (t.timeStamp.bSupported)
+    double now = 0.0;
+    if (t.timeStamp.bSupported && IgclTimeSeconds(t.timeStamp.units, ItemVal(t.timeStamp), now))
     {
-        double now = ItemVal(t.timeStamp);
-        double dt  = now - dev.prevTime;
+        double dt = now - dev.prevTime;
 
         if (dev.seeded && dt > 0.0)
         {
-            if (t.gpuEnergyCounter.bSupported)
-                set(GpuMetric::Power, (ItemVal(t.gpuEnergyCounter) - dev.prevEnergy) / dt);
+            double j = 0.0;
+            if (t.gpuEnergyCounter.bSupported &&
+                IgclEnergyJoules(t.gpuEnergyCounter.units, ItemVal(t.gpuEnergyCounter), j))
+                set(GpuMetric::Power, (j - dev.prevEnergy) / dt);
             if (t.globalActivityCounter.bSupported)
                 set(GpuMetric::Usage, (ItemVal(t.globalActivityCounter) - dev.prevActivity) / dt * 100.0);
-            if (t.totalCardEnergyCounter.bSupported)
-                set(GpuMetric::TotalBoardPower, (ItemVal(t.totalCardEnergyCounter) - dev.prevTotalEnergy) / dt);
+            double cardJ = 0.0;
+            if (t.totalCardEnergyCounter.bSupported &&
+                IgclEnergyJoules(t.totalCardEnergyCounter.units, ItemVal(t.totalCardEnergyCounter), cardJ))
+                set(GpuMetric::TotalBoardPower, (cardJ - dev.prevTotalEnergy) / dt);
             if (t.mediaActivityCounter.bSupported)
             {
                 // IGCL reports media engines combined (no encode/decode split) —
