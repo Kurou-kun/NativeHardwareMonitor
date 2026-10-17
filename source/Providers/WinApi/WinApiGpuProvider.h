@@ -13,9 +13,10 @@
 // iGPU with no ADLX, an Intel GPU with no ControlLib, and any card whose SDK is missing
 // or too old — which is exactly where the vendor providers leave holes.
 //
-// It only ever supplies Usage, VramUsed and VramTotal. Temperature, power, voltage and
-// fan have no Windows-side source at all without a kernel driver, which is the thing
-// this plugin exists not to need.
+// It only ever supplies Usage, VramUsed, VramTotal and VramShared - the last of which
+// no vendor SDK reports at all, so Windows is its only source on any card. Temperature,
+// power, voltage and fan have no Windows-side source at all without a kernel driver,
+// which is the thing this plugin exists not to need.
 class WinApiGpuProvider : public IProvider
 {
 public:

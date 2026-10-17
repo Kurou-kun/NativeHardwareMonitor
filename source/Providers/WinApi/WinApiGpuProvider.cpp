@@ -6,6 +6,7 @@
 #include <dxgi1_4.h>
 
 #include <algorithm>
+#include <cwctype>
 #include <map>
 
 #pragma comment(lib, "pdh.lib")
@@ -67,13 +68,19 @@ bool WinApiGpuProvider::EnumerateAdapters()
             a.dedicatedTotal = static_cast<double>(desc.DedicatedVideoMemory);
             a.sharedTotal    = static_cast<double>(desc.SharedSystemMemory);
 
-            // PDH spells the LUID into its instance names as high then low, lowercase
-            // hex, eight digits each: "luid_0x00000000_0x0000cf63_phys_0".
+            // PDH spells the LUID into its instance names as high then low, eight hex
+            // digits each: "luid_0x00000000_0x0000EFE0_phys_0". The case of those digits
+            // is not promised - current builds use upper, %x here gives lower - so every
+            // comparison against this key goes through ContainsNoCase.
             wchar_t key[64];
             swprintf_s(key, L"luid_0x%08x_0x%08x",
                        static_cast<unsigned>(desc.AdapterLuid.HighPart),
                        static_cast<unsigned>(desc.AdapterLuid.LowPart));
             a.luidKey = key;
+
+            LOG_STARTUP(L"WinApiGpuProvider: adapter %u %s dedicated=%.0f shared=%.0f",
+                        (uint32_t)m_adapters.size(), a.luidKey.c_str(),
+                        a.dedicatedTotal, a.sharedTotal);
 
             m_adapters.push_back(std::move(a));
         }
@@ -114,6 +121,23 @@ int WinApiGpuProvider::FindAdapter(uint32_t pciVendorId, uint32_t ordinal) const
     return -1;
 }
 
+// PDH spells the LUID in its instance names with UPPERCASE hex on current Windows builds
+// - "luid_0x00000000_0x0000EFE0_phys_0" - while swprintf's %x produces lowercase. A
+// case-sensitive find therefore matched only on an adapter whose LUID happened to contain
+// no hex letter, and silently matched nothing on one that did: every Windows-side metric
+// read -1 on exactly the machines the Windows path exists for, an AMD GPU with no ADLX or
+// an Intel one with no ControlLib. Neither spelling is promised by the API, so compare
+// without case rather than betting on one.
+static bool ContainsNoCase(const std::wstring& haystack, const std::wstring& needle)
+{
+    if (needle.empty())
+        return true;
+
+    return std::search(haystack.begin(), haystack.end(), needle.begin(), needle.end(),
+                       [](wchar_t a, wchar_t b) { return std::towlower(a) == std::towlower(b); })
+           != haystack.end();
+}
+
 void WinApiGpuProvider::GatherSnapshot(uint32_t deviceIndex, Snapshot& snap)
 {
     if (deviceIndex >= m_adapters.size())
@@ -144,7 +168,7 @@ void WinApiGpuProvider::GatherSnapshot(uint32_t deviceIndex, Snapshot& snap)
         for (DWORD i = 0; i < count; ++i)
         {
             std::wstring name = items[i].szName ? items[i].szName : L"";
-            if (name.find(ad.luidKey) == std::wstring::npos)
+            if (!ContainsNoCase(name, ad.luidKey))
                 continue;
 
             size_t typePos = name.find(L"engtype_");
@@ -165,23 +189,38 @@ void WinApiGpuProvider::GatherSnapshot(uint32_t deviceIndex, Snapshot& snap)
     // VRAM in use, summed over every instance on this adapter. Unlike DXGI's
     // QueryVideoMemoryInfo, which only reports the calling process, this is the whole
     // machine's usage — which is what a desktop monitor is being asked for.
-    PDH_HCOUNTER memCounter = integrated ? m_shared : m_dedicated;
-    if (memCounter && PdhReadCounterArray(memCounter, buf, items, count, PDH_FMT_DOUBLE | PDH_FMT_NOCAP100))
+    auto sumForAdapter = [&](PDH_HCOUNTER counter, double& out) -> bool
     {
-        double used  = 0.0;
+        if (!counter || !PdhReadCounterArray(counter, buf, items, count, PDH_FMT_DOUBLE | PDH_FMT_NOCAP100))
+            return false;
+
+        double total = 0.0;
         bool   found = false;
         for (DWORD i = 0; i < count; ++i)
         {
             std::wstring name = items[i].szName ? items[i].szName : L"";
-            if (name.find(ad.luidKey) == std::wstring::npos)
+            if (!ContainsNoCase(name, ad.luidKey))
                 continue;
-            used += items[i].FmtValue.doubleValue;
+            total += items[i].FmtValue.doubleValue;
             found = true;
         }
 
-        if (found)
-            snap.Set(static_cast<uint32_t>(GpuMetric::VramUsed), used);
-    }
+        out = total;
+        return found;
+    };
+
+    double used = 0.0;
+    if (sumForAdapter(integrated ? m_shared : m_dedicated, used))
+        snap.Set(static_cast<uint32_t>(GpuMetric::VramUsed), used);
+
+    // The shared pool is published for every adapter, not only integrated ones, because
+    // it is the one memory figure no vendor SDK can see - and on an integrated GPU it is
+    // where the real allocation lives, which is why a tool that sums both pools reads
+    // higher than VramUsed does. On such a device VramUsed and VramShared are deliberately
+    // the same number: there is one pool and both names point at it.
+    double shared = 0.0;
+    if (sumForAdapter(m_shared, shared))
+        snap.Set(static_cast<uint32_t>(GpuMetric::VramShared), shared);
 }
 
 bool WinApiGpuProvider::GetString(uint32_t metricId, uint32_t deviceIndex, std::wstring& out)

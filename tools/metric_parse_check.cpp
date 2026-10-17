@@ -104,6 +104,11 @@ int main()
     CHECK(MetricName(Category::GPU, static_cast<uint32_t>(GpuMetric::VramTotal)) == L"VramTotal");
 
 
+    CHECK(ParseMetric(Category::GPU, L"vramshared") == static_cast<uint32_t>(GpuMetric::VramShared));
+
+    CHECK(MetricName(Category::GPU, static_cast<uint32_t>(GpuMetric::VramShared)) == L"VramShared");
+
+
     CHECK(ParseMetric(Category::GPU, L"fanspeed") == static_cast<uint32_t>(GpuMetric::FanSpeed));
 
     CHECK(ParseMetric(Category::GPU, L"fan") == static_cast<uint32_t>(GpuMetric::FanSpeed));

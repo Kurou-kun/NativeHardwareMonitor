@@ -116,6 +116,7 @@ static const MetricDef GPUDefs[] = {
     DEF(GpuMetric, MemoryTemperature,  L"memtemp"),
     DEF(GpuMetric, VramUsed,           L"vram"),
     DEF(GpuMetric, VramTotal,          nullptr),
+    DEF(GpuMetric, VramShared,         nullptr),
     DEF(GpuMetric, FanSpeed,           L"fan"),
     DEF(GpuMetric, FanSpeedRPM,        L"fanrpm"),
     DEF(GpuMetric, Power,              nullptr),

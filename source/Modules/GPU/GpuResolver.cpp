@@ -136,7 +136,7 @@ bool GpuResolver::Initialize()
 }
 
 // Windows' own GPU counters, behind every vendor SDK and never in front of one. They
-// only carry Usage, VramUsed and VramTotal, and MergeMissing means a vendor reading
+// only carry Usage, VramUsed, VramTotal and VramShared, and MergeMissing means a vendor reading
 // always wins — but on an AMD iGPU with no ADLX, or an Intel GPU with no ControlLib,
 // they are the difference between three live metrics and three -1s.
 //
