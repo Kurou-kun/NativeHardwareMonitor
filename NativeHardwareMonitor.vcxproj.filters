@@ -132,6 +132,9 @@
     <ClCompile Include="source\Providers\WinApi\WinApiDisplayProvider.cpp">
       <Filter>Source Files\Providers\WinApi</Filter>
     </ClCompile>
+    <ClCompile Include="source\Providers\WinApi\WinApiGpuProvider.cpp">
+      <Filter>Source Files\Providers\WinApi</Filter>
+    </ClCompile>
     <!-- Types -->
     <ClCompile Include="source\Types\MetricParser.cpp">
       <Filter>Source Files\Types</Filter>
@@ -165,6 +168,9 @@
       <Filter>Header Files\Core</Filter>
     </ClInclude>
     <ClInclude Include="source\Core\PollerThread.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Core\Module.h">
       <Filter>Header Files\Core</Filter>
     </ClInclude>
     <!-- Modules\GPU -->
@@ -236,6 +242,9 @@
     <ClInclude Include="source\Providers\WinApi\WinApiDisplayProvider.h">
       <Filter>Header Files\Providers\WinApi</Filter>
     </ClInclude>
+    <ClInclude Include="source\Providers\WinApi\WinApiGpuProvider.h">
+      <Filter>Header Files\Providers\WinApi</Filter>
+    </ClInclude>
     <!-- Types -->
     <ClInclude Include="source\Types\Category.h">
       <Filter>Header Files\Types</Filter>
@@ -281,6 +290,12 @@
       <Filter>Header Files\Utils</Filter>
     </ClInclude>
     <ClInclude Include="source\Utils\WmiUtil.h">
+      <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Utils\PdhUtil.h">
+      <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Utils\ValueFormat.h">
       <Filter>Header Files\Utils</Filter>
     </ClInclude>
   </ItemGroup>
