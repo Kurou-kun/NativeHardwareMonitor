@@ -13,6 +13,38 @@ static constexpr uint32_t PCI_VENDOR_NVIDIA = 0x10DE;
 static constexpr uint32_t PCI_VENDOR_AMD    = 0x1002;
 static constexpr uint32_t PCI_VENDOR_INTEL  = 0x8086;
 
+// Which ADL2 device is the same card as ADLX device `index`, or -1 for none.
+//
+// Falls back to the index when either side cannot name itself, because an unpaired
+// backup is strictly worse than a probably-right one: on the single-AMD-GPU machines
+// that are the overwhelming majority, index 0 to index 0 is correct, and that is the
+// behaviour this replaced. The log line is there so a dump from a two-AMD machine
+// shows which rule actually applied.
+static int MatchByPciId(IProvider* primary, uint32_t index, IProvider* backup, bool backupOk)
+{
+    if (!backupOk || !backup)
+        return -1;
+
+    const uint32_t backupCount = backup->GetDeviceCount();
+    const uint32_t metric      = static_cast<uint32_t>(GpuMetric::PciDeviceId);
+
+    std::wstring mine;
+    if (primary->GetString(metric, index, mine) && !mine.empty())
+    {
+        for (uint32_t j = 0; j < backupCount; ++j)
+        {
+            std::wstring theirs;
+            if (backup->GetString(metric, j, theirs) && theirs == mine)
+                return static_cast<int>(j);
+        }
+
+        LOG_STARTUP(L"GpuResolver: no ADL2 device matches PciDeviceId %s - pairing device"
+                    L" %u by index instead", mine.c_str(), index);
+    }
+
+    return index < backupCount ? static_cast<int>(index) : -1;
+}
+
 bool GpuResolver::Initialize()
 {
     // NVIDIA: NVML primary, NVAPI kept alive as a per-metric backup —
@@ -78,10 +110,19 @@ bool GpuResolver::Initialize()
             {
                 DeviceEntry entry{ adlx.get(), i, GpuVendor::AMD };
                 entry.providerName = L"ADLX";
-                if (adl2Ok && i < adl2->GetDeviceCount())
+
+                // Pair the two AMD APIs by PCI id, not by index. ADLX and ADL2
+                // enumerate independently and share no ordering guarantee, so on a
+                // machine with two AMD GPUs - an APU plus a discrete Radeon is an
+                // ordinary desktop now - index pairing can hand device 0's ADLX
+                // readings device 1's ADL2 backup for every metric ADLX did not
+                // supply. Both report PciDeviceId in the same "vendor:device" form,
+                // which is the stable thing to match on.
+                const int paired = MatchByPciId(adlx.get(), i, adl2.get(), adl2Ok);
+                if (paired >= 0)
                 {
                     entry.backupProvider   = adl2.get();
-                    entry.backupLocalIndex = i;
+                    entry.backupLocalIndex = static_cast<uint32_t>(paired);
                     entry.backupName       = L"ADL2";
                 }
                 m_devices.push_back(entry);
