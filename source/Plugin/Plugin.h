@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include "Types/Category.h"
+#include "Utils/TemperatureUnit.h"
 
 // Stored in SectionHandle::handle when the metric name in a section variable
 // failed to parse: the error is logged once and later reads return the
@@ -26,6 +27,7 @@ struct MeasureContext
 {
     bool valid = false;
     bool hub   = false; // no Category= at all: the measure only hosts section variables
+    TemperatureUnit tempUnit = TemperatureUnit::Celsius; // also applies to its section variables
 
     Category  category         = Category::Unknown;
     uint32_t  metricId         = 0;

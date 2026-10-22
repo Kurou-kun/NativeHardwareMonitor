@@ -99,6 +99,14 @@ static void ReadContext(MeasureContext* ctx, void* rm)
     ctx->debugLevel       = RmReadInt(rm, L"Debug", 0);
     ctx->updateOverrideMs = static_cast<uint32_t>(RmReadInt(rm, L"UpdateOverride", 0));
     ctx->pingIntervalMs   = static_cast<uint32_t>(RmReadInt(rm, L"PingInterval", 1000));
+
+    // Always logged, not behind Debug=: a measure that silently reads -2 looks like broken
+    // hardware. Only on the change into Invalid, since DynamicVariables=1 reloads every second.
+    const bool     wasInvalid = ctx->tempUnit == TemperatureUnit::Invalid;
+    const wchar_t* unit       = RmReadString(rm, L"TemperatureUnit", L"C", FALSE);
+    ctx->tempUnit = ParseTemperatureUnit(unit);
+    if (ctx->tempUnit == TemperatureUnit::Invalid && !wasInvalid)
+        RmLogF(rm, LOG_ERROR, L"NativeHardwareMonitor: TemperatureUnit=%s is not C, F or K - measure disabled", unit);
 }
 
 PLUGIN_EXPORT void Initialize(void** data, void* rm)
@@ -108,6 +116,12 @@ PLUGIN_EXPORT void Initialize(void** data, void* rm)
     auto* ctx = new MeasureContext();
 
     ReadContext(ctx, rm);
+
+    if (ctx->tempUnit == TemperatureUnit::Invalid) // already logged; stays unregistered, reads -2
+    {
+        *data = ctx;
+        return;
+    }
 
     if (ctx->metricId == static_cast<uint32_t>(-1))
     {
@@ -164,12 +178,12 @@ PLUGIN_EXPORT void Reload(void* data, void* rm, double* maxValue)
 
     ReadContext(ctx, rm);
 
-    if (ctx->metricId == static_cast<uint32_t>(-1))
+    if (ctx->tempUnit == TemperatureUnit::Invalid || ctx->metricId == static_cast<uint32_t>(-1))
     {
         if (hadOld)
             GetCore().UnregisterMeasure(oldHandle);
 
-        if (!ctx->hub)
+        if (ctx->tempUnit != TemperatureUnit::Invalid && !ctx->hub)
             LOG_MEASURE(rm, ctx->debugLevel, L"[%s] Unknown category — skipped",
                 ctx->categoryStr.c_str());
         return;
@@ -205,7 +219,11 @@ PLUGIN_EXPORT double Update(void* data)
 
     MaybeDump(ctx);
 
-    return GetCore().GetValue(ctx->handle);
+    double value = GetCore().GetValue(ctx->handle);
+    if (IsTemperatureMetric(ctx->category, ctx->metricId))
+        value = ConvertTemperature(value, ctx->tempUnit);
+
+    return value;
 }
 
 PLUGIN_EXPORT LPCWSTR GetString(void* data)
@@ -236,7 +254,7 @@ PLUGIN_EXPORT LPCWSTR GetString(void* data)
 // per category — which is the point: one measure, no per-metric measures.
 // ---------------------------------------------------------------------------
 
-static uint32_t SectionHandleFor(MeasureContext* ctx, Category category, int argc, const WCHAR* argv[])
+static SectionHandle SectionHandleFor(MeasureContext* ctx, Category category, int argc, const WCHAR* argv[])
 {
     const std::wstring name = argc > 0 ? argv[0] : L"";
 
@@ -248,7 +266,7 @@ static uint32_t SectionHandleFor(MeasureContext* ctx, Category category, int arg
     for (const SectionHandle& sh : ctx->svHandles)
     {
         if (sh.category == category && sh.metric == metric && sh.device == device)
-            return sh.handle;
+            return sh;
     }
 
     // An unrecognised name lands on the category's Unknown sentinel, which would
@@ -259,7 +277,7 @@ static uint32_t SectionHandleFor(MeasureContext* ctx, Category category, int arg
         LOG_ERROR(L"[%s] Unknown metric '%s' in section variable",
             CategoryName(category).c_str(), name.c_str());
         ctx->svHandles.push_back({ category, metric, device, SV_BAD_METRIC });
-        return SV_BAD_METRIC;
+        return ctx->svHandles.back();
     }
 
     uint32_t handle = GetCore().RegisterMeasure(
@@ -276,7 +294,7 @@ static uint32_t SectionHandleFor(MeasureContext* ctx, Category category, int arg
     LOG_MEASURE(g_Rainmeter, ctx->debugLevel, L"[%s/%s/dev%u] Section variable registered (handle=%u)",
         CategoryName(category).c_str(), name.c_str(), device, handle);
 
-    return handle;
+    return ctx->svHandles.back();
 }
 
 static LPCWSTR SectionValue(void* data, Category category, int argc, const WCHAR* argv[])
@@ -285,8 +303,14 @@ static LPCWSTR SectionValue(void* data, Category category, int argc, const WCHAR
     if (!ctx)
         return L"-2";
 
-    uint32_t handle = SectionHandleFor(ctx, category, argc, argv);
-    if (handle == SV_BAD_METRIC)
+    if (ctx->tempUnit == TemperatureUnit::Invalid) // the hub is disabled, so is everything it serves
+    {
+        ctx->svBuffer = L"-2";
+        return ctx->svBuffer.c_str();
+    }
+
+    SectionHandle sh = SectionHandleFor(ctx, category, argc, argv);
+    if (sh.handle == SV_BAD_METRIC)
     {
         ctx->svBuffer = L"-1";
         return ctx->svBuffer.c_str();
@@ -298,10 +322,12 @@ static LPCWSTR SectionValue(void* data, Category category, int argc, const WCHAR
 
     // Same order Rainmeter uses on a measure: the value first (it initializes the
     // module on the first read), then the string form if the metric has one.
-    double value = GetCore().GetValue(handle);
+    double value = GetCore().GetValue(sh.handle);
+    if (IsTemperatureMetric(category, sh.metric))
+        value = ConvertTemperature(value, ctx->tempUnit);
 
     std::wstring text;
-    if (GetCore().GetString(handle, text))
+    if (GetCore().GetString(sh.handle, text))
         ctx->svBuffer = text; // string metric: Name, DriverVersion, ThrottleReasons, ...
     else
         FormatSectionValue(value, decimalsArg, ctx->svBuffer);

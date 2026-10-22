@@ -4,6 +4,39 @@ All notable changes to NativeHardwareMonitor are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/);
 this project uses a four-part `MAJOR.MINOR.PATCH.BUILD` version in the DLL resource.
 
+## [2.3.2] — 2026-10-22
+
+### Added
+
+- **`TemperatureUnit=C|F|K` on any measure** ([#16](https://github.com/Kurou-kun/NativeHardwareMonitor/issues/16)).
+  Every temperature metric (GPU `Temperature`, `HotspotTemperature`, `MemoryTemperature`,
+  `IntakeTemperature`, Storage `Temperature`) can now read in Fahrenheit or Kelvin; every
+  other metric ignores the option. Default is Celsius, so no existing skin changes.
+
+  ```ini
+  [MeasureGpuTemp]
+  Measure=Plugin
+  Plugin=NativeHardwareMonitor
+  Category=GPU
+  Metric=temp
+  TemperatureUnit=F
+  ```
+
+  - **`-1` (unsupported) and `-2` (error) are never converted.** The plain Calc formula
+    `C*1.8+32` turns a missing sensor into a believable 30.2 °F; the plugin keeps it `-1`.
+  - **A hub measure's setting covers its section variables too:** a hub with
+    `TemperatureUnit=F` makes `[NHM:GPU(temp)]` Fahrenheit.
+  - **Anything other than one letter C, F or K (either case) disables the measure**: it
+    reads `-2`, its section variables read `-2`, and the Rainmeter log says which value was
+    rejected, whatever `Debug=` is set to. `Fahrenheit` spelled out is rejected on purpose
+    rather than guessed at.
+  - `Debug=2` dumps stay in Celsius: they show what the hardware reported.
+  - **The reference skins show it:** `gpu.ini` and `overview.ini` have a `temp_unit=C`
+    variable that sets both the measures' `TemperatureUnit` and the label after the number,
+    so switching to `F` is one line.
+  - A bar on a temperature needs its `MaxValue` retuned for the new unit (212 rather than
+    100 for a 0–100 °C range).
+
 ## [2.3.1] — 2026-10-17
 
 ### Changed
@@ -23,8 +56,8 @@ this project uses a four-part `MAJOR.MINOR.PATCH.BUILD` version in the DLL resou
       ...
   ```
 
-  Upgrading leaves the old flat `.ini` files behind in `Skins\NHM\` — the installer never
-  deletes — so remove them by hand if you want the folder tidy.
+  Upgrading needs no cleanup: the installer moves the existing `Skins\NHM` aside to
+  `Skins\@Backup\NHM` and installs a fresh one, so the old flat `.ini` files do not linger.
 
 - **One palette and style set, shared from `@Resources`.** 2.3.0 gave every skin the same
   look by giving every skin its own copy of it: the same ten variables and six style blocks,
